@@ -227,6 +227,11 @@ MVPでは Django標準User を使います。メールログインは `username=
 - `PATCH /api/v1/shop/me/`
 - `GET /api/v1/categories/`
 - `GET /api/v1/units/`
+- `GET /api/v1/ingredients/`
+- `POST /api/v1/ingredients/`
+- `GET /api/v1/ingredients/{id}/`
+- `PATCH /api/v1/ingredients/{id}/`
+- `DELETE /api/v1/ingredients/{id}/`
 
 ## CI
 

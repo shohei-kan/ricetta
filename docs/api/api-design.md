@@ -393,6 +393,8 @@ MVPでは物理削除でもよいが、将来的には `is_active=false` によ�
 
 材料一覧を取得する。
 
+ログイン中ユーザーの現在Shopに紐づく `is_active=true` のIngredientのみ返す。
+
 ### Query Params
 
 ```text
@@ -440,6 +442,10 @@ q=トマト
 ## POST /api/v1/ingredients/
 
 材料を作成する。
+
+作成時はフロントから `shop_id` を受け取らず、サーバー側で現在Shopを設定する。
+
+Unit指定は `shop = null` の標準Unit、または現在Shopの店舗独自Unitのみ許可する。
 
 ### Request: 原価計算しない
 
@@ -501,11 +507,41 @@ q=トマト
 
 材料詳細を取得する。
 
+現在ShopのIngredientのみ取得できる。他ShopのIngredientは `404 Not Found`。
+
 ---
 
 ## PATCH /api/v1/ingredients/{id}/
 
 材料を更新する。
+
+現在ShopのIngredientのみ更新できる。
+
+Unit指定は `shop = null` の標準Unit、または現在Shopの店舗独自Unitのみ許可する。
+
+### cost_mode validation
+
+`none`:
+
+- 必須は `name` のみ
+- 仕入数量・仕入単位・仕入価格・使用単位・換算情報は空でも保存できる
+
+`same_unit`:
+
+- `purchase_quantity`, `purchase_unit_id`, `purchase_price`, `usage_unit_id` が必須
+- `purchase_quantity > 0`
+- `purchase_price >= 0`
+- MVPでは `usage_unit_id == purchase_unit_id` を必須にする
+
+`conversion`:
+
+- `purchase_quantity`, `purchase_unit_id`, `purchase_price`, `usage_unit_id`, `conversion_from_quantity`, `conversion_from_unit_id`, `conversion_to_quantity`, `conversion_to_unit_id` が必須
+- `purchase_quantity > 0`
+- `purchase_price >= 0`
+- `conversion_from_quantity > 0`
+- `conversion_to_quantity > 0`
+- MVPでは `conversion_from_unit_id == purchase_unit_id` を必須にする
+- MVPでは `conversion_to_unit_id == usage_unit_id` を必須にする
 
 ---
 
@@ -513,7 +549,9 @@ q=トマト
 
 材料を削除する。
 
-MVPでは物理削除でもよいが、レシピで使用中の場合は削除不可または `is_active=false` を検討する。
+MVPでは `is_active=false` による論理削除とする。
+
+現在ShopのIngredientのみ削除できる。他ShopのIngredientは `404 Not Found`。
 
 ---
 

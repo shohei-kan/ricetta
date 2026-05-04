@@ -379,7 +379,9 @@ Use:
 docs/handoff/latest.md
 ```
 
-for the latest working context.
+for the latest working context only.
+
+`latest.md` is not the full project history. It is the current handoff for the next agent: where the project is now, what matters for the next task, and what to do next.
 
 Move older handoffs into:
 
@@ -387,7 +389,63 @@ Move older handoffs into:
 docs/handoff/archive/
 ```
 
-when needed.
+when a phase is completed, the next work theme starts, `latest.md` has become too long, or older details make the current state hard to see.
+
+Do not create a new archive file for every handoff. Archive files should be grouped by broad topic. If the broad topic already exists, append a new entry to that file instead of creating a new file.
+
+```text
+docs/handoff/archive/index.md
+docs/handoff/archive/planning-and-docs.md
+docs/handoff/archive/backend-foundation.md
+docs/handoff/archive/frontend-implementation.md
+docs/handoff/archive/release-prep.md
+```
+
+Create additional archive files only when a new broad topic is needed, for example:
+
+```text
+docs/handoff/archive/billing-and-subscription.md
+docs/handoff/archive/deployment.md
+```
+
+`docs/handoff/archive/index.md` is the archive table of contents. It should list archive files and their broad purpose, not every small work entry.
+
+Inside each archive file, separate entries with date and title headings:
+
+```text
+# Backend Foundation Handoff Archive
+
+## 2026-05-04 Initial scaffold
+
+Summary...
+
+## 2026-05-04 Auth and shop scope
+
+Summary...
+```
+
+`latest.md` should use this fixed structure:
+
+```text
+# Ricetta Handoff Latest
+
+## Date
+## Project
+## Status
+## Summary
+## Current Goal
+## Current State
+## What Was Done
+## Key Decisions
+## Key Files
+## Verification
+## Current Product Scope
+## Out of Scope for MVP
+## Next Recommended Tasks
+## Open Questions
+## Notes for Next Agent
+## Suggested Commit Message
+```
 
 A handoff should include:
 
@@ -399,6 +457,19 @@ A handoff should include:
 - Current decisions
 - Next recommended tasks
 - Notes / caveats
+- Suggested Commit Message
+
+Handoff content rules:
+
+- Keep `latest.md` short and current.
+- Do not accumulate the full project history in `latest.md`.
+- Do not repeat old phase details at length.
+- Prefer links or references to archive files instead of repeating old history.
+- Include only decisions and caveats that affect the next work.
+- Remove resolved open questions.
+- Record verification that was actually run.
+- If verification could not be run, say exactly why.
+- Do not use handoff files for long-term product or technical decisions.
 
 ### Decisions
 
@@ -409,6 +480,8 @@ docs/decisions/
 ```
 
 for important product or technical decisions.
+
+All decision docs belong under `docs/decisions/`. Do not use a root-level `decisions/` directory.
 
 Examples:
 
@@ -421,6 +494,8 @@ Examples:
 
 Do not create decision docs for every tiny change.  
 Use them when a decision affects future implementation.
+
+Use decision docs for durable choices such as MVP scope, shop scope, cost calculation mode, navigation, or documentation structure. Use handoff files for short-lived working context such as what changed in the last task, what was verified, and what the next agent should do.
 
 ## Coding Guidelines
 

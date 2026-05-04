@@ -1,3 +1,5 @@
+from decimal import Decimal, InvalidOperation
+
 from django.conf import settings
 from django.db import models
 
@@ -117,3 +119,127 @@ class Unit(TimeStampedModel):
     def __str__(self):
         scope = "standard" if self.shop_id is None else self.shop.name
         return f"{self.name} ({scope})"
+
+
+class Ingredient(TimeStampedModel):
+    class CostMode(models.TextChoices):
+        NONE = "none", "原価計算しない"
+        SAME_UNIT = "same_unit", "仕入単位のまま計算"
+        CONVERSION = "conversion", "使用単位に換算して計算"
+
+    shop = models.ForeignKey(
+        Shop,
+        on_delete=models.CASCADE,
+        related_name="ingredients",
+    )
+    name = models.CharField(max_length=120)
+    supplier = models.CharField(max_length=120, blank=True)
+    memo = models.TextField(blank=True)
+    cost_mode = models.CharField(
+        max_length=20,
+        choices=CostMode.choices,
+        default=CostMode.NONE,
+    )
+    purchase_quantity = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        blank=True,
+        null=True,
+    )
+    purchase_unit = models.ForeignKey(
+        Unit,
+        on_delete=models.PROTECT,
+        related_name="purchase_ingredients",
+        blank=True,
+        null=True,
+    )
+    purchase_price = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        blank=True,
+        null=True,
+    )
+    usage_unit = models.ForeignKey(
+        Unit,
+        on_delete=models.PROTECT,
+        related_name="usage_ingredients",
+        blank=True,
+        null=True,
+    )
+    conversion_from_quantity = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        blank=True,
+        null=True,
+    )
+    conversion_from_unit = models.ForeignKey(
+        Unit,
+        on_delete=models.PROTECT,
+        related_name="conversion_from_ingredients",
+        blank=True,
+        null=True,
+    )
+    conversion_to_quantity = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        blank=True,
+        null=True,
+    )
+    conversion_to_unit = models.ForeignKey(
+        Unit,
+        on_delete=models.PROTECT,
+        related_name="conversion_to_ingredients",
+        blank=True,
+        null=True,
+    )
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["name", "id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["shop", "name"],
+                condition=models.Q(is_active=True),
+                name="unique_active_ingredient_shop_name",
+            )
+        ]
+
+    def __str__(self):
+        return self.name
+
+    @property
+    def unit_cost_label(self):
+        unit_cost = self._unit_cost()
+        if unit_cost is None or self.usage_unit_id is None:
+            return None
+        return f"{self._format_decimal(unit_cost)}円 / {self.usage_unit.name}"
+
+    def _unit_cost(self):
+        try:
+            if self.cost_mode == self.CostMode.SAME_UNIT:
+                if self.purchase_price is None or not self.purchase_quantity:
+                    return None
+                return Decimal(self.purchase_price) / Decimal(self.purchase_quantity)
+            if self.cost_mode == self.CostMode.CONVERSION:
+                if self.purchase_price is None:
+                    return None
+                required_positive_values = [
+                    self.purchase_quantity,
+                    self.conversion_from_quantity,
+                    self.conversion_to_quantity,
+                ]
+                if any(value in (None, 0) for value in required_positive_values):
+                    return None
+                return (
+                    Decimal(self.purchase_price)
+                    * Decimal(self.conversion_from_quantity)
+                    / Decimal(self.purchase_quantity)
+                    / Decimal(self.conversion_to_quantity)
+                )
+        except (InvalidOperation, ZeroDivisionError):
+            return None
+        return None
+
+    def _format_decimal(self, value):
+        rounded = value.quantize(Decimal("0.01"))
+        return format(rounded.normalize(), "f")

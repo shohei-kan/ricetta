@@ -6,10 +6,11 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Category, Unit
+from .models import Category, Ingredient, Unit
 from .serializers import (
     AuthMeSerializer,
     CategorySerializer,
+    IngredientSerializer,
     LoginSerializer,
     ShopSerializer,
     UnitSerializer,
@@ -120,3 +121,30 @@ class UnitViewSet(viewsets.ModelViewSet):
         instance.is_active = False
         instance.save(update_fields=["is_active", "updated_at"])
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class IngredientViewSet(viewsets.ModelViewSet):
+    serializer_class = IngredientSerializer
+    permission_classes = [IsAuthenticated]
+    http_method_names = ["get", "post", "patch", "delete", "head", "options"]
+
+    def get_queryset(self):
+        shop = get_current_shop(self.request.user)
+        queryset = Ingredient.objects.select_related(
+            "purchase_unit",
+            "usage_unit",
+            "conversion_from_unit",
+            "conversion_to_unit",
+        ).filter(shop=shop, is_active=True)
+        query = self.request.query_params.get("q")
+        if query:
+            queryset = queryset.filter(name__icontains=query)
+        return queryset
+
+    def perform_create(self, serializer):
+        shop = get_current_shop(self.request.user)
+        serializer.save(shop=shop)
+
+    def perform_destroy(self, instance):
+        instance.is_active = False
+        instance.save(update_fields=["is_active", "updated_at"])

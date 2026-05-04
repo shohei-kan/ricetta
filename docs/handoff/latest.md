@@ -2,7 +2,7 @@
 
 ## Date
 
-2026-05-04
+2026-05-05
 
 ## Project
 
@@ -10,110 +10,45 @@ Ricetta
 
 ## Status
 
-Backend Foundation / Auth + Shop Scope implemented
+Ready for Phase 4 Recipe API
 
 ## Summary
 
-RicettaのSaaS化前提となる店舗スコープの土台を実装した。Django標準User、Shop、Membership、Category、Unit、初期データ投入、Auth API、Shop API、Category API、Unit API、スコープ用helper、テストを追加した。
+Ingredient APIまで完了し、次はRecipe / RecipeIngredient / RecipeStep APIを実装する状態。
 
 ## Current Goal
 
-Recipe / Ingredient / PrepTask を作る前に、ログイン中ユーザーのMembershipから現在Shopを特定し、店舗ごとにデータを分離できるbackend foundationを固める。
+Recipe / RecipeIngredient / RecipeStep を実装し、IngredientとUnitを使ったレシピ管理と `cost_summary` の土台を作る。
+
+## Current State
+
+- Scaffold完了
+- Docker / CI修正済み
+- Auth / Shop Scope実装済み
+- Category / Unit実装済み
+- Ingredient API実装済み
+- backend tests pass
+- frontend build / lint pass
+- handoff archive 方針をWebアプリ開発テンプレに合わせて整理済み
 
 ## What Was Done
 
-- GitHub Actions frontend job の Node.js を 22 に更新
-- frontend job に npm cache と `frontend/package-lock.json` の cache dependency path を追加
-- GitHub Actions backend job の PostgreSQL service に `5432:5432` port mapping を追加
-- backend job の PostgreSQL health check を `pg_isready -U ricetta -d ricetta_test` に修正
-- backend job の env を job level に移動し、Django check / migration check / test 全てで同じDB接続設定を使うようにした
-- backend job の `POSTGRES_HOST` は GitHub Actions service 接続用に `localhost` を明示
-- backend job の Python setup を `actions/setup-python@v5` に更新
-- Docker Composeの環境変数渡しを修正
-- `docker-compose.yml` から obsolete な `version:` 属性を削除
-- backend service に `env_file: .env` を追加
-- db service の `POSTGRES_DB` / `POSTGRES_USER` / `POSTGRES_PASSWORD` に開発用デフォルト値を追加
-- backend service の環境変数に開発用デフォルト値を追加し、`POSTGRES_HOST=db` を明示
-- Django settings で空文字の環境変数をdefault扱いにする `env()` / `env_bool()` helperを追加
-- `POSTGRES_HOST` がある場合はPostgreSQL、ない場合はDEBUG時のみSQLiteを使う方針に整理
-- READMEに `.env.example` から `.env` を作る前提とDocker確認コマンドを追記
-- Django dependency を `5.2.13` に更新
-- Django標準Userを採用
-- メールログインは `username=email` として扱う方針にした
-- MVP認証方式を Django Session Auth + DRF Basic Auth にした
-- `Shop` モデルを追加
-- `Membership` モデルを追加
-- `Category` モデルを追加
-- `Unit` モデルを追加
-- `get_current_membership(user)` / `get_current_shop(user)` を追加
-- `seed_initial_data` management command を追加
-- Auth APIを追加
-- Shop APIを追加
-- Category APIを追加
-- Unit APIを追加
-- Category作成時に現在Shopを自動設定
-- Category削除は `is_active=false` の論理削除
-- Unit一覧は標準Unit（`shop=null`）+ 現在ShopのUnitを返す
-- 標準Unitは編集・削除不可にした
-- Auth / Shop scope / Category / Unit のテストを追加
-- Tailwind CSS v4に合わせて frontend PostCSS 設定を修正し、CI buildを通した
-- README / API docs / data model docs を更新
+- `docs/handoff/latest.md` を次フェーズ向けの現在地に整理
+- `docs/handoff/archive/` を内容単位のarchive構成に整理
+- `docs/handoff/archive/index.md` を追加
+- `docs/handoff/archive/backend-foundation.md` にIngredient APIまでのbackend土台handoffを要約追記
+- `AGENTS.md` にhandoff archive運用ルールを追記
+- `docs/decisions/0005-documentation-structure.md` を追加
 
 ## Key Decisions
 
-- API prefix: `/api/v1/`
-- Django: `5.2.13`
-- User: Django標準User
-- Login identifier: email
-- Implementation detail: `User.username` and `User.email` both store the email address
-- Auth: Django Session Auth + DRF Basic Auth
-- JWTはMVPで必要になってから検討
-- フロントから送られた `shop_id` は信用しない
-- 現在Shopは有効なMembershipからサーバー側で特定する
-- MVPでは複数Membershipがあっても最初のactive Membershipを使う
-- Stripe / billing fields are not added yet
-- Docker Compose backend DB host: `POSTGRES_HOST=db`
-- GitHub Actions backend DB host: `POSTGRES_HOST=localhost`
-- GitHub Actions frontend Node.js: `22`
-- ローカルの直接実行では `POSTGRES_HOST` 未設定かつ `DJANGO_DEBUG=True` の場合のみSQLiteを使う
-- `DJANGO_DEBUG=False` で `POSTGRES_HOST` がない場合は明確にエラーにする
-
-## Seed Command
-
-```bash
-cd backend
-python manage.py migrate
-python manage.py seed_initial_data
-```
-
-作成される開発用データ:
-
-```text
-email: owner@example.com
-password: password
-shop: 〇〇食堂
-role: owner
-```
-
-このアカウントとShopはローカル開発用。本番データとして使わない。
-
-## API Added
-
-```text
-POST /api/v1/auth/login/
-POST /api/v1/auth/logout/
-GET  /api/v1/auth/me/
-GET  /api/v1/shop/me/
-PATCH /api/v1/shop/me/
-GET  /api/v1/categories/
-POST /api/v1/categories/
-PATCH /api/v1/categories/{id}/
-DELETE /api/v1/categories/{id}/
-GET  /api/v1/units/
-POST /api/v1/units/
-PATCH /api/v1/units/{id}/
-DELETE /api/v1/units/{id}/
-```
+- Documentation decisions are stored in `docs/decisions/`.
+- Handoff archive files are grouped by broad topic, not by every task.
+- `shop_id` はfrontendから信用しない。
+- Ingredientは現在Shopでスコープ済み。
+- IngredientのUnit指定は標準Unit + 現在Shop Unitのみ。
+- Recipe詳細では材料欄に原価情報を混ぜない。
+- 原価情報は `cost_summary` に集約する。
 
 ## Key Files
 
@@ -121,140 +56,93 @@ DELETE /api/v1/units/{id}/
 - `backend/api/serializers.py`
 - `backend/api/views.py`
 - `backend/api/urls.py`
-- `backend/api/shop_scope.py`
-- `backend/api/seed_data.py`
-- `backend/api/management/commands/seed_initial_data.py`
-- `backend/api/migrations/0001_initial.py`
-- `backend/api/tests.py`
-- `backend/ricetta/settings.py`
-- `backend/requirements.txt`
-- `docker-compose.yml`
-- `.github/workflows/ci.yml`
-- `README.md`
 - `docs/api/api-design.md`
 - `docs/data/data-model.md`
-- `frontend/postcss.config.js`
-- `frontend/package.json`
-- `frontend/package-lock.json`
+- `docs/handoff/archive/backend-foundation.md`
+- `docs/handoff/archive/index.md`
+- `docs/decisions/0005-documentation-structure.md`
+- `AGENTS.md`
 
 ## Verification
 
-実行済み:
+直近のIngredient実装後に以下を確認済み。
 
 ```bash
-docker compose config --services
-docker compose up -d db
-docker compose run --rm backend python -c "import os; print(os.getenv('POSTGRES_DB'), os.getenv('POSTGRES_HOST'))"
-docker compose run --rm backend python -c "import django; print(django.get_version())"
-docker compose run --rm backend python manage.py check
-docker compose run --rm backend python manage.py makemigrations --check --dry-run
-docker compose run --rm backend python manage.py test
-docker run --rm -d --name ricetta-ci-postgres-test -e POSTGRES_DB=ricetta_test -e POSTGRES_USER=ricetta -e POSTGRES_PASSWORD=ricetta -p 55432:5432 postgres:15
-docker exec ricetta-ci-postgres-test pg_isready -U ricetta -d ricetta_test
-docker compose run --rm -e DJANGO_SECRET_KEY=test-secret-key -e DJANGO_DEBUG=True -e DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1 -e POSTGRES_DB=ricetta_test -e POSTGRES_USER=ricetta -e POSTGRES_PASSWORD=ricetta -e POSTGRES_HOST=host.docker.internal -e POSTGRES_PORT=55432 backend python manage.py check
-docker compose run --rm -e DJANGO_SECRET_KEY=test-secret-key -e DJANGO_DEBUG=True -e DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1 -e POSTGRES_DB=ricetta_test -e POSTGRES_USER=ricetta -e POSTGRES_PASSWORD=ricetta -e POSTGRES_HOST=host.docker.internal -e POSTGRES_PORT=55432 backend python manage.py makemigrations --check --dry-run
-docker compose run --rm -e DJANGO_SECRET_KEY=test-secret-key -e DJANGO_DEBUG=True -e DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1 -e POSTGRES_DB=ricetta_test -e POSTGRES_USER=ricetta -e POSTGRES_PASSWORD=ricetta -e POSTGRES_HOST=host.docker.internal -e POSTGRES_PORT=55432 backend python manage.py test
-docker stop ricetta-ci-postgres-test
+docker compose run --rm -e POSTGRES_HOST= backend python manage.py check
+docker compose run --rm -e POSTGRES_HOST= backend python manage.py makemigrations --check --dry-run
+docker compose run --rm -e POSTGRES_HOST= backend python manage.py test
 
 cd frontend
-npm ci
 npm run build
 npm run lint
 ```
 
-結果:
+Result:
 
-- Docker compose config: pass
-- Docker db startup: pass
-- Docker env check: `ricetta db`
-- Docker Django version: `5.2.13`
-- Docker backend check: pass
-- Docker migration check: pass
-- Docker backend tests: 12 tests pass
-- CI-like PostgreSQL startup: pass
-- CI-like backend check: pass
-- CI-like backend migration check: pass
-- CI-like backend tests: 12 tests pass
-- Frontend npm ci: pass
+- Backend check: pass
+- Migration check: pass
+- Backend tests: 29 tests pass
 - Frontend build: pass
 - Frontend lint: pass
 
-再確認コマンド:
-
-```bash
-cp .env.example .env
-docker compose down
-docker compose up -d db
-docker compose run --rm backend python -c "import os; print(os.getenv('POSTGRES_DB'), os.getenv('POSTGRES_HOST'))"
-docker compose run --rm backend python -c "import django; print(django.get_version())"
-docker compose run --rm backend python manage.py check
-docker compose run --rm backend python manage.py makemigrations --check --dry-run
-docker compose run --rm backend python manage.py test
-```
+今回の作業はドキュメント運用整理のみ。backend / frontend の検証は再実行していない。
 
 ## Current Product Scope
 
-MVPでは以下を対象とする。
+MVP対象:
 
-- ログイン / ログアウト
-- 店舗アカウント
-- 店舗ごとのデータ分離
-- レシピ一覧
-- レシピ詳細
-- レシピ作成 / 編集
-- 材料作成 / 編集
-- 材料ごとの原価計算モード
-- レシピごとの材料原価計算
-- 今日の仕込み一覧
-- 仕込みタスクのステータス変更
-- スマホ対応
-- タブレット横向き対応
+- Login / logout
+- Shop account scope
+- Recipe list/detail/create/edit
+- Ingredient create/edit
+- Ingredient cost mode
+- Basic food cost calculation
+- Today's prep list
+- Prep task status update
+- Smartphone layout
+- Tablet landscape layout
 
 ## Out of Scope for MVP
 
-MVPでは以下は対象外。
-
-- Stripe決済
-- Checkout
-- Billing Portal
-- POS連携
-- 複数店舗管理
-- 在庫自動減算
-- 高度な発注管理
-- AI自動分類
-- 栄養計算
-- HACCP帳票
-- 高度な権限管理
-- 店舗端末モード
-- 本格的な仕込みログ
-- 使用期限・残量アラート
+- Stripe payment / Checkout / Billing Portal
+- POS integration
+- Multi-shop management UI
+- Automatic inventory deduction
+- Advanced ordering
+- AI auto-classification
+- Nutrition calculation
+- HACCP reports
+- Advanced role management
+- Shop device mode
+- Full prep inventory / expiry alerts
 
 ## Next Recommended Tasks
 
-1. Ingredient モデルとAPIを実装する
-2. Ingredient cost mode のバリデーションを追加する
-3. Unitを使った簡易換算の土台を作る
-4. Recipe / RecipeIngredient / RecipeStep モデルとAPIを実装する
-5. Frontend login screen と session状態取得を実装する
+1. Recipe / RecipeIngredient / RecipeStep モデルとAPIを実装する
+2. RecipeIngredientでIngredientとUnitを現在Shopにスコープして選択できるようにする
+3. Recipe単位の材料原価計算service/helperを実装する
+4. Recipe detail response に `ingredients` / `steps` / `cost_summary` を含める
+5. docs / tests / handoff を更新する
 
 ## Open Questions
 
 - Session Auth運用時のCSRF取得APIをfrontend実装時に追加するか
 - Staffの原価情報閲覧制限をどのPhaseで入れるか
 - 標準Unitの追加・変更をdata migrationで固定するか、seed command運用に寄せるか
-- `decisions/` と `docs/decisions/` の配置をどちらに統一するか
+- `unit_cost_label` の丸めを将来どこまで厳密にするか
+- Ingredientの仕入価格履歴をどのPhaseで扱うか
 
 ## Notes for Next Agent
 
-- `get_current_shop(user)` を今後のRecipe / Ingredient / PrepTask queryset filteringで使う。
-- Category / Unit 作成時は `shop_id` をserializerで受け取らず、server側で設定する方針を継続する。
-- Unitの標準単位は `shop=None`。店舗独自Unitだけ編集・削除できる。
-- frontend buildはTailwind v4対応として `@tailwindcss/postcss` を使う構成に変更済み。
-- Docker Compose実行前はプロジェクトルートで `cp .env.example .env` を行う。
-- backend container は `.env` を `env_file` で読み、Compose側でも開発用defaultを持つ。
+- `get_current_shop(user)` をRecipe / Ingredient / PrepTask queryset filteringで使う。
+- Recipe作成時も `shop_id` をserializerで受け取らず、server側で設定する。
+- RecipeIngredientで選べるIngredientは現在ShopのIngredientのみ。
+- RecipeIngredientで選べるUnitは標準Unit + 現在Shop Unitのみ。
+- 材料欄と原価情報は分ける。
+- Recipe全体の原価は `cost_summary` に集約する。
 
 ## Suggested Commit Message
 
 ```text
-fix(ci): update Node version and PostgreSQL service
+docs(handoff): align archive workflow with webapp template
 ```

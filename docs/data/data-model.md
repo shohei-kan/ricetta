@@ -222,6 +222,21 @@ MVPでは以下の2種類です。
 | created_at | datetime | 作成日時 |
 | updated_at | datetime | 更新日時 |
 
+### 店舗スコープ
+
+Ingredientは必ずShopに紐づきます。
+
+作成時は、フロントから `shop_id` を受け取らず、サーバー側で現在ログイン中ユーザーのShopを設定します。
+
+一覧・詳細・更新・削除は現在Shopの `is_active=true` のIngredientのみ対象です。削除はMVPでは `is_active=false` の論理削除とします。
+
+Ingredientで指定できるUnitは以下に限定します。
+
+- `shop = null` の標準Unit
+- 現在Shopの店舗独自Unit
+
+他ShopのUnitは指定できません。
+
 ### cost_mode
 
 | 値 | 説明 |
@@ -229,6 +244,61 @@ MVPでは以下の2種類です。
 | none | 原価計算しない |
 | same_unit | 仕入単位のまま計算 |
 | conversion | 使用単位に換算して計算 |
+
+### cost_mode validation
+
+#### none
+
+必須は `name` のみです。
+
+仕入数量・仕入単位・仕入価格・使用単位・換算情報は空でも保存できます。
+
+#### same_unit
+
+必須:
+
+- purchase_quantity
+- purchase_unit
+- purchase_price
+- usage_unit
+
+条件:
+
+- purchase_quantity > 0
+- purchase_price >= 0
+- MVPでは `usage_unit == purchase_unit` を必須にする
+
+#### conversion
+
+必須:
+
+- purchase_quantity
+- purchase_unit
+- purchase_price
+- usage_unit
+- conversion_from_quantity
+- conversion_from_unit
+- conversion_to_quantity
+- conversion_to_unit
+
+条件:
+
+- purchase_quantity > 0
+- purchase_price >= 0
+- conversion_from_quantity > 0
+- conversion_to_quantity > 0
+- MVPでは `conversion_from_unit == purchase_unit` を必須にする
+- MVPでは `conversion_to_unit == usage_unit` を必須にする
+
+### unit_cost_label
+
+Ingredient APIでは表示用の単価ラベルを返します。
+
+- none: null
+- same_unit: `purchase_price / purchase_quantity` を `円 / usage_unit` で表示
+- conversion: `purchase_price * conversion_from_quantity / purchase_quantity / conversion_to_quantity` を `円 / usage_unit` で表示
+
+この値はMVPの表示用です。Recipe全体の原価計算や会計上の厳密な丸めは次Phase以降で扱います。
 
 ### 例：原価計算しない
 

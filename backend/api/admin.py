@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Category, Membership, Shop, Unit
+from .models import Category, Ingredient, Membership, Shop, Unit
 
 
 @admin.register(Shop)
@@ -28,3 +28,10 @@ class UnitAdmin(admin.ModelAdmin):
     list_display = ["id", "shop", "name", "unit_type", "is_default", "sort_order", "is_active"]
     list_filter = ["unit_type", "is_default", "is_active"]
     search_fields = ["name", "shop__name"]
+
+
+@admin.register(Ingredient)
+class IngredientAdmin(admin.ModelAdmin):
+    list_display = ["id", "shop", "name", "supplier", "cost_mode", "is_active"]
+    list_filter = ["cost_mode", "is_active"]
+    search_fields = ["name", "supplier", "shop__name"]
