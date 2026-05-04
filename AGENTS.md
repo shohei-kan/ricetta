@@ -142,6 +142,9 @@ Important:
 - Do not trust `shop_id` sent from the frontend.
 - The backend must determine the shop from the logged-in user and Membership.
 - Querysets must always be filtered by the current user's shop.
+- Do not expose `shop_id` as a writable serializer field for shop-scoped models.
+- Create shop-scoped records by setting `shop` on the server side.
+- Users must not read, update, or delete another shop's data.
 
 Main shop-scoped data:
 
@@ -149,9 +152,12 @@ Main shop-scoped data:
 - Ingredient
 - PrepTask
 - Category
-- Unit
+- Unit, for shop-specific units
+- RecipeIngredient, through Recipe
 - PrepLog, future
 - Subscription, future
+
+When adding a new shop-scoped model, also add tests that prove cross-shop access is blocked for list/detail/update/delete and that create ignores frontend-provided shop identifiers.
 
 ### 2. Navigation
 
@@ -330,6 +336,100 @@ UI tone:
 
 Use Japanese labels for user-facing UI.
 
+## Architecture Responsibility Rules
+
+Keep frontend, backend, and database responsibilities clear.
+
+Frontend is responsible for:
+
+- UI rendering
+- Form interaction
+- Client-side validation for better UX
+- API calling
+- Loading, error, and empty states
+- Temporary screen state
+
+Frontend must not make final authorization decisions. Frontend must not decide or trust `shop_id`. Frontend may display cost values, but final cost calculation belongs on the backend.
+
+Backend is responsible for:
+
+- Authentication
+- Authorization
+- Shop scope enforcement
+- Data validation
+- Persistent business rules
+- Cost calculation
+- API response shape
+- Database writes
+
+Backend must treat all frontend input as untrusted. Validate data again on the server even when the frontend already validates it.
+
+Database is responsible for:
+
+- Persistence
+- Relational integrity
+- Schema managed by migrations
+
+Use database constraints where they protect important integrity, but keep request-aware rules such as current-Shop scope in backend serializers, querysets, and services.
+
+## API and Save Behavior Rules
+
+- All MVP APIs use `/api/v1/`.
+- Business APIs require authentication.
+- Create and update endpoints should return saved data or a useful summary.
+- Validation errors should be clear enough for forms to display.
+- Do not return raw stack traces or internal implementation details to the frontend.
+- Keep API response shapes stable once frontend integration starts.
+- When an API response changes, update `docs/api/api-design.md`.
+
+For nested writes, such as Recipe with ingredients and steps:
+
+- Choose a simple MVP strategy.
+- Document the strategy in `docs/handoff/latest.md`.
+- If the strategy affects future implementation, add or update `docs/decisions/`.
+
+## Error Handling Rules
+
+Backend:
+
+- Return 400 for validation errors.
+- Return 401 for unauthenticated requests.
+- Return 403 or 404 for unauthorized access.
+- For cross-shop data access, prefer 404 when hiding the existence of the resource is safer.
+- Avoid leaking internal implementation details.
+
+Frontend:
+
+- Show a clear message when saving fails.
+- Keep form input when an API request fails.
+- Show loading, empty, and error states.
+- Do not show raw stack traces or technical errors to users.
+
+User-facing message examples:
+
+```text
+保存に失敗しました。もう一度お試しください。
+入力内容を確認してください。
+ログインが必要です。
+このデータは見つかりませんでした。
+```
+
+## Cost Calculation Rules
+
+Ricetta separates material work information from management cost information.
+
+```text
+ingredients = 作るための情報
+cost_summary = 管理情報
+```
+
+- Ingredient and recipe material lists should show work information only.
+- Do not mix cost details into ingredient rows on Recipe Detail.
+- Recipe-level cost information should be returned as `cost_summary`.
+- Cost calculation should be implemented on the backend.
+- Frontend should display cost results, not calculate final values.
+- Keep detailed accounting behavior small for MVP; document rounding or calculation tradeoffs when they affect future work.
+
 ## Documentation Rules
 
 Keep documentation current when implementation changes.
@@ -339,12 +439,29 @@ Important docs:
 ```text
 docs/planning/concept.md
 docs/planning/mvp-requirements.md
+docs/planning/mvp-roadmap.md
 docs/product/screens.md
+docs/product/ui-guidelines.md
 docs/data/data-model.md
 docs/api/api-design.md
 docs/handoff/latest.md
 docs/decisions/
 ```
+
+Update docs according to the type of change:
+
+| Change | Update |
+|---|---|
+| Product scope change | `docs/planning/mvp-requirements.md` |
+| Implementation order change | `docs/planning/mvp-roadmap.md` |
+| Screen or UI change | `docs/product/screens.md` or `docs/product/ui-guidelines.md` |
+| Data model change | `docs/data/data-model.md` |
+| API change | `docs/api/api-design.md` |
+| Long-term decision | `docs/decisions/` |
+| Completed task or next context | `docs/handoff/latest.md` |
+| Setup or command change | `README.md` |
+
+At the end of a Codex task, update `docs/handoff/latest.md` by default unless the task is truly tiny and does not affect the next agent's context.
 
 ### README.md
 
@@ -492,6 +609,13 @@ Examples:
 0004-tablet-navigation.md
 ```
 
+Future decision candidates, when the implementation needs them:
+
+```text
+0006-auth-and-csrf-strategy.md
+0007-image-upload-scope.md
+```
+
 Do not create decision docs for every tiny change.  
 Use them when a decision affects future implementation.
 
@@ -507,6 +631,8 @@ Use decision docs for durable choices such as MVP scope, shop scope, cost calcul
 - Use typed interfaces where helpful.
 - Keep business logic out of UI components when possible.
 - Make shop scope explicit on the backend.
+- Do not refactor large unrelated areas.
+- Do not rename directories or change project structure without a clear reason.
 
 ### Frontend
 
@@ -522,6 +648,9 @@ Use decision docs for durable choices such as MVP scope, shop scope, cost calcul
   - Status badge
   - Recipe card
   - Prep task card
+- Client-side validation is for UX only; backend validation is authoritative.
+- Preserve form input when save requests fail.
+- Show loading, empty, and error states for API-backed screens.
 
 ### Backend
 
@@ -532,6 +661,9 @@ Use decision docs for durable choices such as MVP scope, shop scope, cost calcul
 - Use viewsets where appropriate, but avoid overcomplicating early.
 - Filter querysets by current shop.
 - Keep cost calculation in backend service/helper functions.
+- Treat frontend input as untrusted.
+- Do not expose `shop_id` as writable for shop-scoped models.
+- Do not change the authentication strategy without explicit direction.
 
 ### API
 
@@ -555,6 +687,98 @@ Units
 ```
 
 Do not implement Stripe, billing, or POS APIs in MVP.
+
+Do not add Stripe, billing, POS integration, inventory automation, or multi-shop UI during MVP unless explicitly requested.
+
+### Migrations
+
+- Model changes require migrations.
+- Do not rewrite existing migrations casually after they may have been shared.
+- Run migration checks before considering backend work complete.
+- Prefer Docker Compose for local verification when the task depends on the project runtime.
+
+Recommended backend checks:
+
+```bash
+python manage.py check
+python manage.py makemigrations --check --dry-run
+python manage.py test
+```
+
+Docker equivalent:
+
+```bash
+docker compose run --rm backend python manage.py check
+docker compose run --rm backend python manage.py makemigrations --check --dry-run
+docker compose run --rm backend python manage.py test
+```
+
+### Environment Variables and Secrets
+
+- `.env` must not be committed.
+- Update `.env.example` when new environment variables are added.
+- Do not hardcode secret keys, database passwords, Stripe keys, or tokens.
+- Use development defaults only when they are clearly safe for local development.
+- Production-like secrets must be provided through environment variables.
+
+When adding a new environment variable, update:
+
+- `.env.example`
+- `README.md`, if developers need setup information
+- `docs/handoff/latest.md`, if it affects the current task or next agent
+
+### Dependencies
+
+- Do not add new dependencies casually.
+- Check whether the existing stack can solve the problem first.
+- Prefer built-in Django, DRF, React, and TypeScript features when reasonable.
+- Add a short reason in the task summary or handoff when adding a dependency.
+- Update lockfiles.
+- Ensure CI passes.
+
+Do not add these without explicit direction:
+
+- New UI library
+- New state management library
+- New API client library
+- New auth library
+- Payment library
+
+### CI
+
+- Do not proceed to the next implementation phase with known failing CI.
+- If CI fails because of environment configuration, fix CI before adding business features.
+- Keep CI minimal and fast.
+- Do not add deployment or CD workflows unless explicitly requested.
+- Do not add secrets-dependent CI jobs during MVP setup.
+
+Recommended checks:
+
+```bash
+python manage.py check
+python manage.py makemigrations --check --dry-run
+python manage.py test
+npm run build
+npm run lint
+```
+
+Consider adding frontend `typecheck` only after the project has a stable script for it.
+
+### Codex Scope Guardrails
+
+- Do not implement features outside the current prompt.
+- Do not add future SaaS features unless explicitly requested.
+- Do not implement Stripe, billing, POS integration, inventory automation, or multi-shop UI during MVP unless explicitly requested.
+- Do not refactor large unrelated areas.
+- Do not rename directories or change project structure without a clear reason.
+- Do not change authentication strategy without explicit direction.
+- Do not silently change API response shapes.
+- Do not add new dependencies, migrations, or environment variables for documentation-only tasks.
+
+When a necessary design judgment comes up:
+
+- Record task-local context in `docs/handoff/latest.md`.
+- Record or propose a decision doc in `docs/decisions/` if the choice has long-term product or technical impact.
 
 ## Testing Guidelines
 
