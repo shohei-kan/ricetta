@@ -22,6 +22,13 @@ Recipe / Ingredient / PrepTask を作る前に、ログイン中ユーザーのM
 
 ## What Was Done
 
+- GitHub Actions frontend job の Node.js を 22 に更新
+- frontend job に npm cache と `frontend/package-lock.json` の cache dependency path を追加
+- GitHub Actions backend job の PostgreSQL service に `5432:5432` port mapping を追加
+- backend job の PostgreSQL health check を `pg_isready -U ricetta -d ricetta_test` に修正
+- backend job の env を job level に移動し、Django check / migration check / test 全てで同じDB接続設定を使うようにした
+- backend job の `POSTGRES_HOST` は GitHub Actions service 接続用に `localhost` を明示
+- backend job の Python setup を `actions/setup-python@v5` に更新
 - Docker Composeの環境変数渡しを修正
 - `docker-compose.yml` から obsolete な `version:` 属性を削除
 - backend service に `env_file: .env` を追加
@@ -66,6 +73,8 @@ Recipe / Ingredient / PrepTask を作る前に、ログイン中ユーザーのM
 - MVPでは複数Membershipがあっても最初のactive Membershipを使う
 - Stripe / billing fields are not added yet
 - Docker Compose backend DB host: `POSTGRES_HOST=db`
+- GitHub Actions backend DB host: `POSTGRES_HOST=localhost`
+- GitHub Actions frontend Node.js: `22`
 - ローカルの直接実行では `POSTGRES_HOST` 未設定かつ `DJANGO_DEBUG=True` の場合のみSQLiteを使う
 - `DJANGO_DEBUG=False` で `POSTGRES_HOST` がない場合は明確にエラーにする
 
@@ -120,6 +129,7 @@ DELETE /api/v1/units/{id}/
 - `backend/ricetta/settings.py`
 - `backend/requirements.txt`
 - `docker-compose.yml`
+- `.github/workflows/ci.yml`
 - `README.md`
 - `docs/api/api-design.md`
 - `docs/data/data-model.md`
@@ -139,8 +149,15 @@ docker compose run --rm backend python -c "import django; print(django.get_versi
 docker compose run --rm backend python manage.py check
 docker compose run --rm backend python manage.py makemigrations --check --dry-run
 docker compose run --rm backend python manage.py test
+docker run --rm -d --name ricetta-ci-postgres-test -e POSTGRES_DB=ricetta_test -e POSTGRES_USER=ricetta -e POSTGRES_PASSWORD=ricetta -p 55432:5432 postgres:15
+docker exec ricetta-ci-postgres-test pg_isready -U ricetta -d ricetta_test
+docker compose run --rm -e DJANGO_SECRET_KEY=test-secret-key -e DJANGO_DEBUG=True -e DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1 -e POSTGRES_DB=ricetta_test -e POSTGRES_USER=ricetta -e POSTGRES_PASSWORD=ricetta -e POSTGRES_HOST=host.docker.internal -e POSTGRES_PORT=55432 backend python manage.py check
+docker compose run --rm -e DJANGO_SECRET_KEY=test-secret-key -e DJANGO_DEBUG=True -e DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1 -e POSTGRES_DB=ricetta_test -e POSTGRES_USER=ricetta -e POSTGRES_PASSWORD=ricetta -e POSTGRES_HOST=host.docker.internal -e POSTGRES_PORT=55432 backend python manage.py makemigrations --check --dry-run
+docker compose run --rm -e DJANGO_SECRET_KEY=test-secret-key -e DJANGO_DEBUG=True -e DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1 -e POSTGRES_DB=ricetta_test -e POSTGRES_USER=ricetta -e POSTGRES_PASSWORD=ricetta -e POSTGRES_HOST=host.docker.internal -e POSTGRES_PORT=55432 backend python manage.py test
+docker stop ricetta-ci-postgres-test
 
 cd frontend
+npm ci
 npm run build
 npm run lint
 ```
@@ -154,6 +171,11 @@ npm run lint
 - Docker backend check: pass
 - Docker migration check: pass
 - Docker backend tests: 12 tests pass
+- CI-like PostgreSQL startup: pass
+- CI-like backend check: pass
+- CI-like backend migration check: pass
+- CI-like backend tests: 12 tests pass
+- Frontend npm ci: pass
 - Frontend build: pass
 - Frontend lint: pass
 
@@ -234,5 +256,5 @@ MVPでは以下は対象外。
 ## Suggested Commit Message
 
 ```text
-fix(docker): load env defaults for backend database
+fix(ci): update Node version and PostgreSQL service
 ```
