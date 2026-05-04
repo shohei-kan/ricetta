@@ -22,6 +22,15 @@ Recipe / Ingredient / PrepTask を作る前に、ログイン中ユーザーのM
 
 ## What Was Done
 
+- Docker Composeの環境変数渡しを修正
+- `docker-compose.yml` から obsolete な `version:` 属性を削除
+- backend service に `env_file: .env` を追加
+- db service の `POSTGRES_DB` / `POSTGRES_USER` / `POSTGRES_PASSWORD` に開発用デフォルト値を追加
+- backend service の環境変数に開発用デフォルト値を追加し、`POSTGRES_HOST=db` を明示
+- Django settings で空文字の環境変数をdefault扱いにする `env()` / `env_bool()` helperを追加
+- `POSTGRES_HOST` がある場合はPostgreSQL、ない場合はDEBUG時のみSQLiteを使う方針に整理
+- READMEに `.env.example` から `.env` を作る前提とDocker確認コマンドを追記
+- Django dependency を `5.2.13` に更新
 - Django標準Userを採用
 - メールログインは `username=email` として扱う方針にした
 - MVP認証方式を Django Session Auth + DRF Basic Auth にした
@@ -46,6 +55,7 @@ Recipe / Ingredient / PrepTask を作る前に、ログイン中ユーザーのM
 ## Key Decisions
 
 - API prefix: `/api/v1/`
+- Django: `5.2.13`
 - User: Django標準User
 - Login identifier: email
 - Implementation detail: `User.username` and `User.email` both store the email address
@@ -55,6 +65,9 @@ Recipe / Ingredient / PrepTask を作る前に、ログイン中ユーザーのM
 - 現在Shopは有効なMembershipからサーバー側で特定する
 - MVPでは複数Membershipがあっても最初のactive Membershipを使う
 - Stripe / billing fields are not added yet
+- Docker Compose backend DB host: `POSTGRES_HOST=db`
+- ローカルの直接実行では `POSTGRES_HOST` 未設定かつ `DJANGO_DEBUG=True` の場合のみSQLiteを使う
+- `DJANGO_DEBUG=False` で `POSTGRES_HOST` がない場合は明確にエラーにする
 
 ## Seed Command
 
@@ -105,6 +118,8 @@ DELETE /api/v1/units/{id}/
 - `backend/api/migrations/0001_initial.py`
 - `backend/api/tests.py`
 - `backend/ricetta/settings.py`
+- `backend/requirements.txt`
+- `docker-compose.yml`
 - `README.md`
 - `docs/api/api-design.md`
 - `docs/data/data-model.md`
@@ -117,12 +132,13 @@ DELETE /api/v1/units/{id}/
 実行済み:
 
 ```bash
-cd backend
-python3 manage.py check
-python3 manage.py makemigrations --check --dry-run
-python3 manage.py test
-python3 manage.py migrate
-python3 manage.py seed_initial_data
+docker compose config --services
+docker compose up -d db
+docker compose run --rm backend python -c "import os; print(os.getenv('POSTGRES_DB'), os.getenv('POSTGRES_HOST'))"
+docker compose run --rm backend python -c "import django; print(django.get_version())"
+docker compose run --rm backend python manage.py check
+docker compose run --rm backend python manage.py makemigrations --check --dry-run
+docker compose run --rm backend python manage.py test
 
 cd frontend
 npm run build
@@ -131,12 +147,28 @@ npm run lint
 
 結果:
 
-- Backend check: pass
-- Migration check: pass
-- Backend tests: 12 tests pass
-- Seed command: pass
+- Docker compose config: pass
+- Docker db startup: pass
+- Docker env check: `ricetta db`
+- Docker Django version: `5.2.13`
+- Docker backend check: pass
+- Docker migration check: pass
+- Docker backend tests: 12 tests pass
 - Frontend build: pass
 - Frontend lint: pass
+
+再確認コマンド:
+
+```bash
+cp .env.example .env
+docker compose down
+docker compose up -d db
+docker compose run --rm backend python -c "import os; print(os.getenv('POSTGRES_DB'), os.getenv('POSTGRES_HOST'))"
+docker compose run --rm backend python -c "import django; print(django.get_version())"
+docker compose run --rm backend python manage.py check
+docker compose run --rm backend python manage.py makemigrations --check --dry-run
+docker compose run --rm backend python manage.py test
+```
 
 ## Current Product Scope
 
@@ -196,9 +228,11 @@ MVPでは以下は対象外。
 - Category / Unit 作成時は `shop_id` をserializerで受け取らず、server側で設定する方針を継続する。
 - Unitの標準単位は `shop=None`。店舗独自Unitだけ編集・削除できる。
 - frontend buildはTailwind v4対応として `@tailwindcss/postcss` を使う構成に変更済み。
+- Docker Compose実行前はプロジェクトルートで `cp .env.example .env` を行う。
+- backend container は `.env` を `env_file` で読み、Compose側でも開発用defaultを持つ。
 
 ## Suggested Commit Message
 
 ```text
-feat(api): add auth and shop-scoped foundation
+fix(docker): load env defaults for backend database
 ```

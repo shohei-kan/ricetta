@@ -102,7 +102,7 @@ Frontend:
 
 Backend:
 
-- Django
+- Django 5.2 LTS
 - Django REST Framework
 - PostgreSQL
 
@@ -130,10 +130,53 @@ API prefix:
 ### Quick Start
 
 1. Clone the repository
-2. Copy `.env.example` to `.env` and fill in the values
-3. Run `docker-compose up --build`
-4. Open http://localhost:5173 for frontend
-5. Backend API at http://localhost:8000
+2. Copy `.env.example` to `.env`
+3. Fill in `.env` values as needed
+4. Run `docker compose up --build`
+5. Open http://localhost:5173 for frontend
+6. Backend API at http://localhost:8000
+
+```bash
+cp .env.example .env
+docker compose up --build
+```
+
+Docker Compose reads the project root `.env`. The backend container also loads it with `env_file: .env`.
+
+For backend-to-database connections inside Docker, use:
+
+```text
+POSTGRES_HOST=db
+```
+
+The Compose file also provides development defaults for PostgreSQL variables:
+
+```text
+POSTGRES_DB=ricetta
+POSTGRES_USER=ricetta
+POSTGRES_PASSWORD=ricetta
+POSTGRES_HOST=db
+POSTGRES_PORT=5432
+```
+
+### Docker Verification
+
+```bash
+cp .env.example .env
+docker compose down
+docker compose up -d db
+docker compose run --rm backend python -c "import os; print(os.getenv('POSTGRES_DB'), os.getenv('POSTGRES_HOST'))"
+docker compose run --rm backend python -c "import django; print(django.get_version())"
+docker compose run --rm backend python manage.py check
+docker compose run --rm backend python manage.py makemigrations --check --dry-run
+docker compose run --rm backend python manage.py test
+```
+
+Expected environment check output:
+
+```text
+ricetta db
+```
 
 ### Health Check
 
