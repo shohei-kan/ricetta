@@ -1,0 +1,30 @@
+DEFAULT_CATEGORIES = [
+    "仕込み",
+    "メイン",
+    "デザート",
+    "ドリンク",
+    "ソース",
+    "副菜",
+    "その他",
+]
+
+DEFAULT_UNITS = [
+    ("g", "weight"),
+    ("kg", "weight"),
+    ("ml", "volume"),
+    ("L", "volume"),
+    ("個", "count"),
+    ("本", "count"),
+    ("枚", "count"),
+    ("缶", "count"),
+    ("袋", "count"),
+    ("束", "count"),
+    ("バッチ", "custom"),
+    ("人前", "custom"),
+    ("食", "custom"),
+    ("台", "count"),
+    ("杯", "count"),
+    ("小さじ", "volume"),
+    ("大さじ", "volume"),
+    ("適量", "custom"),
+]

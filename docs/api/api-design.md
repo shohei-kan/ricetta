@@ -21,7 +21,7 @@ MVPでは以下を実現する。
 - Backend: Django + Django REST Framework
 - DB: PostgreSQL
 - API prefix: `/api/v1/`
-- 認証: Django Session Auth または Token/JWTを検討
+- 認証: MVPでは Django Session Auth + DRF Basic Auth
 - 初期MVPでは決済APIは作らない
 - 将来的に Stripe Checkout / Billing を追加予定
 
@@ -146,6 +146,8 @@ MVPでは以下を優先する。
   }
 }
 ```
+
+未ログインの場合は `401 Unauthorized` を返す。
 
 ---
 
@@ -684,13 +686,17 @@ date=2026-04-29
 
 カテゴリを更新する。
 
+ログイン中ユーザーの現在Shopに紐づくカテゴリのみ更新できる。
+
 ---
 
 ## DELETE /api/v1/categories/{id}/
 
 カテゴリを削除する。
 
-使用中カテゴリは削除不可または非表示化を検討する。
+MVPでは `is_active=false` による論理削除とする。
+
+ログイン中ユーザーの現在Shopに紐づくカテゴリのみ削除できる。
 
 ---
 
@@ -700,6 +706,8 @@ date=2026-04-29
 
 単位一覧を取得する。
 
+`shop = null` の標準単位と、ログイン中ユーザーの現在Shopに紐づく店舗独自単位を返す。
+
 ### Response
 
 ```json
@@ -708,13 +716,15 @@ date=2026-04-29
     "id": 1,
     "name": "g",
     "unit_type": "weight",
-    "is_default": true
+    "is_default": true,
+    "is_standard": true
   },
   {
     "id": 7,
     "name": "缶",
     "unit_type": "custom",
-    "is_default": true
+    "is_default": true,
+    "is_standard": true
   }
 ]
 ```
@@ -740,13 +750,15 @@ date=2026-04-29
 
 単位を更新する。
 
+標準単位（`shop = null`）は更新できない。店舗独自単位のみ更新できる。
+
 ---
 
 ## DELETE /api/v1/units/{id}/
 
 単位を削除する。
 
-使用中単位は削除不可または非表示化を検討する。
+標準単位（`shop = null`）は削除できない。店舗独自単位のみ `is_active=false` による論理削除とする。
 
 ---
 

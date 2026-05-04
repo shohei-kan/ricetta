@@ -1,9 +1,122 @@
-from django.shortcuts import render
+from django.contrib.auth import login, logout
+from django.db.models import Q
 from rest_framework.decorators import api_view
+from rest_framework import status, viewsets
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
-# Create your views here.
+from .models import Category, Unit
+from .serializers import (
+    AuthMeSerializer,
+    CategorySerializer,
+    LoginSerializer,
+    ShopSerializer,
+    UnitSerializer,
+)
+from .shop_scope import get_current_membership, get_current_shop
 
 @api_view(['GET'])
 def health_check(request):
     return Response({'status': 'ok'})
+
+
+class LoginView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = LoginSerializer(
+            data=request.data,
+            context={"request": request},
+        )
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data["user"]
+        membership = get_current_membership(user)
+        login(request, user)
+        return Response(AuthMeSerializer(membership).data)
+
+
+class LogoutView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        logout(request)
+        return Response({"detail": "ログアウトしました。"})
+
+
+class MeView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        membership = get_current_membership(request.user)
+        return Response(AuthMeSerializer(membership).data)
+
+
+class ShopMeView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        shop = get_current_shop(request.user)
+        return Response(ShopSerializer(shop).data)
+
+    def patch(self, request):
+        shop = get_current_shop(request.user)
+        serializer = ShopSerializer(shop, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+
+class CategoryViewSet(viewsets.ModelViewSet):
+    serializer_class = CategorySerializer
+    permission_classes = [IsAuthenticated]
+    http_method_names = ["get", "post", "patch", "delete", "head", "options"]
+
+    def get_queryset(self):
+        shop = get_current_shop(self.request.user)
+        return Category.objects.filter(shop=shop, is_active=True)
+
+    def perform_create(self, serializer):
+        shop = get_current_shop(self.request.user)
+        serializer.save(shop=shop)
+
+    def perform_destroy(self, instance):
+        instance.is_active = False
+        instance.save(update_fields=["is_active", "updated_at"])
+
+
+class UnitViewSet(viewsets.ModelViewSet):
+    serializer_class = UnitSerializer
+    permission_classes = [IsAuthenticated]
+    http_method_names = ["get", "post", "patch", "delete", "head", "options"]
+
+    def get_queryset(self):
+        shop = get_current_shop(self.request.user)
+        return Unit.objects.filter(
+            Q(shop__isnull=True) | Q(shop=shop),
+            is_active=True,
+        )
+
+    def perform_create(self, serializer):
+        shop = get_current_shop(self.request.user)
+        serializer.save(shop=shop, is_default=False)
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance.shop_id is None:
+            return Response(
+                {"detail": "標準単位は編集できません。"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        return super().update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance.shop_id is None:
+            return Response(
+                {"detail": "標準単位は削除できません。"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        instance.is_active = False
+        instance.save(update_fields=["is_active", "updated_at"])
+        return Response(status=status.HTTP_204_NO_CONTENT)

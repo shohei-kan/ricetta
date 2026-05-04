@@ -149,6 +149,42 @@ Response:
 }
 ```
 
+### Initial Development Data
+
+Backend migration 後、開発用の標準単位・Shop・Ownerユーザー・Membership・初期カテゴリを作成できます。
+
+```bash
+cd backend
+python manage.py migrate
+python manage.py seed_initial_data
+```
+
+開発用ログイン:
+
+```text
+email: owner@example.com
+password: password
+shop: 〇〇食堂
+```
+
+このユーザーとShopはローカル開発用です。本番データとしては使いません。
+
+### Auth / Shop Scope
+
+MVPでは Django標準User を使います。メールログインは `username=email` として扱い、API認証は Django Session Auth + DRF Basic Auth で開始します。
+
+主要データはサーバー側でログイン中ユーザーの有効な `Membership` から現在の `Shop` を特定します。フロントから送られた `shop_id` は信用しません。
+
+主なAPI:
+
+- `POST /api/v1/auth/login/`
+- `POST /api/v1/auth/logout/`
+- `GET /api/v1/auth/me/`
+- `GET /api/v1/shop/me/`
+- `PATCH /api/v1/shop/me/`
+- `GET /api/v1/categories/`
+- `GET /api/v1/units/`
+
 ## CI
 
 GitHub Actions runs on PR and push to main.
