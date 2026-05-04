@@ -243,3 +243,108 @@ class Ingredient(TimeStampedModel):
     def _format_decimal(self, value):
         rounded = value.quantize(Decimal("0.01"))
         return format(rounded.normalize(), "f")
+
+
+class Recipe(TimeStampedModel):
+    shop = models.ForeignKey(
+        Shop,
+        on_delete=models.CASCADE,
+        related_name="recipes",
+    )
+    name = models.CharField(max_length=120)
+    category = models.ForeignKey(
+        Category,
+        on_delete=models.PROTECT,
+        related_name="recipes",
+        blank=True,
+        null=True,
+    )
+    description = models.TextField(blank=True)
+    main_image = models.URLField(blank=True, null=True)
+    base_yield_quantity = models.DecimalField(max_digits=10, decimal_places=2)
+    base_yield_unit = models.ForeignKey(
+        Unit,
+        on_delete=models.PROTECT,
+        related_name="base_yield_recipes",
+    )
+    selling_price = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        blank=True,
+        null=True,
+    )
+    notes = models.TextField(blank=True)
+    allergen_notes = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name="created_recipes",
+        blank=True,
+        null=True,
+    )
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name="updated_recipes",
+        blank=True,
+        null=True,
+    )
+
+    class Meta:
+        ordering = ["name", "id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["shop", "name"],
+                condition=models.Q(is_active=True),
+                name="unique_active_recipe_shop_name",
+            )
+        ]
+
+    def __str__(self):
+        return self.name
+
+
+class RecipeIngredient(TimeStampedModel):
+    recipe = models.ForeignKey(
+        Recipe,
+        on_delete=models.CASCADE,
+        related_name="ingredients",
+    )
+    ingredient = models.ForeignKey(
+        Ingredient,
+        on_delete=models.PROTECT,
+        related_name="recipe_ingredients",
+    )
+    quantity = models.DecimalField(max_digits=10, decimal_places=2)
+    unit = models.ForeignKey(
+        Unit,
+        on_delete=models.PROTECT,
+        related_name="recipe_ingredients",
+    )
+    sort_order = models.PositiveIntegerField(default=0)
+    memo = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ["sort_order", "id"]
+
+    def __str__(self):
+        return f"{self.recipe} / {self.ingredient}"
+
+
+class RecipeStep(TimeStampedModel):
+    recipe = models.ForeignKey(
+        Recipe,
+        on_delete=models.CASCADE,
+        related_name="steps",
+    )
+    step_number = models.PositiveIntegerField()
+    instruction = models.TextField()
+    image = models.URLField(blank=True, null=True)
+    memo = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ["step_number", "id"]
+
+    def __str__(self):
+        return f"{self.recipe} step {self.step_number}"

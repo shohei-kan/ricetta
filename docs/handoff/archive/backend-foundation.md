@@ -46,9 +46,9 @@ Backend Foundation through Phase 3 is complete. Ricetta has Django 5.2.13, DRF, 
 Verified after Ingredient implementation:
 
 ```bash
-docker compose run --rm -e POSTGRES_HOST= backend python manage.py check
-docker compose run --rm -e POSTGRES_HOST= backend python manage.py makemigrations --check --dry-run
-docker compose run --rm -e POSTGRES_HOST= backend python manage.py test
+docker compose run --rm backend python manage.py check
+docker compose run --rm backend python manage.py makemigrations --check --dry-run
+docker compose run --rm backend python manage.py test
 
 cd frontend
 npm run build
@@ -79,5 +79,73 @@ Also verified backend against a PostgreSQL test container after Ingredient imple
 - `backend/ricetta/settings.py`
 - `docker-compose.yml`
 - `.github/workflows/ci.yml`
+- `docs/api/api-design.md`
+- `docs/data/data-model.md`
+
+## 2026-05-05 Recipe API
+
+### Summary
+
+Phase 4 is complete. Recipe / RecipeIngredient / RecipeStep backend models and API were added, with current-Shop scoping, nested create/update, logical delete, and Recipe detail `cost_summary`.
+
+### Completed Scope
+
+- `Recipe`, `RecipeIngredient`, and `RecipeStep` models.
+- Migration `0003_recipe_recipeingredient_recipestep_and_more.py`.
+- `GET /api/v1/recipes/`
+- `POST /api/v1/recipes/`
+- `GET /api/v1/recipes/{id}/`
+- `PATCH /api/v1/recipes/{id}/`
+- `DELETE /api/v1/recipes/{id}/`
+- Recipe queryset filtering by current Shop and `is_active=true`.
+- Server-side Shop assignment via `get_current_shop(user)`.
+- Scope validation for Category, Ingredient, and Unit references.
+- Nested create for ingredients and steps.
+- Nested PATCH policy: replace submitted `ingredients` / `steps`.
+- Logical delete with `is_active=false`.
+- Recipe `cost_summary` calculation using Ingredient `cost_mode`.
+
+### Key Decisions
+
+- `shop_id` from frontend remains untrusted.
+- RecipeIngredient can reference only current-Shop active Ingredients.
+- Recipe and RecipeIngredient Units are limited to standard Units or current-Shop Units.
+- Recipe Category is limited to current-Shop Categories.
+- Costed RecipeIngredient rows must use the Ingredient `usage_unit`; mismatch is a validation error.
+- Ingredients response in Recipe detail contains work information only: ingredient name, quantity, unit, order, memo.
+- Recipe-level cost information is grouped in `cost_summary`.
+- Material-level cost breakdown API is deferred.
+
+### Verification
+
+Verified after Recipe API implementation:
+
+```bash
+docker compose run --rm -e POSTGRES_HOST= backend python manage.py check
+docker compose run --rm -e POSTGRES_HOST= backend python manage.py makemigrations --check --dry-run
+docker compose run --rm -e POSTGRES_HOST= backend python manage.py test
+
+cd frontend
+npm run build
+npm run lint
+```
+
+Result:
+
+- Backend check: pass
+- Migration check: pass
+- Backend tests: pass
+- Frontend build: pass
+- Frontend lint: pass
+
+### Key Files
+
+- `backend/api/models.py`
+- `backend/api/serializers.py`
+- `backend/api/views.py`
+- `backend/api/urls.py`
+- `backend/api/costing.py`
+- `backend/api/tests.py`
+- `backend/api/migrations/0003_recipe_recipeingredient_recipestep_and_more.py`
 - `docs/api/api-design.md`
 - `docs/data/data-model.md`

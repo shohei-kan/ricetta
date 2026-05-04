@@ -2,7 +2,17 @@ from django.contrib.auth import authenticate, get_user_model
 from django.db.models import Q
 from rest_framework import serializers
 
-from .models import Category, Ingredient, Membership, Shop, Unit
+from .costing import calculate_recipe_cost_summary
+from .models import (
+    Category,
+    Ingredient,
+    Membership,
+    Recipe,
+    RecipeIngredient,
+    RecipeStep,
+    Shop,
+    Unit,
+)
 from .shop_scope import get_current_membership, get_current_shop
 
 
@@ -83,6 +93,12 @@ class CategorySerializer(serializers.ModelSerializer):
         model = Category
         fields = ["id", "name", "sort_order", "is_active", "created_at", "updated_at"]
         read_only_fields = ["id", "created_at", "updated_at"]
+
+
+class CategorySummarySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = ["id", "name"]
 
 
 class UnitSerializer(serializers.ModelSerializer):
@@ -331,3 +347,226 @@ class IngredientSerializer(serializers.ModelSerializer):
             "conversion_to_unit": "conversion_to_unit_id",
         }
         return unit_fields.get(field, field)
+
+
+class ScopedUnitField(serializers.PrimaryKeyRelatedField):
+    def get_queryset(self):
+        request = self.context.get("request")
+        if request is None:
+            return Unit.objects.none()
+        shop = get_current_shop(request.user)
+        return Unit.objects.filter(
+            Q(shop__isnull=True) | Q(shop=shop),
+            is_active=True,
+        )
+
+
+class ScopedCategoryField(serializers.PrimaryKeyRelatedField):
+    def get_queryset(self):
+        request = self.context.get("request")
+        if request is None:
+            return Category.objects.none()
+        shop = get_current_shop(request.user)
+        return Category.objects.filter(shop=shop, is_active=True)
+
+
+class ScopedIngredientField(serializers.PrimaryKeyRelatedField):
+    def get_queryset(self):
+        request = self.context.get("request")
+        if request is None:
+            return Ingredient.objects.none()
+        shop = get_current_shop(request.user)
+        return Ingredient.objects.filter(shop=shop, is_active=True)
+
+
+class RecipeIngredientWriteSerializer(serializers.ModelSerializer):
+    ingredient_id = ScopedIngredientField(source="ingredient")
+    unit_id = ScopedUnitField(source="unit")
+
+    class Meta:
+        model = RecipeIngredient
+        fields = ["ingredient_id", "quantity", "unit_id", "sort_order", "memo"]
+
+    def validate_quantity(self, value):
+        if value <= 0:
+            raise serializers.ValidationError("0より大きい値を入力してください。")
+        return value
+
+    def validate(self, attrs):
+        ingredient = attrs.get("ingredient")
+        unit = attrs.get("unit")
+        if (
+            ingredient is not None
+            and unit is not None
+            and ingredient.cost_mode != Ingredient.CostMode.NONE
+            and ingredient.usage_unit_id != unit.id
+        ):
+            raise serializers.ValidationError(
+                {"unit_id": "原価計算する材料では使用単位と同じ単位を指定してください。"}
+            )
+        return attrs
+
+
+class RecipeStepWriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RecipeStep
+        fields = ["step_number", "instruction", "image", "memo"]
+
+    def validate_step_number(self, value):
+        if value < 1:
+            raise serializers.ValidationError("1以上の値を入力してください。")
+        return value
+
+
+class RecipeIngredientReadSerializer(serializers.ModelSerializer):
+    ingredient = serializers.SerializerMethodField()
+    unit = UnitSummarySerializer(read_only=True)
+
+    class Meta:
+        model = RecipeIngredient
+        fields = ["id", "ingredient", "quantity", "unit", "sort_order", "memo"]
+
+    def get_ingredient(self, obj):
+        return {"id": obj.ingredient_id, "name": obj.ingredient.name}
+
+
+class RecipeStepReadSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RecipeStep
+        fields = ["id", "step_number", "instruction", "image", "memo"]
+
+
+class RecipeListSerializer(serializers.ModelSerializer):
+    category = CategorySummarySerializer(read_only=True)
+    base_yield_unit = UnitSummarySerializer(read_only=True)
+
+    class Meta:
+        model = Recipe
+        fields = [
+            "id",
+            "name",
+            "category",
+            "base_yield_quantity",
+            "base_yield_unit",
+            "main_image",
+            "updated_at",
+        ]
+
+
+class RecipeSerializer(serializers.ModelSerializer):
+    category = CategorySummarySerializer(read_only=True)
+    category_id = ScopedCategoryField(
+        source="category",
+        required=False,
+        allow_null=True,
+        write_only=True,
+    )
+    base_yield_unit = UnitSummarySerializer(read_only=True)
+    base_yield_unit_id = ScopedUnitField(source="base_yield_unit", write_only=True)
+    ingredients = serializers.SerializerMethodField()
+    steps = serializers.SerializerMethodField()
+    cost_summary = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Recipe
+        fields = [
+            "id",
+            "name",
+            "category",
+            "category_id",
+            "description",
+            "main_image",
+            "base_yield_quantity",
+            "base_yield_unit",
+            "base_yield_unit_id",
+            "selling_price",
+            "notes",
+            "allergen_notes",
+            "ingredients",
+            "steps",
+            "cost_summary",
+            "is_active",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = [
+            "id",
+            "category",
+            "base_yield_unit",
+            "ingredients",
+            "steps",
+            "cost_summary",
+            "created_at",
+            "updated_at",
+        ]
+
+    def to_internal_value(self, data):
+        internal = super().to_internal_value(data)
+        if "ingredients" in data:
+            serializer = RecipeIngredientWriteSerializer(
+                data=data.get("ingredients"),
+                many=True,
+                context=self.context,
+            )
+            if not serializer.is_valid():
+                raise serializers.ValidationError({"ingredients": serializer.errors})
+            internal["ingredients"] = serializer.validated_data
+        if "steps" in data:
+            serializer = RecipeStepWriteSerializer(
+                data=data.get("steps"),
+                many=True,
+                context=self.context,
+            )
+            if not serializer.is_valid():
+                raise serializers.ValidationError({"steps": serializer.errors})
+            internal["steps"] = serializer.validated_data
+        return internal
+
+    def get_ingredients(self, obj):
+        return RecipeIngredientReadSerializer(obj.ingredients.all(), many=True).data
+
+    def get_steps(self, obj):
+        return RecipeStepReadSerializer(obj.steps.all(), many=True).data
+
+    def get_cost_summary(self, obj):
+        return calculate_recipe_cost_summary(obj)
+
+    def validate_base_yield_quantity(self, value):
+        if value <= 0:
+            raise serializers.ValidationError("0より大きい値を入力してください。")
+        return value
+
+    def validate_selling_price(self, value):
+        if value is not None and value < 0:
+            raise serializers.ValidationError("0以上の値を入力してください。")
+        return value
+
+    def create(self, validated_data):
+        ingredients_data = validated_data.pop("ingredients", [])
+        steps_data = validated_data.pop("steps", [])
+        recipe = Recipe.objects.create(**validated_data)
+        self._replace_ingredients(recipe, ingredients_data)
+        self._replace_steps(recipe, steps_data)
+        return recipe
+
+    def update(self, instance, validated_data):
+        ingredients_data = validated_data.pop("ingredients", None)
+        steps_data = validated_data.pop("steps", None)
+        for field, value in validated_data.items():
+            setattr(instance, field, value)
+        instance.save()
+        if ingredients_data is not None:
+            instance.ingredients.all().delete()
+            self._replace_ingredients(instance, ingredients_data)
+        if steps_data is not None:
+            instance.steps.all().delete()
+            self._replace_steps(instance, steps_data)
+        return instance
+
+    def _replace_ingredients(self, recipe, ingredients_data):
+        for ingredient_data in ingredients_data:
+            RecipeIngredient.objects.create(recipe=recipe, **ingredient_data)
+
+    def _replace_steps(self, recipe, steps_data):
+        for step_data in steps_data:
+            RecipeStep.objects.create(recipe=recipe, **step_data)

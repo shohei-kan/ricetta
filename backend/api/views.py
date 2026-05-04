@@ -6,12 +6,14 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Category, Ingredient, Unit
+from .models import Category, Ingredient, Recipe, Unit
 from .serializers import (
     AuthMeSerializer,
     CategorySerializer,
     IngredientSerializer,
     LoginSerializer,
+    RecipeListSerializer,
+    RecipeSerializer,
     ShopSerializer,
     UnitSerializer,
 )
@@ -144,6 +146,51 @@ class IngredientViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         shop = get_current_shop(self.request.user)
         serializer.save(shop=shop)
+
+    def perform_destroy(self, instance):
+        instance.is_active = False
+        instance.save(update_fields=["is_active", "updated_at"])
+
+
+class RecipeViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+    http_method_names = ["get", "post", "patch", "delete", "head", "options"]
+
+    def get_serializer_class(self):
+        if self.action == "list":
+            return RecipeListSerializer
+        return RecipeSerializer
+
+    def get_queryset(self):
+        shop = get_current_shop(self.request.user)
+        queryset = (
+            Recipe.objects.select_related(
+                "category",
+                "base_yield_unit",
+                "created_by",
+                "updated_by",
+            )
+            .prefetch_related(
+                "ingredients__ingredient",
+                "ingredients__unit",
+                "steps",
+            )
+            .filter(shop=shop, is_active=True)
+        )
+        query = self.request.query_params.get("q")
+        if query:
+            queryset = queryset.filter(name__icontains=query)
+        category_id = self.request.query_params.get("category")
+        if category_id:
+            queryset = queryset.filter(category_id=category_id)
+        return queryset
+
+    def perform_create(self, serializer):
+        shop = get_current_shop(self.request.user)
+        serializer.save(shop=shop, created_by=self.request.user, updated_by=self.request.user)
+
+    def perform_update(self, serializer):
+        serializer.save(updated_by=self.request.user)
 
     def perform_destroy(self, instance):
         instance.is_active = False

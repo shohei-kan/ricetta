@@ -10,45 +10,41 @@ Ricetta
 
 ## Status
 
-Ready for Phase 4 Recipe API
+Phase 4 Recipe API implemented
 
 ## Summary
 
-Ingredient APIまで完了し、次はRecipe / RecipeIngredient / RecipeStep APIを実装する状態。
+Recipe / RecipeIngredient / RecipeStep APIまで実装済み。IngredientとUnitを使ったレシピ管理、shop scope validation、Recipe detailの `cost_summary` の土台が入った。
 
 ## Current Goal
 
-Recipe / RecipeIngredient / RecipeStep を実装し、IngredientとUnitを使ったレシピ管理と `cost_summary` の土台を作る。
-
-## Current State
-
-- Scaffold完了
-- Docker / CI修正済み
-- Auth / Shop Scope実装済み
-- Category / Unit実装済み
-- Ingredient API実装済み
-- backend tests pass
-- frontend build / lint pass
-- handoff archive 方針をWebアプリ開発テンプレに合わせて整理済み
+次はPrepTask APIへ進み、Recipeを今日の仕込みボードに載せるためのbackend土台を作る。
 
 ## What Was Done
 
-- `docs/handoff/latest.md` を次フェーズ向けの現在地に整理
-- `docs/handoff/archive/` を内容単位のarchive構成に整理
-- `docs/handoff/archive/index.md` を追加
-- `docs/handoff/archive/backend-foundation.md` にIngredient APIまでのbackend土台handoffを要約追記
-- `AGENTS.md` にhandoff archive運用ルールを追記
-- `docs/decisions/0005-documentation-structure.md` を追加
+- `Recipe` / `RecipeIngredient` / `RecipeStep` モデルを追加
+- Recipe CRUD APIを追加
+- Recipe作成時に現在Shopをserver側で設定
+- Recipe一覧・詳細・更新・削除を現在Shopにスコープ
+- RecipeIngredientで現在ShopのIngredient、標準Unit + 現在Shop Unitのみ指定可能にした
+- Recipe detail responseに `ingredients` / `steps` / `cost_summary` を追加
+- `ingredients` には材料ごとの原価情報を含めず、原価情報を `cost_summary` に集約
+- DELETEは `is_active=false` の論理削除
+- PATCHで `ingredients` / `steps` が送られた場合は置き換え更新する方針にした
+- Recipe関連テストを追加
+- API docs / data model / READMEを更新
 
 ## Key Decisions
 
-- Documentation decisions are stored in `docs/decisions/`.
-- Handoff archive files are grouped by broad topic, not by every task.
 - `shop_id` はfrontendから信用しない。
-- Ingredientは現在Shopでスコープ済み。
-- IngredientのUnit指定は標準Unit + 現在Shop Unitのみ。
-- Recipe詳細では材料欄に原価情報を混ぜない。
-- 原価情報は `cost_summary` に集約する。
+- Recipe作成時のShopは `get_current_shop(user)` から設定する。
+- RecipeIngredientで選べるIngredientは現在Shopの `is_active=true` のIngredientのみ。
+- Recipe / RecipeIngredientで選べるUnitは標準Unit + 現在Shop Unitのみ。
+- Recipeで選べるCategoryは現在ShopのCategoryのみ。
+- 原価計算対象Ingredientでは、RecipeIngredientのUnitはIngredientの `usage_unit` と一致させる。
+- Nested updateはMVPでは「送られた `ingredients` / `steps` を全置き換え」。
+- Recipe detailでは材料欄と原価情報を分離し、原価情報は `cost_summary` に集約する。
+- `docs/decisions/` に長期的な判断を集約する。
 
 ## Key Files
 
@@ -56,21 +52,21 @@ Recipe / RecipeIngredient / RecipeStep を実装し、IngredientとUnitを使っ
 - `backend/api/serializers.py`
 - `backend/api/views.py`
 - `backend/api/urls.py`
+- `backend/api/costing.py`
+- `backend/api/tests.py`
+- `backend/api/migrations/0003_recipe_recipeingredient_recipestep_and_more.py`
 - `docs/api/api-design.md`
 - `docs/data/data-model.md`
 - `docs/handoff/archive/backend-foundation.md`
-- `docs/handoff/archive/index.md`
-- `docs/decisions/0005-documentation-structure.md`
-- `AGENTS.md`
 
 ## Verification
 
-直近のIngredient実装後に以下を確認済み。
+直近の確認結果:
 
 ```bash
-docker compose run --rm -e POSTGRES_HOST= backend python manage.py check
-docker compose run --rm -e POSTGRES_HOST= backend python manage.py makemigrations --check --dry-run
-docker compose run --rm -e POSTGRES_HOST= backend python manage.py test
+docker compose run --rm backend python manage.py check
+docker compose run --rm backend python manage.py makemigrations --check --dry-run
+docker compose run --rm backend python manage.py test
 
 cd frontend
 npm run build
@@ -81,11 +77,9 @@ Result:
 
 - Backend check: pass
 - Migration check: pass
-- Backend tests: 29 tests pass
+- Backend tests: pass
 - Frontend build: pass
 - Frontend lint: pass
-
-今回の作業はドキュメント運用整理のみ。backend / frontend の検証は再実行していない。
 
 ## Current Product Scope
 
@@ -118,10 +112,10 @@ MVP対象:
 
 ## Next Recommended Tasks
 
-1. Recipe / RecipeIngredient / RecipeStep モデルとAPIを実装する
-2. RecipeIngredientでIngredientとUnitを現在Shopにスコープして選択できるようにする
-3. Recipe単位の材料原価計算service/helperを実装する
-4. Recipe detail response に `ingredients` / `steps` / `cost_summary` を含める
+1. PrepTaskモデルとAPIを実装する
+2. 今日の仕込み一覧を現在Shopでスコープする
+3. PrepTaskでRecipeとUnitを現在Shopにスコープして選択できるようにする
+4. Prep status (`todo` / `doing` / `done`) 更新APIを追加する
 5. docs / tests / handoff を更新する
 
 ## Open Questions
@@ -129,20 +123,21 @@ MVP対象:
 - Session Auth運用時のCSRF取得APIをfrontend実装時に追加するか
 - Staffの原価情報閲覧制限をどのPhaseで入れるか
 - 標準Unitの追加・変更をdata migrationで固定するか、seed command運用に寄せるか
-- `unit_cost_label` の丸めを将来どこまで厳密にするか
+- `unit_cost_label` / `cost_summary` の丸めを将来どこまで厳密にするか
 - Ingredientの仕入価格履歴をどのPhaseで扱うか
+- RecipeIngredientの個別編集APIを将来追加するか、nested replacementのまま進めるか
 
 ## Notes for Next Agent
 
-- `get_current_shop(user)` をRecipe / Ingredient / PrepTask queryset filteringで使う。
-- Recipe作成時も `shop_id` をserializerで受け取らず、server側で設定する。
-- RecipeIngredientで選べるIngredientは現在ShopのIngredientのみ。
-- RecipeIngredientで選べるUnitは標準Unit + 現在Shop Unitのみ。
-- 材料欄と原価情報は分ける。
-- Recipe全体の原価は `cost_summary` に集約する。
+- `get_current_shop(user)` をPrepTask queryset filteringでも使う。
+- PrepTask作成時も `shop_id` をserializerで受け取らず、server側で設定する。
+- PrepTaskで選べるRecipeは現在Shopの `is_active=true` のRecipeのみ。
+- PrepTaskで選べるUnitは標準Unit + 現在Shop Unitのみ。
+- Recipe detailの材料欄には原価情報を混ぜない方針を維持する。
+- Recipe全体の原価は `backend/api/costing.py` の `calculate_recipe_cost_summary()` で計算している。
 
 ## Suggested Commit Message
 
 ```text
-docs(handoff): align archive workflow with webapp template
+feat(api): add shop-scoped recipe management
 ```

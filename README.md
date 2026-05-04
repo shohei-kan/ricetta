@@ -232,6 +232,13 @@ MVPでは Django標準User を使います。メールログインは `username=
 - `GET /api/v1/ingredients/{id}/`
 - `PATCH /api/v1/ingredients/{id}/`
 - `DELETE /api/v1/ingredients/{id}/`
+- `GET /api/v1/recipes/`
+- `POST /api/v1/recipes/`
+- `GET /api/v1/recipes/{id}/`
+- `PATCH /api/v1/recipes/{id}/`
+- `DELETE /api/v1/recipes/{id}/`
+
+Recipe API は現在Shopにスコープされます。作成時の `shop_id` は受け取らず、RecipeIngredientで指定できるIngredientは現在Shopの有効なIngredientのみ、Unitは標準Unitまたは現在ShopのUnitのみです。Recipe detailの材料欄には原価内訳を混ぜず、全体の原価情報は `cost_summary` に集約します。
 
 ## CI
 

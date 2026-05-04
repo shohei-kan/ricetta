@@ -168,6 +168,19 @@ MVPでは以下の2種類です。
 - base_yield_unit: バッチ
 - selling_price: null
 
+### 店舗スコープとバリデーション
+
+Recipeは必ずShopに紐づきます。作成時はフロントから `shop_id` を受け取らず、サーバー側で現在ログイン中ユーザーのShopを設定します。
+
+一覧・詳細・更新・削除は現在Shopの `is_active=true` のRecipeのみ対象です。削除は `is_active=false` の論理削除です。
+
+Recipeで指定できるCategoryは現在ShopのCategoryのみです。`base_yield_unit` は以下に限定します。
+
+- `shop = null` の標準Unit
+- 現在Shopの店舗独自Unit
+
+`base_yield_quantity` は0より大きい値、`selling_price` は未設定または0以上の値にします。
+
 ## RecipeIngredient
 
 レシピに紐づく材料と使用量を表します。
@@ -195,6 +208,56 @@ MVPでは以下の2種類です。
 - にんにく 10g
 - オリーブオイル 60ml
 - 塩 12g
+
+### 店舗スコープとバリデーション
+
+RecipeIngredientで指定できるIngredientは、現在Shopの `is_active=true` のIngredientのみです。
+
+RecipeIngredientで指定できるUnitは以下に限定します。
+
+- `shop = null` の標準Unit
+- 現在Shopの店舗独自Unit
+
+`quantity` は0より大きい値にします。MVPでは、原価計算対象のIngredient（`same_unit` / `conversion`）は、RecipeIngredientの `unit` がIngredientの `usage_unit` と一致することを必須にします。`cost_mode=none` のIngredientはこの一致を厳しく要求しません。
+
+## RecipeStep
+
+レシピの作り方工程を表します。
+
+### 主なフィールド
+
+| フィールド | 型 | 説明 |
+|---|---|---|
+| id | UUID / BigAutoField | ID |
+| recipe_id | FK | Recipe |
+| step_number | integer | 工程番号 |
+| instruction | text | 作業内容 |
+| image | string / nullable | 工程画像URL |
+| memo | text | メモ |
+| created_at | datetime | 作成日時 |
+| updated_at | datetime | 更新日時 |
+
+`step_number` は1以上、`instruction` は必須です。本格的な画像アップロードやS3連携はMVP後に扱います。
+
+## Recipe cost_summary
+
+Recipe detail APIでは、材料欄に材料ごとの原価情報を混ぜず、Recipe全体の原価情報を `cost_summary` に集約します。
+
+| フィールド | 説明 |
+|---|---|
+| material_cost | 材料原価合計 |
+| selling_price | 販売価格 |
+| cost_rate | 原価率。販売価格未設定ならnull |
+| gross_profit | 粗利。販売価格未設定ならnull |
+
+計算方針:
+
+- `cost_mode=none`: 原価に含めない
+- `cost_mode=same_unit`: `purchase_price / purchase_quantity * quantity`
+- `cost_mode=conversion`: `purchase_price * conversion_from_quantity / purchase_quantity / conversion_to_quantity * quantity`
+- `selling_price` が未設定の場合、`cost_rate` と `gross_profit` はnull
+
+Decimalで計算し、MVPでは表示用に簡易丸めします。厳密な会計処理や材料ごとの原価内訳APIは後続Phaseで扱います。
 
 ## Ingredient
 
@@ -298,7 +361,7 @@ Ingredient APIでは表示用の単価ラベルを返します。
 - same_unit: `purchase_price / purchase_quantity` を `円 / usage_unit` で表示
 - conversion: `purchase_price * conversion_from_quantity / purchase_quantity / conversion_to_quantity` を `円 / usage_unit` で表示
 
-この値はMVPの表示用です。Recipe全体の原価計算や会計上の厳密な丸めは次Phase以降で扱います。
+この値はMVPの表示用です。会計上の厳密な丸めは後続Phaseで扱います。
 
 ### 例：原価計算しない
 

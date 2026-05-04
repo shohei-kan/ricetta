@@ -4,7 +4,7 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from .models import Category, Ingredient, Membership, Shop, Unit
+from .models import Category, Ingredient, Membership, Recipe, RecipeIngredient, RecipeStep, Shop, Unit
 from .seed_data import DEFAULT_UNITS
 
 
@@ -63,6 +63,47 @@ class ApiTestCase(TestCase):
             shop=self.other_shop,
             name=name,
             unit_type=unit_type,
+        )
+
+    def create_category(self, name="仕込み", shop=None):
+        return Category.objects.create(shop=shop or self.shop, name=name)
+
+    def create_ingredient(
+        self,
+        name="卵",
+        shop=None,
+        cost_mode=Ingredient.CostMode.NONE,
+        usage_unit=None,
+        purchase_unit=None,
+        purchase_quantity=None,
+        purchase_price=None,
+        conversion_from_quantity=None,
+        conversion_from_unit=None,
+        conversion_to_quantity=None,
+        conversion_to_unit=None,
+    ):
+        return Ingredient.objects.create(
+            shop=shop or self.shop,
+            name=name,
+            cost_mode=cost_mode,
+            usage_unit=usage_unit,
+            purchase_unit=purchase_unit,
+            purchase_quantity=purchase_quantity,
+            purchase_price=purchase_price,
+            conversion_from_quantity=conversion_from_quantity,
+            conversion_from_unit=conversion_from_unit,
+            conversion_to_quantity=conversion_to_quantity,
+            conversion_to_unit=conversion_to_unit,
+        )
+
+    def create_recipe(self, name="トマトソース", shop=None, unit=None, category=None):
+        recipe_shop = shop or self.shop
+        return Recipe.objects.create(
+            shop=recipe_shop,
+            name=name,
+            category=category,
+            base_yield_quantity="1",
+            base_yield_unit=unit or self.create_standard_unit("バッチ", Unit.UnitType.CUSTOM),
         )
 
 
@@ -531,3 +572,356 @@ class IngredientApiTests(ApiTestCase):
         self.assertFalse(ingredient.is_active)
         self.assertEqual(list_response.status_code, status.HTTP_200_OK)
         self.assertEqual(list_response.data, [])
+
+
+class RecipeApiTests(ApiTestCase):
+    def recipe_payload(self, category=None, base_unit=None, ingredient=None, ingredient_unit=None):
+        category = category or self.create_category()
+        base_unit = base_unit or self.create_standard_unit("バッチ", Unit.UnitType.CUSTOM)
+        ingredient_unit = ingredient_unit or self.create_standard_unit("g", Unit.UnitType.WEIGHT)
+        ingredient = ingredient or self.create_ingredient(
+            name="玉ねぎ",
+            cost_mode=Ingredient.CostMode.NONE,
+            usage_unit=ingredient_unit,
+        )
+        return {
+            "name": "トマトソース",
+            "category_id": category.id,
+            "description": "基本のソース",
+            "main_image": None,
+            "base_yield_quantity": "1",
+            "base_yield_unit_id": base_unit.id,
+            "selling_price": None,
+            "notes": "焦げないように混ぜる",
+            "allergen_notes": "なし",
+            "ingredients": [
+                {
+                    "ingredient_id": ingredient.id,
+                    "quantity": "300",
+                    "unit_id": ingredient_unit.id,
+                    "sort_order": 1,
+                    "memo": "",
+                }
+            ],
+            "steps": [
+                {
+                    "step_number": 1,
+                    "instruction": "玉ねぎをみじん切りにする。",
+                    "image": None,
+                    "memo": "",
+                }
+            ],
+        }
+
+    def test_create_recipe_with_ingredients_and_steps(self):
+        self.login_owner()
+
+        response = self.client.post(
+            reverse("recipe-list"),
+            self.recipe_payload(),
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        recipe = Recipe.objects.get(id=response.data["id"])
+        self.assertEqual(recipe.shop, self.shop)
+        self.assertEqual(recipe.created_by, self.owner)
+        self.assertEqual(recipe.ingredients.count(), 1)
+        self.assertEqual(recipe.steps.count(), 1)
+        self.assertEqual(response.data["ingredients"][0]["ingredient"]["name"], "玉ねぎ")
+        self.assertNotIn("cost", response.data["ingredients"][0])
+        self.assertIn("cost_summary", response.data)
+
+    def test_recipe_requires_name(self):
+        self.login_owner()
+        payload = self.recipe_payload()
+        payload.pop("name")
+
+        response = self.client.post(reverse("recipe-list"), payload, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("name", response.data)
+
+    def test_base_yield_quantity_must_be_positive(self):
+        self.login_owner()
+        payload = self.recipe_payload()
+        payload["base_yield_quantity"] = "0"
+
+        response = self.client.post(reverse("recipe-list"), payload, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("base_yield_quantity", response.data)
+
+    def test_recipe_requires_base_yield_unit(self):
+        self.login_owner()
+        payload = self.recipe_payload()
+        payload.pop("base_yield_unit_id")
+
+        response = self.client.post(reverse("recipe-list"), payload, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("base_yield_unit_id", response.data)
+
+    def test_other_shop_category_is_rejected(self):
+        self.login_owner()
+        other_category = self.create_category("秘密カテゴリ", shop=self.other_shop)
+        payload = self.recipe_payload()
+        payload["category_id"] = other_category.id
+
+        response = self.client.post(reverse("recipe-list"), payload, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("category_id", response.data)
+
+    def test_other_shop_base_yield_unit_is_rejected(self):
+        self.login_owner()
+        other_unit = self.create_other_shop_unit("箱", Unit.UnitType.COUNT)
+        payload = self.recipe_payload()
+        payload["base_yield_unit_id"] = other_unit.id
+
+        response = self.client.post(reverse("recipe-list"), payload, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("base_yield_unit_id", response.data)
+
+    def test_other_shop_ingredient_is_rejected(self):
+        self.login_owner()
+        other_ingredient = self.create_ingredient(
+            name="秘密材料",
+            shop=self.other_shop,
+            cost_mode=Ingredient.CostMode.NONE,
+        )
+        payload = self.recipe_payload()
+        payload["ingredients"][0]["ingredient_id"] = other_ingredient.id
+
+        response = self.client.post(reverse("recipe-list"), payload, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("ingredient_id", response.data["ingredients"][0])
+
+    def test_other_shop_recipe_ingredient_unit_is_rejected(self):
+        self.login_owner()
+        other_unit = self.create_other_shop_unit("箱", Unit.UnitType.COUNT)
+        payload = self.recipe_payload()
+        payload["ingredients"][0]["unit_id"] = other_unit.id
+
+        response = self.client.post(reverse("recipe-list"), payload, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("unit_id", response.data["ingredients"][0])
+
+    def test_recipe_ingredient_quantity_must_be_positive(self):
+        self.login_owner()
+        payload = self.recipe_payload()
+        payload["ingredients"][0]["quantity"] = "0"
+
+        response = self.client.post(reverse("recipe-list"), payload, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("quantity", response.data["ingredients"][0])
+
+    def test_recipe_list_is_scoped_to_current_shop(self):
+        self.login_owner()
+        unit = self.create_standard_unit("バッチ", Unit.UnitType.CUSTOM)
+        self.create_recipe("自店レシピ", unit=unit)
+        self.create_recipe("別店舗レシピ", shop=self.other_shop, unit=unit)
+
+        response = self.client.get(reverse("recipe-list"))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual([item["name"] for item in response.data], ["自店レシピ"])
+
+    def test_recipe_list_supports_query_and_category_filter(self):
+        self.login_owner()
+        unit = self.create_standard_unit("バッチ", Unit.UnitType.CUSTOM)
+        sauce = self.create_category("ソース")
+        dessert = self.create_category("デザート")
+        self.create_recipe("トマトソース", unit=unit, category=sauce)
+        self.create_recipe("プリン", unit=unit, category=dessert)
+
+        response = self.client.get(
+            reverse("recipe-list"),
+            {"q": "トマト", "category": sauce.id},
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual([item["name"] for item in response.data], ["トマトソース"])
+
+    def test_cannot_access_other_shop_recipe_detail(self):
+        self.login_owner()
+        unit = self.create_standard_unit("バッチ", Unit.UnitType.CUSTOM)
+        recipe = self.create_recipe("秘密レシピ", shop=self.other_shop, unit=unit)
+
+        response = self.client.get(reverse("recipe-detail", args=[recipe.id]))
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_cannot_update_other_shop_recipe(self):
+        self.login_owner()
+        unit = self.create_standard_unit("バッチ", Unit.UnitType.CUSTOM)
+        recipe = self.create_recipe("秘密レシピ", shop=self.other_shop, unit=unit)
+
+        response = self.client.patch(
+            reverse("recipe-detail", args=[recipe.id]),
+            {"name": "更新できない"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        recipe.refresh_from_db()
+        self.assertEqual(recipe.name, "秘密レシピ")
+
+    def test_cannot_delete_other_shop_recipe(self):
+        self.login_owner()
+        unit = self.create_standard_unit("バッチ", Unit.UnitType.CUSTOM)
+        recipe = self.create_recipe("秘密レシピ", shop=self.other_shop, unit=unit)
+
+        response = self.client.delete(reverse("recipe-detail", args=[recipe.id]))
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        recipe.refresh_from_db()
+        self.assertTrue(recipe.is_active)
+
+    def test_delete_marks_inactive_and_hides_from_list(self):
+        self.login_owner()
+        recipe = self.create_recipe()
+
+        delete_response = self.client.delete(reverse("recipe-detail", args=[recipe.id]))
+        list_response = self.client.get(reverse("recipe-list"))
+
+        self.assertEqual(delete_response.status_code, status.HTTP_204_NO_CONTENT)
+        recipe.refresh_from_db()
+        self.assertFalse(recipe.is_active)
+        self.assertEqual(list_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(list_response.data, [])
+
+    def test_cost_summary_excludes_none_cost_mode(self):
+        self.login_owner()
+
+        response = self.client.post(
+            reverse("recipe-list"),
+            self.recipe_payload(),
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["cost_summary"]["material_cost"], "0")
+
+    def test_cost_summary_calculates_same_unit(self):
+        self.login_owner()
+        piece = self.create_standard_unit("個", Unit.UnitType.COUNT)
+        egg = self.create_ingredient(
+            name="卵",
+            cost_mode=Ingredient.CostMode.SAME_UNIT,
+            usage_unit=piece,
+            purchase_unit=piece,
+            purchase_quantity="1",
+            purchase_price="30",
+        )
+        payload = self.recipe_payload(ingredient=egg, ingredient_unit=piece)
+        payload["ingredients"][0]["quantity"] = "3"
+        payload["selling_price"] = "120"
+
+        response = self.client.post(reverse("recipe-list"), payload, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["cost_summary"]["material_cost"], "90")
+        self.assertEqual(response.data["cost_summary"]["cost_rate"], "75.00")
+        self.assertEqual(response.data["cost_summary"]["gross_profit"], "30")
+
+    def test_cost_summary_calculates_conversion(self):
+        self.login_owner()
+        can = self.create_standard_unit("缶", Unit.UnitType.COUNT)
+        gram = self.create_standard_unit("g", Unit.UnitType.WEIGHT)
+        tomato = self.create_ingredient(
+            name="ホールトマト",
+            cost_mode=Ingredient.CostMode.CONVERSION,
+            usage_unit=gram,
+            purchase_unit=can,
+            purchase_quantity="1",
+            purchase_price="180",
+            conversion_from_quantity="1",
+            conversion_from_unit=can,
+            conversion_to_quantity="400",
+            conversion_to_unit=gram,
+        )
+        payload = self.recipe_payload(ingredient=tomato, ingredient_unit=gram)
+        payload["ingredients"][0]["quantity"] = "200"
+
+        response = self.client.post(reverse("recipe-list"), payload, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["cost_summary"]["material_cost"], "90")
+        self.assertIsNone(response.data["cost_summary"]["selling_price"])
+        self.assertIsNone(response.data["cost_summary"]["cost_rate"])
+        self.assertIsNone(response.data["cost_summary"]["gross_profit"])
+
+    def test_cost_unit_mismatch_is_rejected_for_costed_ingredient(self):
+        self.login_owner()
+        piece = self.create_standard_unit("個", Unit.UnitType.COUNT)
+        gram = self.create_standard_unit("g", Unit.UnitType.WEIGHT)
+        egg = self.create_ingredient(
+            name="卵",
+            cost_mode=Ingredient.CostMode.SAME_UNIT,
+            usage_unit=piece,
+            purchase_unit=piece,
+            purchase_quantity="1",
+            purchase_price="30",
+        )
+        payload = self.recipe_payload(ingredient=egg, ingredient_unit=gram)
+
+        response = self.client.post(reverse("recipe-list"), payload, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("unit_id", response.data["ingredients"][0])
+
+    def test_patch_replaces_ingredients_and_steps(self):
+        self.login_owner()
+        create_response = self.client.post(
+            reverse("recipe-list"),
+            self.recipe_payload(),
+            format="json",
+        )
+        recipe_id = create_response.data["id"]
+        piece = self.create_standard_unit("個", Unit.UnitType.COUNT)
+        egg = self.create_ingredient(
+            name="卵",
+            cost_mode=Ingredient.CostMode.NONE,
+            usage_unit=piece,
+        )
+
+        response = self.client.patch(
+            reverse("recipe-detail", args=[recipe_id]),
+            {
+                "ingredients": [
+                    {
+                        "ingredient_id": egg.id,
+                        "quantity": "2",
+                        "unit_id": piece.id,
+                        "sort_order": 1,
+                        "memo": "常温に戻す",
+                    }
+                ],
+                "steps": [
+                    {
+                        "step_number": 1,
+                        "instruction": "卵を割る。",
+                        "image": None,
+                        "memo": "",
+                    },
+                    {
+                        "step_number": 2,
+                        "instruction": "混ぜる。",
+                        "image": None,
+                        "memo": "",
+                    },
+                ],
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        recipe = Recipe.objects.get(id=recipe_id)
+        self.assertEqual(recipe.ingredients.count(), 1)
+        self.assertEqual(recipe.steps.count(), 2)
+        self.assertEqual(response.data["ingredients"][0]["ingredient"]["name"], "卵")

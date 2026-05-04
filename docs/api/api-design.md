@@ -207,8 +207,10 @@ MVPでは以下を優先する。
 
 ```text
 q=トマト
-category=仕込み
+category=1
 ```
+
+`category` はCategory IDで絞り込みます。
 
 ### Response
 
@@ -237,6 +239,10 @@ category=仕込み
 ## POST /api/v1/recipes/
 
 レシピを作成する。
+
+`shop_id` は受け取りません。サーバー側でログイン中ユーザーのMembershipから現在Shopを特定して設定します。
+
+Recipeで指定できるCategoryは現在ShopのCategoryのみです。Unitは標準Unitまたは現在ShopのUnitのみ、RecipeIngredientで指定できるIngredientは現在Shopの `is_active=true` のIngredientのみです。
 
 ### Request
 
@@ -282,7 +288,52 @@ category=仕込み
 ```json
 {
   "id": 1,
-  "name": "トマトソース"
+  "name": "トマトソース",
+  "category": {
+    "id": 1,
+    "name": "仕込み"
+  },
+  "description": "パスタや煮込みに使う基本のトマトソース。",
+  "main_image": null,
+  "base_yield_quantity": "1.00",
+  "base_yield_unit": {
+    "id": 10,
+    "name": "バッチ"
+  },
+  "selling_price": null,
+  "notes": "焦げやすいので、煮込み中は定期的に混ぜる。",
+  "allergen_notes": "なし",
+  "ingredients": [
+    {
+      "id": 1,
+      "ingredient": {
+        "id": 1,
+        "name": "ホールトマト"
+      },
+      "quantity": "2.00",
+      "unit": {
+        "id": 7,
+        "name": "缶"
+      },
+      "sort_order": 1,
+      "memo": ""
+    }
+  ],
+  "steps": [
+    {
+      "id": 1,
+      "step_number": 1,
+      "instruction": "玉ねぎをみじん切りにする。",
+      "image": null,
+      "memo": ""
+    }
+  ],
+  "cost_summary": {
+    "material_cost": "0",
+    "selling_price": null,
+    "cost_rate": null,
+    "gross_profit": null
+  }
 }
 ```
 
@@ -303,6 +354,7 @@ category=仕込み
     "name": "仕込み"
   },
   "description": "パスタや煮込みに使う基本のトマトソース。",
+  "main_image": null,
   "base_yield_quantity": "1.00",
   "base_yield_unit": {
     "id": 10,
@@ -322,7 +374,9 @@ category=仕込み
       "unit": {
         "id": 7,
         "name": "缶"
-      }
+      },
+      "sort_order": 1,
+      "memo": ""
     },
     {
       "id": 2,
@@ -334,14 +388,18 @@ category=仕込み
       "unit": {
         "id": 1,
         "name": "g"
-      }
+      },
+      "sort_order": 2,
+      "memo": ""
     }
   ],
   "steps": [
     {
       "id": 1,
       "step_number": 1,
-      "instruction": "玉ねぎをみじん切りにする。"
+      "instruction": "玉ねぎをみじん切りにする。",
+      "image": null,
+      "memo": ""
     }
   ],
   "cost_summary": {
@@ -359,6 +417,15 @@ category=仕込み
 
 材料ごとの原価内訳が必要な場合は、将来的に別APIまたは `cost_detail` として追加する。
 
+`cost_summary` はRecipe全体の材料原価を返します。
+
+- `cost_mode=none`: 原価に含めない
+- `cost_mode=same_unit`: `purchase_price / purchase_quantity * quantity`
+- `cost_mode=conversion`: `purchase_price * conversion_from_quantity / purchase_quantity / conversion_to_quantity * quantity`
+- `selling_price` が未設定の場合、`cost_rate` と `gross_profit` は `null`
+
+MVPでは、原価計算するIngredientのRecipeIngredient単位はIngredientの `usage_unit` と一致させます。一致しない場合は作成・更新時にバリデーションエラーにします。
+
 ---
 
 ## PATCH /api/v1/recipes/{id}/
@@ -369,20 +436,20 @@ category=仕込み
 
 POSTと同じ構造を基本にする。
 
+MVPでは、`ingredients` または `steps` が送られた場合、既存のRecipeIngredient / RecipeStepを一度削除して送信内容で作り直します。
+
 ---
 
 ## DELETE /api/v1/recipes/{id}/
 
 レシピを削除する。
 
-MVPでは物理削除でもよいが、将来的には `is_active=false` による論理削除を検討する。
+MVPでは `is_active=false` による論理削除です。一覧・詳細・更新・削除は現在Shopの `is_active=true` のRecipeのみ対象です。
 
 ### Response
 
-```json
-{
-  "detail": "削除しました。"
-}
+```text
+204 No Content
 ```
 
 ---
