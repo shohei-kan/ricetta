@@ -1,5 +1,6 @@
 from django.contrib.auth import authenticate, get_user_model
 from django.db.models import Q
+from django.utils import timezone
 from rest_framework import serializers
 
 from .costing import calculate_recipe_cost_summary
@@ -7,6 +8,7 @@ from .models import (
     Category,
     Ingredient,
     Membership,
+    PrepTask,
     Recipe,
     RecipeIngredient,
     RecipeStep,
@@ -379,6 +381,15 @@ class ScopedIngredientField(serializers.PrimaryKeyRelatedField):
         return Ingredient.objects.filter(shop=shop, is_active=True)
 
 
+class ScopedRecipeField(serializers.PrimaryKeyRelatedField):
+    def get_queryset(self):
+        request = self.context.get("request")
+        if request is None:
+            return Recipe.objects.none()
+        shop = get_current_shop(request.user)
+        return Recipe.objects.filter(shop=shop, is_active=True)
+
+
 class RecipeIngredientWriteSerializer(serializers.ModelSerializer):
     ingredient_id = ScopedIngredientField(source="ingredient")
     unit_id = ScopedUnitField(source="unit")
@@ -570,3 +581,84 @@ class RecipeSerializer(serializers.ModelSerializer):
     def _replace_steps(self, recipe, steps_data):
         for step_data in steps_data:
             RecipeStep.objects.create(recipe=recipe, **step_data)
+
+
+class RecipeSummarySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Recipe
+        fields = ["id", "name"]
+
+
+class PrepTaskSerializer(serializers.ModelSerializer):
+    recipe = RecipeSummarySerializer(read_only=True)
+    recipe_id = ScopedRecipeField(source="recipe", write_only=True)
+    planned_unit = UnitSummarySerializer(read_only=True)
+    planned_unit_id = ScopedUnitField(source="planned_unit", write_only=True)
+
+    class Meta:
+        model = PrepTask
+        fields = [
+            "id",
+            "date",
+            "recipe",
+            "recipe_id",
+            "planned_quantity",
+            "planned_unit",
+            "planned_unit_id",
+            "status",
+            "memo",
+            "sort_order",
+            "completed_at",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = [
+            "id",
+            "recipe",
+            "planned_unit",
+            "completed_at",
+            "created_at",
+            "updated_at",
+        ]
+
+    def validate_planned_quantity(self, value):
+        if value <= 0:
+            raise serializers.ValidationError("0より大きい値を入力してください。")
+        return value
+
+    def create(self, validated_data):
+        self._set_completed_at(validated_data)
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        self._set_completed_at(validated_data, instance=instance)
+        return super().update(instance, validated_data)
+
+    def _set_completed_at(self, attrs, instance=None):
+        status = attrs.get("status")
+        if status is None and instance is None:
+            status = PrepTask.Status.TODO
+        elif status is None:
+            return
+
+        if status == PrepTask.Status.DONE:
+            if instance is None or instance.status != PrepTask.Status.DONE or not instance.completed_at:
+                attrs["completed_at"] = timezone.now()
+        else:
+            attrs["completed_at"] = None
+
+
+class PrepTaskStatusSerializer(serializers.ModelSerializer):
+    status = serializers.ChoiceField(choices=PrepTask.Status.choices)
+
+    class Meta:
+        model = PrepTask
+        fields = ["id", "status", "completed_at"]
+        read_only_fields = ["id", "completed_at"]
+
+    def update(self, instance, validated_data):
+        status = validated_data["status"]
+        instance.status = status
+        instance.completed_at = timezone.now() if status == PrepTask.Status.DONE else None
+        instance.save(update_fields=["status", "completed_at", "updated_at"])
+        return instance

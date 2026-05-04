@@ -408,7 +408,6 @@ Ingredient APIでは表示用の単価ラベルを返します。
 | planned_quantity | decimal | 予定数量 |
 | planned_unit_id | FK | 単位 |
 | status | string | todo / doing / done |
-| assigned_to_id | FK / nullable | 担当者 |
 | memo | text | メモ |
 | sort_order | integer | 並び順 |
 | completed_at | datetime / nullable | 完了日時 |
@@ -422,6 +421,25 @@ Ingredient APIでは表示用の単価ラベルを返します。
 | todo | 未着手 |
 | doing | 作業中 |
 | done | 完了 |
+
+### 店舗スコープとバリデーション
+
+PrepTaskは必ずShopに紐づきます。作成時はフロントから `shop_id` を受け取らず、サーバー側で現在ログイン中ユーザーのShopを設定します。
+
+一覧・詳細・更新・削除は現在ShopのPrepTaskのみ対象です。MVPでは削除は物理削除です。
+
+PrepTaskで指定できるRecipeは現在Shopの `is_active=true` のRecipeのみです。
+
+PrepTaskで指定できるUnitは以下に限定します。
+
+- `shop = null` の標準Unit
+- 現在Shopの店舗独自Unit
+
+`planned_quantity` は0より大きい値にします。
+
+`status=done` にした場合は `completed_at` を設定します。`done` 以外へ戻した場合は `completed_at=null` にします。
+
+PrepTask一覧APIは日付で絞り込み、summaryとして `todo` / `doing` / `done` の件数を返します。MVPでは `sort_order, id` 順に返します。
 
 ### 例
 

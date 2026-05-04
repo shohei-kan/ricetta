@@ -1,23 +1,28 @@
 from django.contrib.auth import login, logout
 from django.db.models import Q
-from rest_framework.decorators import api_view
+from django.utils import timezone
+from django.utils.dateparse import parse_date
+from rest_framework.decorators import action, api_view
 from rest_framework import status, viewsets
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Category, Ingredient, Recipe, Unit
+from .models import Category, Ingredient, PrepTask, Recipe, Unit
 from .serializers import (
     AuthMeSerializer,
     CategorySerializer,
     IngredientSerializer,
     LoginSerializer,
+    PrepTaskSerializer,
+    PrepTaskStatusSerializer,
     RecipeListSerializer,
     RecipeSerializer,
     ShopSerializer,
     UnitSerializer,
 )
 from .shop_scope import get_current_membership, get_current_shop
+
 
 @api_view(['GET'])
 def health_check(request):
@@ -195,3 +200,56 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def perform_destroy(self, instance):
         instance.is_active = False
         instance.save(update_fields=["is_active", "updated_at"])
+
+
+class PrepTaskViewSet(viewsets.ModelViewSet):
+    serializer_class = PrepTaskSerializer
+    permission_classes = [IsAuthenticated]
+    http_method_names = ["get", "post", "patch", "delete", "head", "options"]
+
+    def get_queryset(self):
+        shop = get_current_shop(self.request.user)
+        return PrepTask.objects.select_related(
+            "recipe",
+            "planned_unit",
+        ).filter(shop=shop).order_by("sort_order", "id")
+
+    def list(self, request, *args, **kwargs):
+        target_date = self._target_date(request)
+        if target_date is None:
+            return Response(
+                {"date": "YYYY-MM-DD形式で指定してください。"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        queryset = self.get_queryset().filter(date=target_date)
+        serializer = self.get_serializer(queryset, many=True)
+        summary = {status_value: 0 for status_value, _label in PrepTask.Status.choices}
+        for task in queryset:
+            summary[task.status] += 1
+
+        return Response(
+            {
+                "date": target_date.isoformat(),
+                "summary": summary,
+                "tasks": serializer.data,
+            }
+        )
+
+    def perform_create(self, serializer):
+        shop = get_current_shop(self.request.user)
+        serializer.save(shop=shop)
+
+    @action(detail=True, methods=["patch"], url_path="status")
+    def update_status(self, request, pk=None):
+        task = self.get_object()
+        serializer = PrepTaskStatusSerializer(task, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+    def _target_date(self, request):
+        date_value = request.query_params.get("date")
+        if not date_value:
+            return timezone.localdate()
+        return parse_date(date_value)

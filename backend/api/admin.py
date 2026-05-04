@@ -4,6 +4,7 @@ from .models import (
     Category,
     Ingredient,
     Membership,
+    PrepTask,
     Recipe,
     RecipeIngredient,
     RecipeStep,
@@ -62,3 +63,20 @@ class RecipeAdmin(admin.ModelAdmin):
     list_filter = ["is_active", "category"]
     search_fields = ["name", "shop__name", "category__name"]
     inlines = [RecipeIngredientInline, RecipeStepInline]
+
+
+@admin.register(PrepTask)
+class PrepTaskAdmin(admin.ModelAdmin):
+    list_display = [
+        "id",
+        "shop",
+        "date",
+        "recipe",
+        "planned_quantity",
+        "planned_unit",
+        "status",
+        "sort_order",
+        "completed_at",
+    ]
+    list_filter = ["status", "date"]
+    search_fields = ["recipe__name", "shop__name", "memo"]

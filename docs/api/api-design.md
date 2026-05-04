@@ -628,17 +628,21 @@ MVPでは `is_active=false` による論理削除とする。
 
 今日の仕込みタスク一覧を取得する。
 
+ログイン必須。現在ShopのPrepTaskのみ返す。
+
 ### Query Params
 
 ```text
-date=2026-04-29
+date=2026-05-05
 ```
+
+`date` 未指定時はサーバー側のtodayを使う。
 
 ### Response
 
 ```json
 {
-  "date": "2026-04-29",
+  "date": "2026-05-05",
   "summary": {
     "todo": 3,
     "doing": 1,
@@ -657,11 +661,15 @@ date=2026-04-29
         "name": "バッチ"
       },
       "status": "todo",
-      "memo": ""
+      "memo": "",
+      "sort_order": 1,
+      "completed_at": null
     }
   ]
 }
 ```
+
+MVPでは `tasks` を `sort_order, id` 順に返す。
 
 ---
 
@@ -669,15 +677,20 @@ date=2026-04-29
 
 仕込みタスクを作成する。
 
+`shop_id` は受け取らない。サーバー側でログイン中ユーザーのMembershipから現在Shopを特定して設定する。
+
+指定できるRecipeは現在Shopの `is_active=true` のRecipeのみ。指定できるUnitは標準Unitまたは現在ShopのUnitのみ。
+
 ### Request
 
 ```json
 {
-  "date": "2026-04-29",
+  "date": "2026-05-05",
   "recipe_id": 1,
   "planned_quantity": "3",
   "planned_unit_id": 10,
-  "memo": ""
+  "memo": "",
+  "sort_order": 1
 }
 ```
 
@@ -686,8 +699,20 @@ date=2026-04-29
 ```json
 {
   "id": 1,
-  "date": "2026-04-29",
-  "status": "todo"
+  "date": "2026-05-05",
+  "recipe": {
+    "id": 1,
+    "name": "トマトソース"
+  },
+  "planned_quantity": "3.00",
+  "planned_unit": {
+    "id": 10,
+    "name": "バッチ"
+  },
+  "status": "todo",
+  "memo": "",
+  "sort_order": 1,
+  "completed_at": null
 }
 ```
 
@@ -701,11 +726,16 @@ date=2026-04-29
 
 ```json
 {
+  "date": "2026-05-05",
+  "recipe_id": 1,
   "planned_quantity": "4",
   "planned_unit_id": 10,
-  "memo": ""
+  "memo": "",
+  "sort_order": 2
 }
 ```
+
+通常PATCHでも `status` 更新は可能。`status=done` では `completed_at` を設定し、`done` 以外へ戻した場合は `completed_at=null` にする。
 
 ---
 
@@ -739,11 +769,23 @@ date=2026-04-29
 }
 ```
 
+Statusは以下のみ有効。
+
+```text
+todo
+doing
+done
+```
+
+`done` にした場合は `completed_at=now`。`done` 以外に戻した場合は `completed_at=null`。
+
 ---
 
 ## DELETE /api/v1/prep-tasks/{id}/
 
 仕込みタスクを削除する。
+
+MVPでは物理削除。他ShopのPrepTaskは `404 Not Found`。
 
 ---
 

@@ -1,10 +1,23 @@
+from datetime import timedelta
+
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from .models import Category, Ingredient, Membership, Recipe, RecipeIngredient, RecipeStep, Shop, Unit
+from .models import (
+    Category,
+    Ingredient,
+    Membership,
+    PrepTask,
+    Recipe,
+    RecipeIngredient,
+    RecipeStep,
+    Shop,
+    Unit,
+)
 from .seed_data import DEFAULT_UNITS
 
 
@@ -104,6 +117,33 @@ class ApiTestCase(TestCase):
             category=category,
             base_yield_quantity="1",
             base_yield_unit=unit or self.create_standard_unit("バッチ", Unit.UnitType.CUSTOM),
+        )
+
+    def create_prep_task(
+        self,
+        recipe=None,
+        shop=None,
+        unit=None,
+        date=None,
+        status=PrepTask.Status.TODO,
+        sort_order=0,
+    ):
+        task_shop = shop or self.shop
+        task_unit = unit or self.create_standard_unit("バッチ", Unit.UnitType.CUSTOM)
+        task_recipe = recipe or self.create_recipe(
+            name=f"トマトソース{Recipe.objects.count() + 1}",
+            shop=task_shop,
+            unit=task_unit,
+        )
+        return PrepTask.objects.create(
+            shop=task_shop,
+            date=date or timezone.localdate(),
+            recipe=task_recipe,
+            planned_quantity="3",
+            planned_unit=task_unit,
+            status=status,
+            sort_order=sort_order,
+            completed_at=timezone.now() if status == PrepTask.Status.DONE else None,
         )
 
 
@@ -925,3 +965,270 @@ class RecipeApiTests(ApiTestCase):
         self.assertEqual(recipe.ingredients.count(), 1)
         self.assertEqual(recipe.steps.count(), 2)
         self.assertEqual(response.data["ingredients"][0]["ingredient"]["name"], "卵")
+
+
+class PrepTaskApiTests(ApiTestCase):
+    def prep_task_payload(self, recipe=None, unit=None, date=None):
+        unit = unit or self.create_standard_unit("バッチ", Unit.UnitType.CUSTOM)
+        recipe = recipe or self.create_recipe(unit=unit)
+        return {
+            "date": (date or timezone.localdate()).isoformat(),
+            "recipe_id": recipe.id,
+            "planned_quantity": "3",
+            "planned_unit_id": unit.id,
+            "memo": "",
+            "sort_order": 1,
+        }
+
+    def test_create_prep_task_sets_current_shop_and_default_status(self):
+        self.login_owner()
+
+        response = self.client.post(
+            reverse("prep-task-list"),
+            {**self.prep_task_payload(), "shop": self.other_shop.id},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        task = PrepTask.objects.get(id=response.data["id"])
+        self.assertEqual(task.shop, self.shop)
+        self.assertEqual(task.status, PrepTask.Status.TODO)
+        self.assertEqual(response.data["status"], "todo")
+
+    def test_planned_quantity_must_be_positive(self):
+        self.login_owner()
+        payload = self.prep_task_payload()
+        payload["planned_quantity"] = "0"
+
+        response = self.client.post(reverse("prep-task-list"), payload, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("planned_quantity", response.data)
+
+    def test_date_is_required(self):
+        self.login_owner()
+        payload = self.prep_task_payload()
+        payload.pop("date")
+
+        response = self.client.post(reverse("prep-task-list"), payload, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("date", response.data)
+
+    def test_recipe_is_required(self):
+        self.login_owner()
+        payload = self.prep_task_payload()
+        payload.pop("recipe_id")
+
+        response = self.client.post(reverse("prep-task-list"), payload, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("recipe_id", response.data)
+
+    def test_planned_unit_is_required(self):
+        self.login_owner()
+        payload = self.prep_task_payload()
+        payload.pop("planned_unit_id")
+
+        response = self.client.post(reverse("prep-task-list"), payload, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("planned_unit_id", response.data)
+
+    def test_other_shop_recipe_is_rejected(self):
+        self.login_owner()
+        unit = self.create_standard_unit("バッチ", Unit.UnitType.CUSTOM)
+        other_recipe = self.create_recipe("秘密レシピ", shop=self.other_shop, unit=unit)
+        payload = self.prep_task_payload(recipe=other_recipe, unit=unit)
+
+        response = self.client.post(reverse("prep-task-list"), payload, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("recipe_id", response.data)
+
+    def test_other_shop_unit_is_rejected(self):
+        self.login_owner()
+        other_unit = self.create_other_shop_unit("箱", Unit.UnitType.COUNT)
+        payload = self.prep_task_payload()
+        payload["planned_unit_id"] = other_unit.id
+
+        response = self.client.post(reverse("prep-task-list"), payload, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("planned_unit_id", response.data)
+
+    def test_list_is_scoped_to_current_shop(self):
+        self.login_owner()
+        unit = self.create_standard_unit("バッチ", Unit.UnitType.CUSTOM)
+        recipe = self.create_recipe("トマトソース", unit=unit)
+        self.create_prep_task(recipe=recipe, unit=unit, sort_order=1)
+        self.create_prep_task(shop=self.other_shop, unit=unit, sort_order=2)
+
+        response = self.client.get(reverse("prep-task-list"))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data["tasks"]), 1)
+        self.assertEqual(response.data["tasks"][0]["recipe"]["name"], "トマトソース")
+
+    def test_cannot_access_other_shop_detail(self):
+        self.login_owner()
+        unit = self.create_standard_unit("バッチ", Unit.UnitType.CUSTOM)
+        task = self.create_prep_task(shop=self.other_shop, unit=unit)
+
+        response = self.client.get(reverse("prep-task-detail", args=[task.id]))
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_cannot_update_other_shop_prep_task(self):
+        self.login_owner()
+        unit = self.create_standard_unit("バッチ", Unit.UnitType.CUSTOM)
+        task = self.create_prep_task(shop=self.other_shop, unit=unit)
+
+        response = self.client.patch(
+            reverse("prep-task-detail", args=[task.id]),
+            {"memo": "更新できない"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        task.refresh_from_db()
+        self.assertEqual(task.memo, "")
+
+    def test_cannot_delete_other_shop_prep_task(self):
+        self.login_owner()
+        unit = self.create_standard_unit("バッチ", Unit.UnitType.CUSTOM)
+        task = self.create_prep_task(shop=self.other_shop, unit=unit)
+
+        response = self.client.delete(reverse("prep-task-detail", args=[task.id]))
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertTrue(PrepTask.objects.filter(id=task.id).exists())
+
+    def test_list_filters_by_date_and_returns_summary(self):
+        self.login_owner()
+        unit = self.create_standard_unit("バッチ", Unit.UnitType.CUSTOM)
+        today = timezone.localdate()
+        tomorrow = today + timedelta(days=1)
+        self.create_prep_task(unit=unit, date=today, status=PrepTask.Status.TODO, sort_order=2)
+        self.create_prep_task(unit=unit, date=today, status=PrepTask.Status.DOING, sort_order=1)
+        self.create_prep_task(unit=unit, date=today, status=PrepTask.Status.DONE, sort_order=3)
+        self.create_prep_task(unit=unit, date=tomorrow, status=PrepTask.Status.TODO, sort_order=4)
+
+        response = self.client.get(reverse("prep-task-list"), {"date": today.isoformat()})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["date"], today.isoformat())
+        self.assertEqual(response.data["summary"], {"todo": 1, "doing": 1, "done": 1})
+        self.assertEqual(len(response.data["tasks"]), 3)
+        self.assertEqual([item["sort_order"] for item in response.data["tasks"]], [1, 2, 3])
+
+    def test_list_uses_today_when_date_is_omitted(self):
+        self.login_owner()
+        today = timezone.localdate()
+        self.create_prep_task(date=today)
+        self.create_prep_task(date=today + timedelta(days=1))
+
+        response = self.client.get(reverse("prep-task-list"))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["date"], today.isoformat())
+        self.assertEqual(len(response.data["tasks"]), 1)
+
+    def test_invalid_list_date_returns_error(self):
+        self.login_owner()
+
+        response = self.client.get(reverse("prep-task-list"), {"date": "not-a-date"})
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_status_update_to_todo_and_doing(self):
+        self.login_owner()
+        task = self.create_prep_task(status=PrepTask.Status.DONE)
+
+        todo_response = self.client.patch(
+            reverse("prep-task-update-status", args=[task.id]),
+            {"status": "todo"},
+            format="json",
+        )
+        doing_response = self.client.patch(
+            reverse("prep-task-update-status", args=[task.id]),
+            {"status": "doing"},
+            format="json",
+        )
+
+        self.assertEqual(todo_response.status_code, status.HTTP_200_OK)
+        self.assertIsNone(todo_response.data["completed_at"])
+        self.assertEqual(doing_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(doing_response.data["status"], "doing")
+        self.assertIsNone(doing_response.data["completed_at"])
+
+    def test_status_update_to_done_sets_completed_at(self):
+        self.login_owner()
+        task = self.create_prep_task(status=PrepTask.Status.TODO)
+
+        response = self.client.patch(
+            reverse("prep-task-update-status", args=[task.id]),
+            {"status": "done"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["status"], "done")
+        self.assertIsNotNone(response.data["completed_at"])
+
+    def test_regular_patch_status_updates_completed_at(self):
+        self.login_owner()
+        task = self.create_prep_task(status=PrepTask.Status.TODO)
+
+        done_response = self.client.patch(
+            reverse("prep-task-detail", args=[task.id]),
+            {"status": "done"},
+            format="json",
+        )
+        todo_response = self.client.patch(
+            reverse("prep-task-detail", args=[task.id]),
+            {"status": "todo"},
+            format="json",
+        )
+
+        self.assertEqual(done_response.status_code, status.HTTP_200_OK)
+        self.assertIsNotNone(done_response.data["completed_at"])
+        self.assertEqual(todo_response.status_code, status.HTTP_200_OK)
+        self.assertIsNone(todo_response.data["completed_at"])
+
+    def test_invalid_status_is_rejected(self):
+        self.login_owner()
+        task = self.create_prep_task()
+
+        response = self.client.patch(
+            reverse("prep-task-update-status", args=[task.id]),
+            {"status": "blocked"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("status", response.data)
+
+    def test_cannot_update_other_shop_status(self):
+        self.login_owner()
+        unit = self.create_standard_unit("バッチ", Unit.UnitType.CUSTOM)
+        task = self.create_prep_task(shop=self.other_shop, unit=unit)
+
+        response = self.client.patch(
+            reverse("prep-task-update-status", args=[task.id]),
+            {"status": "done"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        task.refresh_from_db()
+        self.assertEqual(task.status, PrepTask.Status.TODO)
+
+    def test_delete_prep_task(self):
+        self.login_owner()
+        task = self.create_prep_task()
+
+        response = self.client.delete(reverse("prep-task-detail", args=[task.id]))
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(PrepTask.objects.filter(id=task.id).exists())

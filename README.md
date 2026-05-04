@@ -237,8 +237,16 @@ MVPでは Django標準User を使います。メールログインは `username=
 - `GET /api/v1/recipes/{id}/`
 - `PATCH /api/v1/recipes/{id}/`
 - `DELETE /api/v1/recipes/{id}/`
+- `GET /api/v1/prep-tasks/`
+- `POST /api/v1/prep-tasks/`
+- `GET /api/v1/prep-tasks/{id}/`
+- `PATCH /api/v1/prep-tasks/{id}/`
+- `DELETE /api/v1/prep-tasks/{id}/`
+- `PATCH /api/v1/prep-tasks/{id}/status/`
 
 Recipe API は現在Shopにスコープされます。作成時の `shop_id` は受け取らず、RecipeIngredientで指定できるIngredientは現在Shopの有効なIngredientのみ、Unitは標準Unitまたは現在ShopのUnitのみです。Recipe detailの材料欄には原価内訳を混ぜず、全体の原価情報は `cost_summary` に集約します。
+
+PrepTask API も現在Shopにスコープされます。日付指定の一覧は `summary` と `tasks` を返し、`PATCH /api/v1/prep-tasks/{id}/status/` で `todo` / `doing` / `done` を更新できます。
 
 ## CI
 

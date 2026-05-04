@@ -149,3 +149,68 @@ Result:
 - `backend/api/migrations/0003_recipe_recipeingredient_recipestep_and_more.py`
 - `docs/api/api-design.md`
 - `docs/data/data-model.md`
+
+## 2026-05-05 PrepTask API
+
+### Summary
+
+Phase 5 is complete. PrepTask backend model and API were added for the Today's Prep board, including date-filtered list responses, status summary, status update API, and current-Shop scoping.
+
+### Completed Scope
+
+- `PrepTask` model.
+- Migration `0004_preptask.py`.
+- `GET /api/v1/prep-tasks/`
+- `POST /api/v1/prep-tasks/`
+- `GET /api/v1/prep-tasks/{id}/`
+- `PATCH /api/v1/prep-tasks/{id}/`
+- `DELETE /api/v1/prep-tasks/{id}/`
+- `PATCH /api/v1/prep-tasks/{id}/status/`
+- Date-filtered PrepTask list with `summary` and `tasks`.
+- Server-side Shop assignment via `get_current_shop(user)`.
+- Scope validation for Recipe and Unit references.
+- Status transitions with `completed_at` handling.
+
+### Key Decisions
+
+- `shop_id` from frontend remains untrusted.
+- PrepTask can reference only current-Shop active Recipes.
+- PrepTask Units are limited to standard Units or current-Shop Units.
+- PrepTask list uses server today when `date` is omitted.
+- PrepTask list is ordered by `sort_order, id` for MVP.
+- PrepTask delete is physical delete for MVP.
+- Status can be updated through normal PATCH, but the UI-oriented tap flow should use the dedicated `status/` endpoint.
+- `done` sets `completed_at=now`; moving back to `todo` or `doing` clears `completed_at`.
+
+### Verification
+
+Verified after PrepTask API implementation:
+
+```bash
+docker compose run --rm backend python manage.py check
+docker compose run --rm backend python manage.py makemigrations --check --dry-run
+docker compose run --rm backend python manage.py test
+
+cd frontend
+npm run build
+npm run lint
+```
+
+Result:
+
+- Backend check: pass
+- Migration check: pass
+- Backend tests: pass
+- Frontend build: pass
+- Frontend lint: pass
+
+### Key Files
+
+- `backend/api/models.py`
+- `backend/api/serializers.py`
+- `backend/api/views.py`
+- `backend/api/urls.py`
+- `backend/api/tests.py`
+- `backend/api/migrations/0004_preptask.py`
+- `docs/api/api-design.md`
+- `docs/data/data-model.md`

@@ -348,3 +348,42 @@ class RecipeStep(TimeStampedModel):
 
     def __str__(self):
         return f"{self.recipe} step {self.step_number}"
+
+
+class PrepTask(TimeStampedModel):
+    class Status(models.TextChoices):
+        TODO = "todo", "未着手"
+        DOING = "doing", "作業中"
+        DONE = "done", "完了"
+
+    shop = models.ForeignKey(
+        Shop,
+        on_delete=models.CASCADE,
+        related_name="prep_tasks",
+    )
+    date = models.DateField()
+    recipe = models.ForeignKey(
+        Recipe,
+        on_delete=models.PROTECT,
+        related_name="prep_tasks",
+    )
+    planned_quantity = models.DecimalField(max_digits=10, decimal_places=2)
+    planned_unit = models.ForeignKey(
+        Unit,
+        on_delete=models.PROTECT,
+        related_name="prep_tasks",
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.TODO,
+    )
+    memo = models.TextField(blank=True)
+    sort_order = models.PositiveIntegerField(default=0)
+    completed_at = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        ordering = ["sort_order", "id"]
+
+    def __str__(self):
+        return f"{self.date} / {self.recipe} ({self.status})"

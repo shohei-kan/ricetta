@@ -10,40 +10,39 @@ Ricetta
 
 ## Status
 
-Phase 4 Recipe API implemented
+Phase 5 PrepTask API implemented
 
 ## Summary
 
-Recipe / RecipeIngredient / RecipeStep APIまで実装済み。IngredientとUnitを使ったレシピ管理、shop scope validation、Recipe detailの `cost_summary` の土台が入った。
+PrepTask APIまで実装済み。Recipeを今日の仕込みボードへ載せるためのbackend土台として、日付別一覧、status summary、status更新API、Recipe / Unit scope validationが入った。
 
 ## Current Goal
 
-次はPrepTask APIへ進み、Recipeを今日の仕込みボードに載せるためのbackend土台を作る。
+次はDashboard APIまたはfrontend layoutへ進み、今日の仕込みとレシピ台帳を画面から使える状態に近づける。
 
 ## What Was Done
 
-- `Recipe` / `RecipeIngredient` / `RecipeStep` モデルを追加
-- Recipe CRUD APIを追加
-- Recipe作成時に現在Shopをserver側で設定
-- Recipe一覧・詳細・更新・削除を現在Shopにスコープ
-- RecipeIngredientで現在ShopのIngredient、標準Unit + 現在Shop Unitのみ指定可能にした
-- Recipe detail responseに `ingredients` / `steps` / `cost_summary` を追加
-- `ingredients` には材料ごとの原価情報を含めず、原価情報を `cost_summary` に集約
-- DELETEは `is_active=false` の論理削除
-- PATCHで `ingredients` / `steps` が送られた場合は置き換え更新する方針にした
-- Recipe関連テストを追加
+- `PrepTask` モデルを追加
+- PrepTask CRUD APIを追加
+- `PATCH /api/v1/prep-tasks/{id}/status/` を追加
+- PrepTask作成時に現在Shopをserver側で設定
+- PrepTask一覧・詳細・更新・削除を現在Shopにスコープ
+- PrepTaskで現在ShopのRecipe、標準Unit + 現在Shop Unitのみ指定可能にした
+- `GET /api/v1/prep-tasks/?date=YYYY-MM-DD` で `summary` と `tasks` を返す形式にした
+- date未指定時はサーバー側のtodayを使う
+- `done` では `completed_at=now`、`done` 以外へ戻すと `completed_at=null`
+- PrepTask関連テストを追加
 - API docs / data model / READMEを更新
 
 ## Key Decisions
 
 - `shop_id` はfrontendから信用しない。
-- Recipe作成時のShopは `get_current_shop(user)` から設定する。
-- RecipeIngredientで選べるIngredientは現在Shopの `is_active=true` のIngredientのみ。
-- Recipe / RecipeIngredientで選べるUnitは標準Unit + 現在Shop Unitのみ。
-- Recipeで選べるCategoryは現在ShopのCategoryのみ。
-- 原価計算対象Ingredientでは、RecipeIngredientのUnitはIngredientの `usage_unit` と一致させる。
-- Nested updateはMVPでは「送られた `ingredients` / `steps` を全置き換え」。
-- Recipe detailでは材料欄と原価情報を分離し、原価情報は `cost_summary` に集約する。
+- PrepTask作成時のShopは `get_current_shop(user)` から設定する。
+- PrepTaskで選べるRecipeは現在Shopの `is_active=true` のRecipeのみ。
+- PrepTaskで選べるUnitは標準Unit + 現在Shop Unitのみ。
+- PrepTask一覧はMVPでは `sort_order, id` 順で返す。
+- PrepTask deleteはMVPでは物理削除。
+- Status更新は通常PATCHでも可能だが、タップ操作用に専用 `status/` APIを用意する。
 - `docs/decisions/` に長期的な判断を集約する。
 
 ## Key Files
@@ -52,9 +51,8 @@ Recipe / RecipeIngredient / RecipeStep APIまで実装済み。IngredientとUnit
 - `backend/api/serializers.py`
 - `backend/api/views.py`
 - `backend/api/urls.py`
-- `backend/api/costing.py`
 - `backend/api/tests.py`
-- `backend/api/migrations/0003_recipe_recipeingredient_recipestep_and_more.py`
+- `backend/api/migrations/0004_preptask.py`
 - `docs/api/api-design.md`
 - `docs/data/data-model.md`
 - `docs/handoff/archive/backend-foundation.md`
@@ -112,10 +110,10 @@ MVP対象:
 
 ## Next Recommended Tasks
 
-1. PrepTaskモデルとAPIを実装する
-2. 今日の仕込み一覧を現在Shopでスコープする
-3. PrepTaskでRecipeとUnitを現在Shopにスコープして選択できるようにする
-4. Prep status (`todo` / `doing` / `done`) 更新APIを追加する
+1. Dashboard APIを実装する
+2. 今日の仕込みsummaryと次にやるPrepTaskを返せるようにする
+3. Frontend layoutの土台を作る
+4. Login / Dashboard / Prep Today の画面導線を作る
 5. docs / tests / handoff を更新する
 
 ## Open Questions
@@ -126,18 +124,19 @@ MVP対象:
 - `unit_cost_label` / `cost_summary` の丸めを将来どこまで厳密にするか
 - Ingredientの仕入価格履歴をどのPhaseで扱うか
 - RecipeIngredientの個別編集APIを将来追加するか、nested replacementのまま進めるか
+- PrepTask deleteを将来論理削除へ変えるか
 
 ## Notes for Next Agent
 
-- `get_current_shop(user)` をPrepTask queryset filteringでも使う。
-- PrepTask作成時も `shop_id` をserializerで受け取らず、server側で設定する。
-- PrepTaskで選べるRecipeは現在Shopの `is_active=true` のRecipeのみ。
-- PrepTaskで選べるUnitは標準Unit + 現在Shop Unitのみ。
+- `get_current_shop(user)` をDashboard queryset filteringでも使う。
+- Dashboardで使うPrepTaskは現在Shop + 対象日で絞る。
+- PrepTask APIの一覧は `summary` と `tasks` を返すため、通常のDRF list配列ではない。
+- PrepTask status更新は `PATCH /api/v1/prep-tasks/{id}/status/` を使う。
+- `done` から `todo` / `doing` に戻すと `completed_at` はnullになる。
 - Recipe detailの材料欄には原価情報を混ぜない方針を維持する。
-- Recipe全体の原価は `backend/api/costing.py` の `calculate_recipe_cost_summary()` で計算している。
 
 ## Suggested Commit Message
 
 ```text
-feat(api): add shop-scoped recipe management
+feat(api): add shop-scoped prep task management
 ```
