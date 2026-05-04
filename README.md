@@ -1,0 +1,520 @@
+# Ricetta
+
+小さな飲食店のための、レシピ台帳。
+
+Ricetta（リチェッタ）は、個人経営のカフェ・バー・小料理屋・惣菜店など、小規模飲食店向けのレシピ管理SaaSです。
+
+紙、Excel、ホワイトボード、口頭に散らばりがちなレシピ・原価・仕込み情報を、スマホ・タブレット・PCで確認できるようにします。
+
+## Product Concept
+
+Ricetta は、小さな飲食店のために以下を整理するアプリです。
+
+- レシピ
+- 材料
+- 分量
+- 作り方
+- 原価
+- 今日の仕込み
+
+特に、厨房や仕込み場でホワイトボードに書いていた「今日の仕込み」を、レシピとつなげて管理できることを重視します。
+
+基本の体験は以下です。
+
+```text
+レシピを登録する
+↓
+今日の仕込みに入れる
+↓
+必要量に応じた材料量を見る
+↓
+作業が終わったら完了にする
+```
+
+## Target Users
+
+初期ターゲットは、個人経営・小規模飲食店です。
+
+想定する店舗：
+
+- カフェ
+- バー
+- 小料理屋
+- ビストロ
+- 惣菜店
+- 弁当店
+- ベーカリー
+- キッチンカー
+- 1〜3店舗程度の小規模飲食店
+
+## MVP Scope
+
+### In Scope
+
+MVPでは、以下を実装対象にします。
+
+- ログイン / ログアウト
+- 店舗アカウント
+- 店舗ごとのデータ分離
+- レシピ一覧
+- レシピ詳細
+- レシピ作成 / 編集
+- 材料作成 / 編集
+- 材料ごとの原価計算モード
+- レシピごとの材料原価計算
+- 今日の仕込み一覧
+- 仕込みタスクのステータス変更
+- スマホ対応
+- タブレット横向き対応
+
+### Out of Scope
+
+MVPでは以下を実装しません。
+
+- Stripe決済
+- Checkout
+- Billing Portal
+- POS連携
+- 複数店舗管理
+- 在庫自動減算
+- 高度な発注管理
+- AI自動分類
+- 栄養計算
+- HACCP帳票
+- 高度な権限管理
+- 店舗端末モード
+- 本格的な仕込みログ / 使用期限 / 残量アラート
+
+まずは、レシピ台帳と今日の仕込みボードを成立させることを優先します。
+
+## Tech Stack
+
+Frontend:
+
+- React
+- Vite
+- TypeScript
+- Tailwind CSS
+- shadcn/ui
+- TanStack Query
+- React Hook Form
+- Zod
+
+Backend:
+
+- Django
+- Django REST Framework
+- PostgreSQL
+
+Development:
+
+- Docker Compose
+
+Future:
+
+- Stripe Checkout / Billing
+
+API prefix:
+
+```text
+/api/v1/
+```
+
+## Setup
+
+### Prerequisites
+
+- Docker
+- Docker Compose
+
+### Quick Start
+
+1. Clone the repository
+2. Copy `.env.example` to `.env` and fill in the values
+3. Run `docker-compose up --build`
+4. Open http://localhost:5173 for frontend
+5. Backend API at http://localhost:8000
+
+### Health Check
+
+```bash
+curl http://localhost:8000/api/v1/health/
+```
+
+Response:
+
+```json
+{
+  "status": "ok"
+}
+```
+
+## CI
+
+GitHub Actions runs on PR and push to main.
+
+- Backend: Django check, migration check, tests
+- Frontend: Build and lint
+
+## Main Features
+
+## 1. Recipes
+
+レシピを登録・管理します。
+
+主な項目：
+
+- レシピ名
+- カテゴリ
+- 説明
+- 完成写真
+- 基準量
+- 基準単位
+- 材料
+- 作り方
+- 注意点
+- アレルゲン
+- 販売価格
+- 原価情報
+
+レシピ詳細では、現場で見やすいことを優先します。
+
+材料欄には原価情報を混ぜず、原価は専用の「原価情報」カードに集約します。
+
+## 2. Ingredients
+
+材料を登録・管理します。
+
+主な項目：
+
+- 材料名
+- 仕入先
+- メモ
+- 原価計算モード
+- 仕入数量
+- 仕入単位
+- 仕入価格
+- 使用単位
+- 換算情報
+
+## 3. Ingredient Cost Mode
+
+材料ごとに原価計算方法を選択できます。
+
+```text
+none
+same_unit
+conversion
+```
+
+### none
+
+原価計算しない。
+
+例：
+
+- 水
+- 塩少々
+- 飾り
+
+### same_unit
+
+仕入単位のまま計算する。
+
+例：
+
+```text
+卵 1個 = 30円
+3個使用 → 90円
+```
+
+### conversion
+
+使用単位に換算して計算する。
+
+例：
+
+```text
+ホールトマト 1缶 = 180円
+1缶 = 400g
+200g使用 → 90円
+```
+
+MVPでは、1段階の簡易換算まで対応します。
+
+対応例：
+
+- kg ⇔ g
+- L ⇔ ml
+- 缶 → g
+- 袋 → g
+- 本 → ml
+
+MVPでは、歩留まり・廃棄率・加熱後重量・複数段階換算は扱いません。
+
+## 4. Today's Prep
+
+ホワイトボードに書いていた「今日の仕込み」を置き換える機能です。
+
+ステータス：
+
+```text
+todo
+doing
+done
+```
+
+画面表示：
+
+```text
+未着手
+作業中
+完了
+```
+
+操作はドラッグではなく、タップを基本にします。
+
+仕込みカード例：
+
+```text
+トマトソース
+3バッチ
+```
+
+## 5. Dashboard
+
+Dashboard は、単なるホーム画面ではなく「今日の現場」を確認する画面です。
+
+表示例：
+
+- 今日の仕込みサマリー
+- 次にやること
+- 期限注意
+- よく使うレシピ
+- クイックアクション
+- ミニサマリー
+
+## UI Policy
+
+Ricetta のUIは、以下を重視します。
+
+- 小規模飲食店向け
+- 清潔感
+- 柔らかい業務アプリ感
+- 厨房タブレットで見やすい
+- 文字は大きめ
+- タップしやすい
+- 複雑な操作を避ける
+- アイコンより文字で分かりやすくする
+
+### Navigation
+
+スマホ：
+
+- 下部ナビ
+
+タブレット横・PC：
+
+- 120px程度の固定サイドバー
+- テキストのみ
+- カード型
+- 常時表示
+
+サイドバー項目：
+
+```text
+ホーム
+仕込み
+レシピ
+材料
+設定
+```
+
+## Documentation
+
+主要ドキュメント：
+
+```text
+docs/planning/concept.md
+docs/planning/mvp-requirements.md
+docs/product/screens.md
+docs/data/data-model.md
+docs/api/api-design.md
+AGENTS.md
+README.md
+```
+
+### Planning
+
+企画・要件定義系のドキュメントです。
+
+```text
+docs/planning/concept.md
+docs/planning/mvp-requirements.md
+```
+
+### Product
+
+画面・UI仕様系のドキュメントです。
+
+```text
+docs/product/screens.md
+```
+
+### Data
+
+データモデル設計です。
+
+```text
+docs/data/data-model.md
+```
+
+### API
+
+API設計です。
+
+```text
+docs/api/api-design.md
+```
+
+### AGENTS.md
+
+Codex / AI agent 向けの作業ルールです。
+
+## Development Setup
+
+> このセクションは実装開始後に更新します。
+
+想定コマンド例：
+
+```bash
+docker compose up -d
+```
+
+Backend:
+
+```bash
+cd backend
+python manage.py migrate
+python manage.py runserver
+```
+
+Frontend:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+## Environment Variables
+
+> このセクションは `.env.example` 作成時に更新します。
+
+想定する環境変数：
+
+```env
+DJANGO_SECRET_KEY=
+DJANGO_DEBUG=
+DATABASE_URL=
+POSTGRES_DB=
+POSTGRES_USER=
+POSTGRES_PASSWORD=
+FRONTEND_ORIGIN=
+```
+
+将来的なStripe関連：
+
+```env
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+STRIPE_PRICE_ID_STARTER=
+STRIPE_PRICE_ID_SHOP=
+STRIPE_PRICE_ID_PRO=
+```
+
+StripeはMVPでは使用しません。
+
+## API
+
+API prefix:
+
+```text
+/api/v1/
+```
+
+MVP API:
+
+- Auth
+- Shop
+- Dashboard
+- Recipes
+- Ingredients
+- PrepTasks
+- Categories
+- Units
+
+詳細は以下を参照します。
+
+```text
+docs/api/api-design.md
+```
+
+## Implementation Order
+
+推奨実装順：
+
+```text
+1. Project scaffold
+2. Docker Compose
+3. Backend models
+4. Auth / Shop scope
+5. Categories / Units seed data
+6. Ingredients
+7. Recipes
+8. Cost calculation
+9. PrepTasks
+10. Dashboard API
+11. Frontend layout
+12. Frontend screens
+13. Form integration
+14. UI polish
+```
+
+MVPでは、Stripe、複数店舗管理、在庫自動減算から始めないこと。
+
+## Git / Commit
+
+Conventional Commits を使います。
+
+例：
+
+```text
+docs(planning): add Ricetta MVP requirements
+feat(api): add ingredient cost mode
+feat(frontend): add tablet sidebar layout
+fix(cost): handle missing selling price
+refactor(recipe): split recipe detail components
+```
+
+## Current Status
+
+Initial planning phase.
+
+Prepared documents:
+
+- Concept
+- MVP requirements
+- Screens
+- Data model
+- API design
+- AGENTS.md
+
+Next recommended documents:
+
+- docs/planning/mvp-roadmap.md
+- docs/product/ui-guidelines.md
+- docs/decisions/0001-mvp-scope.md
+- docs/decisions/0002-shop-scope.md
+- docs/decisions/0003-cost-calculation-mode.md
+- docs/decisions/0004-tablet-navigation.md
