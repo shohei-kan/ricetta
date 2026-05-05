@@ -68,6 +68,22 @@ MVPでは以下を優先する。
 
 # 1. Auth API
 
+## GET /api/v1/auth/csrf/
+
+Django Session AuthでPOST / PATCH / DELETEを行う前に、CSRF cookieを取得する。
+
+### Response
+
+```json
+{
+  "detail": "CSRF cookie set."
+}
+```
+
+このAPIは `ensure_csrf_cookie` で `csrftoken` cookieをセットする。frontendはunsafe methodのAPI requestでcookieからCSRF tokenを読み、`X-CSRFToken` headerとして送る。
+
+---
+
 ## POST /api/v1/auth/login/
 
 ログインする。
@@ -915,17 +931,21 @@ MVPでは `is_active=false` による論理削除とする。
 
 Dashboard表示に必要な情報を取得する。
 
+ログイン必須。Dashboardに含めるRecipe / Ingredient / PrepTaskはすべて現在Shopにスコープする。
+
 ### Query Params
 
 ```text
-date=2026-04-29
+date=2026-05-05
 ```
+
+`date` 未指定時はサーバー側のtodayを使う。
 
 ### Response
 
 ```json
 {
-  "date": "2026-04-29",
+  "date": "2026-05-05",
   "prep_summary": {
     "todo": 3,
     "doing": 1,
@@ -934,34 +954,50 @@ date=2026-04-29
   "next_tasks": [
     {
       "id": 1,
-      "recipe_name": "トマトソース",
-      "planned_quantity": "3",
-      "planned_unit": "バッチ"
+      "recipe": {
+        "id": 1,
+        "name": "トマトソース"
+      },
+      "planned_quantity": "3.00",
+      "planned_unit": {
+        "id": 10,
+        "name": "バッチ"
+      },
+      "status": "todo",
+      "memo": "",
+      "sort_order": 1
     }
   ],
   "frequent_recipes": [
     {
       "id": 1,
-      "name": "トマトソース"
-    },
-    {
-      "id": 2,
-      "name": "ドレッシング"
+      "name": "トマトソース",
+      "category": {
+        "id": 1,
+        "name": "仕込み"
+      }
     }
   ],
   "stats": {
     "recipe_count": 24,
     "ingredient_count": 86,
     "prep_task_count": 6
-  }
+  },
+  "alerts": []
 }
 ```
 
 ### MVPでの注意
 
-`期限注意` は将来機能です。
+- `prep_summary`: 対象日のPrepTaskを `todo` / `doing` / `done` ごとに集計する。
+- `next_tasks`: 対象日の `status != done` のPrepTaskを `sort_order, id` 順で最大5件返す。
+- `frequent_recipes`: 現在ShopのPrepTask利用回数が多いRecipeを最大5件返す。
+- `stats.recipe_count`: 現在Shopの `is_active=true` のRecipe数。
+- `stats.ingredient_count`: 現在Shopの `is_active=true` のIngredient数。
+- `stats.prep_task_count`: 対象日のPrepTask数。
+- `alerts`: MVPでは期限注意・残量注意を未実装のため空配列を返す。
 
-MVPではダミー表示、またはAPIレスポンスには含めず、フロント側で非表示にしてもよいです。
+`期限注意` は将来機能です。
 
 ---
 
@@ -1066,6 +1102,7 @@ gross_profit = null
 ## Auth
 
 ```text
+GET  /api/v1/auth/csrf/
 POST /api/v1/auth/login/
 POST /api/v1/auth/logout/
 GET  /api/v1/auth/me/

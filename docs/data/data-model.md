@@ -449,6 +449,25 @@ PrepTask一覧APIは日付で絞り込み、summaryとして `todo` / `doing` / 
 - planned_unit: バッチ
 - status: todo
 
+## Dashboard
+
+Dashboardは永続モデルではなく、ログイン後の「今日の現場」を表示するための集約APIです。
+
+### レスポンス方針
+
+| フィールド | 説明 |
+|---|---|
+| date | 対象日 |
+| prep_summary | 対象日のPrepTask status別件数 |
+| next_tasks | 対象日の未完了PrepTask最大5件 |
+| frequent_recipes | PrepTask利用回数が多いRecipe最大5件 |
+| stats | recipe_count / ingredient_count / prep_task_count |
+| alerts | MVPでは空配列 |
+
+Dashboardに含めるRecipe / Ingredient / PrepTaskはすべて現在Shopにスコープします。フロントから `shop_id` は受け取りません。
+
+`frequent_recipes` はMVPではPrepTask利用回数ベースで集計します。期限注意・残量注意はMVPでは未実装のため、`alerts` は空配列を返します。
+
 ## PrepLog
 
 仕込み完了後の記録を表します。

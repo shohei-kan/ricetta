@@ -214,3 +214,59 @@ Result:
 - `backend/api/migrations/0004_preptask.py`
 - `docs/api/api-design.md`
 - `docs/data/data-model.md`
+
+## 2026-05-05 Dashboard API
+
+### Summary
+
+Phase 6 is complete. Dashboard API was added as a current-Shop scoped aggregate endpoint for the post-login "today on the floor" view.
+
+### Completed Scope
+
+- `GET /api/v1/dashboard/`
+- `date=YYYY-MM-DD` query support.
+- Server today fallback when `date` is omitted.
+- `prep_summary` for `todo` / `doing` / `done` PrepTask counts.
+- `next_tasks` for incomplete PrepTasks, ordered by `sort_order, id`, limited to 5.
+- `frequent_recipes` for most-used Recipes based on PrepTask usage count, limited to 5.
+- `stats` for active Recipe count, active Ingredient count, and target-date PrepTask count.
+- `alerts` as an empty array for MVP.
+- Dashboard tests for auth, shop scope, summaries, next tasks, frequent recipes, stats, and alerts.
+
+### Key Decisions
+
+- Dashboard is an aggregate API, not a persistent model.
+- `shop_id` from frontend remains untrusted.
+- Dashboard scope is determined by `get_current_shop(user)`.
+- `frequent_recipes` uses PrepTask usage count for MVP.
+- `alerts` is always `[]` until expiry / remaining quantity features exist.
+
+### Verification
+
+Verified after Dashboard API implementation:
+
+```bash
+docker compose run --rm backend python manage.py check
+docker compose run --rm backend python manage.py makemigrations --check --dry-run
+docker compose run --rm backend python manage.py test
+
+cd frontend
+npm run build
+npm run lint
+```
+
+Result:
+
+- Backend check: pass
+- Migration check: pass
+- Backend tests: pass
+- Frontend build: pass
+- Frontend lint: pass
+
+### Key Files
+
+- `backend/api/views.py`
+- `backend/api/urls.py`
+- `backend/api/tests.py`
+- `docs/api/api-design.md`
+- `docs/data/data-model.md`

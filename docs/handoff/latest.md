@@ -2,7 +2,7 @@
 
 ## Date
 
-2026-05-05
+2026-05-06
 
 ## Project
 
@@ -10,52 +10,60 @@ Ricetta
 
 ## Status
 
-Phase 5 PrepTask API implemented
+Phase 7 Frontend Foundation implemented
 
 ## Summary
 
-PrepTask APIまで実装済み。Recipeを今日の仕込みボードへ載せるためのbackend土台として、日付別一覧、status summary、status更新API、Recipe / Unit scope validationが入った。
+Frontend Foundation / Auth / Layout / Dashboardまで実装済み。Django Session Auth向けのCSRF取得API、frontend API client、Auth state、Login画面、Protected route、Responsive App Layout、Dashboard画面、主要placeholder routesが入った。
 
 ## Current Goal
 
-次はDashboard APIまたはfrontend layoutへ進み、今日の仕込みとレシピ台帳を画面から使える状態に近づける。
+次はPrep Today画面へ進み、PrepTask APIを使って今日の仕込み一覧とstatus更新を画面から操作できるようにする。
 
 ## What Was Done
 
-- `PrepTask` モデルを追加
-- PrepTask CRUD APIを追加
-- `PATCH /api/v1/prep-tasks/{id}/status/` を追加
-- PrepTask作成時に現在Shopをserver側で設定
-- PrepTask一覧・詳細・更新・削除を現在Shopにスコープ
-- PrepTaskで現在ShopのRecipe、標準Unit + 現在Shop Unitのみ指定可能にした
-- `GET /api/v1/prep-tasks/?date=YYYY-MM-DD` で `summary` と `tasks` を返す形式にした
-- date未指定時はサーバー側のtodayを使う
-- `done` では `completed_at=now`、`done` 以外へ戻すと `completed_at=null`
-- PrepTask関連テストを追加
-- API docs / data model / READMEを更新
+- `GET /api/v1/auth/csrf/` を追加
+- frontend API clientを追加し、`credentials: "include"` とunsafe methodの `X-CSRFToken` 送信に対応
+- `AuthProvider` / `useAuth` を追加し、`/api/v1/auth/me/` でログイン状態を確認
+- `/login` 画面を追加し、CSRF取得後にSession Auth loginする流れを実装
+- `/dashboard` `/prep` `/recipes` `/ingredients` `/settings` をProtected route化
+- 共通App Layoutを追加
+- スマホは下部ナビ、タブレット横 / PCは約120pxの固定テキストSidebar
+- Dashboard APIを表示するDashboard画面を追加
+- `/prep` `/recipes` `/ingredients` `/settings` にplaceholder画面を追加
+- Figma Makeの雰囲気を参考に、柔らかい背景、カード、余白、2カラムDashboardをTailwindで実装
+- API docs / README / handoffを更新
 
 ## Key Decisions
 
-- `shop_id` はfrontendから信用しない。
-- PrepTask作成時のShopは `get_current_shop(user)` から設定する。
-- PrepTaskで選べるRecipeは現在Shopの `is_active=true` のRecipeのみ。
-- PrepTaskで選べるUnitは標準Unit + 現在Shop Unitのみ。
-- PrepTask一覧はMVPでは `sort_order, id` 順で返す。
-- PrepTask deleteはMVPでは物理削除。
-- Status更新は通常PATCHでも可能だが、タップ操作用に専用 `status/` APIを用意する。
-- `docs/decisions/` に長期的な判断を集約する。
+- frontendから `shop_id` は送らない。
+- Shop scopeと最終的な認可判断はbackendに任せる。
+- Session AuthのPOST前には `GET /api/v1/auth/csrf/` でCSRF cookieを取得する。
+- API clientのbase URLは `/api/v1` とし、Vite dev proxyを前提にする。
+- Auth stateはMVPではReact Context + hooksで管理する。
+- RoutingはMVPでは追加dependencyなしの軽量History API実装にした。
+- Figma Makeコードは丸ごと移植せず、レイアウト・余白・カード感・サイドバー方針の参考に留めた。
+- Placeholderは導線確認用に留め、Recipe / Ingredient / PrepTaskの本格CRUD画面はまだ作り込まない。
 
 ## Key Files
 
-- `backend/api/models.py`
-- `backend/api/serializers.py`
 - `backend/api/views.py`
 - `backend/api/urls.py`
 - `backend/api/tests.py`
-- `backend/api/migrations/0004_preptask.py`
+- `frontend/src/App.tsx`
+- `frontend/src/auth/AuthContext.tsx`
+- `frontend/src/auth/auth-context.ts`
+- `frontend/src/auth/useAuth.ts`
+- `frontend/src/api/api.ts`
+- `frontend/src/api/auth.ts`
+- `frontend/src/api/dashboard.ts`
+- `frontend/src/components/AppLayout.tsx`
+- `frontend/src/pages/LoginPage.tsx`
+- `frontend/src/pages/DashboardPage.tsx`
+- `frontend/src/pages/PlaceholderPage.tsx`
+- `frontend/src/index.css`
 - `docs/api/api-design.md`
-- `docs/data/data-model.md`
-- `docs/handoff/archive/backend-foundation.md`
+- `docs/handoff/archive/frontend-implementation.md`
 
 ## Verification
 
@@ -85,6 +93,7 @@ MVP対象:
 
 - Login / logout
 - Shop account scope
+- Dashboard summary
 - Recipe list/detail/create/edit
 - Ingredient create/edit
 - Ingredient cost mode
@@ -110,33 +119,35 @@ MVP対象:
 
 ## Next Recommended Tasks
 
-1. Dashboard APIを実装する
-2. 今日の仕込みsummaryと次にやるPrepTaskを返せるようにする
-3. Frontend layoutの土台を作る
-4. Login / Dashboard / Prep Today の画面導線を作る
+1. Prep Today画面を実装する
+2. PrepTask APIの一覧を表示し、summaryとtasksを画面に出す
+3. `PATCH /api/v1/prep-tasks/{id}/status/` でstatus更新UIを作る
+4. 空・読み込み・保存失敗状態を整える
 5. docs / tests / handoff を更新する
 
 ## Open Questions
 
-- Session Auth運用時のCSRF取得APIをfrontend実装時に追加するか
 - Staffの原価情報閲覧制限をどのPhaseで入れるか
 - 標準Unitの追加・変更をdata migrationで固定するか、seed command運用に寄せるか
 - `unit_cost_label` / `cost_summary` の丸めを将来どこまで厳密にするか
 - Ingredientの仕入価格履歴をどのPhaseで扱うか
 - RecipeIngredientの個別編集APIを将来追加するか、nested replacementのまま進めるか
 - PrepTask deleteを将来論理削除へ変えるか
+- Dashboardの `frequent_recipes` を将来どの期間で集計するか
+- 本番frontendでSession Auth / CSRF / CORSの境界をどの構成にするか
 
 ## Notes for Next Agent
 
-- `get_current_shop(user)` をDashboard queryset filteringでも使う。
-- Dashboardで使うPrepTaskは現在Shop + 対象日で絞る。
-- PrepTask APIの一覧は `summary` と `tasks` を返すため、通常のDRF list配列ではない。
+- Login開発用アカウントは `owner@example.com` / `password`。
+- frontendは `shop_id` を送らず、backend responseを表示する。
+- API clientは `frontend/src/api/api.ts`。
+- Auth stateは `frontend/src/auth/`。
+- Dashboard画面は `GET /api/v1/dashboard/` を表示する。
 - PrepTask status更新は `PATCH /api/v1/prep-tasks/{id}/status/` を使う。
-- `done` から `todo` / `doing` に戻すと `completed_at` はnullになる。
-- Recipe detailの材料欄には原価情報を混ぜない方針を維持する。
+- Figma Makeのデザインは雰囲気とレイアウト参考で、既存frontend構成に合わせて再実装している。
 
 ## Suggested Commit Message
 
 ```text
-feat(api): add shop-scoped prep task management
+feat(frontend): add auth layout and dashboard foundation
 ```

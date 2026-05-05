@@ -220,11 +220,13 @@ MVPでは Django標準User を使います。メールログインは `username=
 
 主なAPI:
 
+- `GET /api/v1/auth/csrf/`
 - `POST /api/v1/auth/login/`
 - `POST /api/v1/auth/logout/`
 - `GET /api/v1/auth/me/`
 - `GET /api/v1/shop/me/`
 - `PATCH /api/v1/shop/me/`
+- `GET /api/v1/dashboard/`
 - `GET /api/v1/categories/`
 - `GET /api/v1/units/`
 - `GET /api/v1/ingredients/`
@@ -247,6 +249,10 @@ MVPでは Django標準User を使います。メールログインは `username=
 Recipe API は現在Shopにスコープされます。作成時の `shop_id` は受け取らず、RecipeIngredientで指定できるIngredientは現在Shopの有効なIngredientのみ、Unitは標準Unitまたは現在ShopのUnitのみです。Recipe detailの材料欄には原価内訳を混ぜず、全体の原価情報は `cost_summary` に集約します。
 
 PrepTask API も現在Shopにスコープされます。日付指定の一覧は `summary` と `tasks` を返し、`PATCH /api/v1/prep-tasks/{id}/status/` で `todo` / `doing` / `done` を更新できます。
+
+Dashboard API は現在Shopの「今日の現場」情報として、仕込みsummary、次にやる仕込み、よく使うレシピ、ミニサマリー、空の `alerts` を返します。
+
+FrontendはDjango Session Authを前提に、ログイン前に `GET /api/v1/auth/csrf/` でCSRF cookieを取得します。POST / PATCH / DELETEでは `credentials: "include"` と `X-CSRFToken` を送ります。`shop_id` はfrontendから送らず、backendがログイン中ユーザーのMembershipからShopを決定します。
 
 ## CI
 
@@ -392,6 +398,8 @@ Dashboard は、単なるホーム画面ではなく「今日の現場」を確�
 - よく使うレシピ
 - クイックアクション
 - ミニサマリー
+
+Frontend foundationでは `/login`、`/dashboard`、`/prep`、`/recipes`、`/ingredients`、`/settings` のルートを用意しています。`/dashboard` はDashboard APIを表示し、`/prep` などの業務画面は後続フェーズのplaceholderです。
 
 ## UI Policy
 
