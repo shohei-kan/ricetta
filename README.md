@@ -302,6 +302,8 @@ GitHub Actions runs on PR and push to main.
 - 使用単位
 - 換算情報
 
+Frontendでは `/ingredients` で材料一覧、`/ingredients/{id}` で材料詳細を確認できます。Ingredient Detailは材料マスター管理画面なので、Recipe Detailとは違い、原価計算モード、仕入情報、換算情報、単価表示を表示します。
+
 ## 3. Ingredient Cost Mode
 
 材料ごとに原価計算方法を選択できます。
@@ -399,7 +401,7 @@ Dashboard は、単なるホーム画面ではなく「今日の現場」を確�
 - クイックアクション
 - ミニサマリー
 
-Frontend foundationでは `/login`、`/dashboard`、`/prep`、`/recipes`、`/ingredients`、`/settings` のルートを用意しています。`/dashboard` はDashboard APIを表示し、`/prep` はPrepTask APIを使って今日の仕込み一覧とstatus更新を行います。`/recipes` はRecipe APIを使って一覧と詳細を表示します。`/ingredients` などの業務画面は後続フェーズのplaceholderです。
+Frontend foundationでは `/login`、`/dashboard`、`/prep`、`/recipes`、`/ingredients`、`/settings` のルートを用意しています。`/dashboard` はDashboard APIを表示し、`/prep` はPrepTask APIを使って今日の仕込み一覧とstatus更新を行います。`/recipes` はRecipe APIを使って一覧と詳細を表示します。`/ingredients` はIngredient APIを使って一覧と詳細を表示します。`/settings` は後続フェーズのplaceholderです。
 
 ## UI Policy
 

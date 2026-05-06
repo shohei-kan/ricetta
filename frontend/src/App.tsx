@@ -3,6 +3,8 @@ import { AuthProvider } from './auth/AuthContext'
 import { useAuth } from './auth/useAuth'
 import { AppLayout, type RoutePath } from './components/AppLayout'
 import { DashboardPage } from './pages/DashboardPage'
+import { IngredientDetailPage } from './pages/IngredientDetailPage'
+import { IngredientListPage } from './pages/IngredientListPage'
 import { LoginPage } from './pages/LoginPage'
 import { PlaceholderPage } from './pages/PlaceholderPage'
 import { PrepTodayPage } from './pages/PrepTodayPage'
@@ -18,17 +20,9 @@ const protectedPaths: RoutePath[] = [
 ]
 
 const placeholderContent: Record<
-  Exclude<RoutePath, '/dashboard' | '/prep'>,
+  Exclude<RoutePath, '/dashboard' | '/prep' | '/recipes' | '/ingredients'>,
   { title: string; description: string }
 > = {
-  '/recipes': {
-    title: 'レシピ',
-    description: 'レシピ一覧・詳細・編集画面は次フェーズ以降で実装します。',
-  },
-  '/ingredients': {
-    title: '材料',
-    description: '材料一覧・フォーム画面は次フェーズ以降で実装します。',
-  },
   '/settings': {
     title: '設定',
     description: '店舗情報、カテゴリ、単位設定は後続フェーズで整えます。',
@@ -112,6 +106,15 @@ function renderRoute(path: string, routePath: RoutePath, navigate: (path: string
     return <RecipeListPage navigate={navigate} />
   }
 
+  const ingredientId = getIngredientId(path)
+  if (ingredientId !== null) {
+    return <IngredientDetailPage id={ingredientId} navigate={navigate} />
+  }
+
+  if (routePath === '/ingredients') {
+    return <IngredientListPage navigate={navigate} />
+  }
+
   return (
     <PlaceholderPage
       description={placeholderContent[routePath].description}
@@ -142,11 +145,22 @@ function toRoutePath(path: string): RoutePath | null {
   if (getRecipeId(path) !== null) {
     return '/recipes'
   }
+  if (getIngredientId(path) !== null) {
+    return '/ingredients'
+  }
   return protectedPaths.includes(path as RoutePath) ? (path as RoutePath) : null
 }
 
 function getRecipeId(path: string): number | null {
   const match = path.match(/^\/recipes\/(\d+)$/)
+  if (!match) {
+    return null
+  }
+  return Number(match[1])
+}
+
+function getIngredientId(path: string): number | null {
+  const match = path.match(/^\/ingredients\/(\d+)$/)
   if (!match) {
     return null
   }

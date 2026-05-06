@@ -48,6 +48,41 @@ Figma MakeのRicetta MVP Wireframesは、画面全体の雰囲気、柔らかい
 - Frontend build: pass
 - Frontend lint: pass
 
+## 2026-05-06 Ingredient list and detail views
+
+Ingredient List / Detail画面を実装した。
+
+### Summary
+
+- `frontend/src/api/ingredients.ts` を追加
+- `GET /api/v1/ingredients/` で材料一覧を取得
+- `GET /api/v1/ingredients/{id}/` で材料詳細を取得
+- `/ingredients` placeholderをIngredient List画面に差し替え
+- `/ingredients/:id` routingを追加
+- Ingredient Listに検索欄、Ingredientカード、loading / empty / errorを追加
+- Ingredient Detailに戻るボタン、基本情報、原価計算モード、仕入情報、換算情報、単価表示を追加
+- `cost_mode` を日本語ラベルと説明で表示
+- `unit_cost_label` がない場合は「計算なし」と表示
+
+### Decisions
+
+- Ingredient Detailは材料マスター管理画面なので、原価・換算情報を表示する。
+- Recipe Detailとは役割を分け、Recipe Detailの材料欄には原価・仕入・換算情報を混ぜない。
+- Ingredient作成・編集フォームはまだ実装しない。
+
+### Key Files
+
+- `frontend/src/api/ingredients.ts`
+- `frontend/src/pages/IngredientListPage.tsx`
+- `frontend/src/pages/IngredientDetailPage.tsx`
+- `frontend/src/App.tsx`
+- `docs/handoff/latest.md`
+
+### Verification
+
+- Frontend build: pass
+- Frontend lint: pass
+
 ## 2026-05-06 Recipe list and detail views
 
 Recipe List / Detail画面を実装した。

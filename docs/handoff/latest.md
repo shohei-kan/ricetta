@@ -10,49 +10,47 @@ Ricetta
 
 ## Status
 
-Phase 9 Frontend Recipe List / Detail implemented
+Phase 10 Frontend Ingredient List / Detail implemented
 
 ## Summary
 
-Recipe List / Detail画面まで実装済み。`/recipes` でRecipe APIの一覧を表示し、`/recipes/:id` でRecipe Detailを確認できる。Prep TodayのカードからRecipe Detailへ移動できる導線も入った。
+Ingredient List / Detail画面まで実装済み。`/ingredients` でIngredient APIの一覧を表示し、`/ingredients/:id` で材料詳細、原価計算モード、仕入情報、換算情報、単価表示を確認できる。
 
 ## Current Goal
 
-次はIngredient frontendまたはRecipe作成・編集frontendへ進み、台帳に登録・編集できる範囲を広げる。
+次はRecipe作成・編集frontendまたはIngredient作成・編集frontendへ進み、台帳に登録・編集できる範囲を広げる。
 
 ## What Was Done
 
-- `frontend/src/api/recipes.ts` を追加
-- `GET /api/v1/recipes/` を呼ぶRecipe List API clientを追加
-- `GET /api/v1/recipes/{id}/` を呼ぶRecipe Detail API clientを追加
-- `/recipes` placeholderをRecipe List画面へ差し替え
-- `/recipes/:id` の軽量History API routingを追加
-- Recipe Listに検索欄、Recipeカード、loading / empty / errorを追加
-- Recipeカードにレシピ名、カテゴリ、基準量、更新日を表示
-- Recipe Detailに戻るボタンを追加
-- Recipe Detailにレシピ名、カテゴリ、基準量、説明、材料、作り方、注意点、アレルゲン、原価情報を表示
-- Recipe Detailでは材料欄と原価情報を分離
-- 原価情報カードは `cost_summary` のみを使って表示
-- Prep TodayのPrepTaskカードに「レシピを見る」ボタンを追加
+- `frontend/src/api/ingredients.ts` を追加
+- `GET /api/v1/ingredients/` を呼ぶIngredient List API clientを追加
+- `GET /api/v1/ingredients/{id}/` を呼ぶIngredient Detail API clientを追加
+- `/ingredients` placeholderをIngredient List画面へ差し替え
+- `/ingredients/:id` の軽量History API routingを追加
+- Ingredient Listに検索欄、Ingredientカード、loading / empty / errorを追加
+- Ingredientカードに材料名、仕入先、原価計算モード、`unit_cost_label` を表示
+- Ingredient Detailに戻るボタンを追加
+- Ingredient Detailに材料名、仕入先、memo、原価計算モード、仕入情報、使用単位、換算情報、`unit_cost_label` を表示
+- `none` / `same_unit` / `conversion` ごとに表示内容を整理
 - README / product screens / handoffを更新
 
 ## Key Decisions
 
 - frontendから `shop_id` は送らない。
-- Shop scopeと認可はbackendに任せ、Recipe画面はbackend responseを表示する。
-- Recipe Detailの材料欄には材料名、使用量、単位、memoだけを表示する。
-- 材料ごとの原価、単価、仕入情報、換算情報は表示しない。
-- Recipe全体の原価情報は `cost_summary` だけを使って専用カードに集約する。
-- Recipe作成・編集・削除UIはまだ実装しない。
-- `/recipes/:id` ではSidebar / bottom nav上の現在地は `レシピ` として扱う。
-- Detailの戻るボタンは `window.history.back()` を基本にし、履歴がなければ `/recipes` に戻す。
+- Shop scopeと認可はbackendに任せ、Ingredient画面はbackend responseを表示する。
+- Ingredient Detailは材料マスター管理寄りの画面なので、原価・換算情報を表示する。
+- Recipe Detailとは役割を分け、Recipe Detailの材料欄には原価・仕入・換算情報を混ぜない。
+- `cost_mode` は日本語ラベルと短い説明で表示する。
+- `unit_cost_label` が `null` の場合は「計算なし」と表示する。
+- Ingredient作成・編集・削除UIはまだ実装しない。
+- `/ingredients/:id` ではSidebar / bottom nav上の現在地は `材料` として扱う。
+- Detailの戻るボタンは `window.history.back()` を基本にし、履歴がなければ `/ingredients` に戻す。
 
 ## Key Files
 
-- `frontend/src/api/recipes.ts`
-- `frontend/src/pages/RecipeListPage.tsx`
-- `frontend/src/pages/RecipeDetailPage.tsx`
-- `frontend/src/pages/PrepTodayPage.tsx`
+- `frontend/src/api/ingredients.ts`
+- `frontend/src/pages/IngredientListPage.tsx`
+- `frontend/src/pages/IngredientDetailPage.tsx`
 - `frontend/src/App.tsx`
 - `README.md`
 - `docs/product/screens.md`
@@ -107,10 +105,10 @@ MVP対象:
 
 ## Next Recommended Tasks
 
-1. Ingredient list / detail frontendを実装する
-2. Recipe作成・編集frontendの入力設計を固める
-3. Recipe作成時にIngredient / Unit / Categoryを選べるUIを作る
-4. Recipe DetailからEditへ進む導線を追加する
+1. Recipe作成・編集frontendの入力設計を固める
+2. Recipe作成時にIngredient / Unit / Categoryを選べるUIを作る
+3. Ingredient作成・編集frontendを実装する
+4. SettingsでCategory / Unitの管理画面を整える
 5. docs / tests / handoff を更新する
 
 ## Open Questions
@@ -125,6 +123,7 @@ MVP対象:
 - 本番frontendでSession Auth / CSRF / CORSの境界をどの構成にするか
 - Prep Todayの日付切り替えUIをどのタイミングで入れるか
 - Prep Action Modalを入れるか、カード内ボタンのまま進めるか
+- Ingredient作成・編集フォームでcost_modeごとの入力切り替えをどう設計するか
 - Recipe作成・編集フォームでnested replacement方針をどう見せるか
 
 ## Notes for Next Agent
@@ -132,15 +131,15 @@ MVP対象:
 - Login開発用アカウントは `owner@example.com` / `password`。
 - frontendは `shop_id` を送らず、backend responseを表示する。
 - API clientは `frontend/src/api/api.ts`。
-- Recipe API clientは `frontend/src/api/recipes.ts`。
-- Recipe Listは `frontend/src/pages/RecipeListPage.tsx`。
-- Recipe Detailは `frontend/src/pages/RecipeDetailPage.tsx`。
-- Prep TodayからRecipe Detailへは `navigate(/recipes/:id)` で移動する。
+- Ingredient API clientは `frontend/src/api/ingredients.ts`。
+- Ingredient Listは `frontend/src/pages/IngredientListPage.tsx`。
+- Ingredient Detailは `frontend/src/pages/IngredientDetailPage.tsx`。
 - Recipe Detailの材料欄には原価情報を混ぜない。
-- 原価情報カードは `cost_summary` のみを使う。
+- Ingredient Detailでは原価計算モード、仕入情報、換算情報、単価表示を表示してよい。
+- `unit_cost_label` がない材料は「計算なし」と表示している。
 
 ## Suggested Commit Message
 
 ```text
-feat(frontend): add recipe list and detail views
+feat(frontend): add ingredient list and detail views
 ```
