@@ -10,64 +10,52 @@ Ricetta
 
 ## Status
 
-Phase 12 Frontend Recipe Create / Edit implemented
+Phase 13 Frontend Add Recipe to Prep implemented
 
 ## Summary
 
-Recipe作成・編集画面まで実装済み。`/recipes/new` でレシピを新規作成し、`/recipes/:id/edit` で既存レシピを編集できる。Category / Unit / Ingredient選択、材料行・工程行のnested form、最低限のfrontend validation、backend validation error表示が入った。
+Recipe Detailから今日の仕込みへ追加する導線まで実装済み。`/recipes/:id` の「今日の仕込みに追加」からPrepTaskを作成し、保存成功後に `/prep` へ移動してPrep Todayに表示できる。
 
 ## Current Goal
 
-次はPrepTask作成導線またはSettings画面へ進み、レシピを今日の仕込みへ登録できる状態に近づける。
+次はSettings画面またはPrepTask作成の補助導線を整え、運用に必要な設定・導線を固める。
 
 ## What Was Done
 
-- `frontend/src/api/recipes.ts` に `createRecipe` / `updateRecipe` を追加
-- `frontend/src/api/categories.ts` を追加
-- `GET /api/v1/categories/` でCategory選択肢を取得
-- 既存のUnit / Ingredient API clientをRecipe formで利用
-- `/recipes/new` routeを追加
-- `/recipes/:id/edit` routeを追加
-- `frontend/src/pages/RecipeFormPage.tsx` を追加
-- Recipe Listに「レシピを追加」導線を追加
-- Recipe Detailに「編集」導線を追加
-- 作成成功後は作成されたRecipe Detailへ遷移
-- 編集成功後はRecipe Detailへ遷移
-- Recipe基本情報、材料行、工程行、管理情報のフォームを追加
-- 材料行の追加・削除を追加
-- 工程行の追加・削除を追加
-- Ingredient選択時にIngredientの `usage_unit` を材料行Unitへ自動設定
-- 編集保存時は `ingredients` / `steps` をpayloadに含め、backendのnested replacement方針に合わせた
-- 工程番号は保存時にフォーム表示順で再採番する方針にした
-- 空の材料行・工程行は送信前に除外する方針にした
-- name、基準量、基準単位、材料行、工程行の最低限frontend validationを追加
-- backend validation errorをフォーム上に表示
+- `frontend/src/api/prepTasks.ts` に `createPrepTask` を追加
+- `POST /api/v1/prep-tasks/` でPrepTaskを作成できるようにした
+- Recipe Detailに「今日の仕込みに追加」ボタンを追加
+- Recipe Detail内にAdd to Prepパネルを追加
+- Add to Prepで仕込み日、予定数量、予定単位、メモを入力できるようにした
+- 仕込み日の初期値を今日にした
+- 仕込み日は `<input type="date">` で変更可能にした
+- 予定数量の初期値にRecipeの `base_yield_quantity` を使うようにした
+- 予定単位の初期値にRecipeの `base_yield_unit.id` を使うようにした
+- 予定単位の選択肢を `GET /api/v1/units/` から取得
+- Unit取得失敗時もRecipeの基準単位を選択肢として表示できるfallbackを追加
+- 保存成功後は `/prep` へ遷移する方針にした
+- date / recipe_id / planned_quantity / planned_unit_id の最低限frontend validationを追加
+- backend validation errorをパネル上に表示
 - 保存失敗時に入力内容が消えないようにした
 - README / product screens / handoffを更新
 
 ## Key Decisions
 
 - frontendから `shop_id` は送らない。
-- Shop scopeと認可はbackendに任せ、Recipe作成・編集はbackend validationに従う。
-- Recipeフォームは基本情報 / 材料 / 作り方 / 管理情報に分ける。
-- 材料行には原価情報を表示しない。
-- Ingredient選択時に `usage_unit` があれば材料行Unitに自動設定する。
-- 工程番号は保存時に表示順で `1, 2, 3...` と再採番する。
-- 編集保存時は現在フォームにある `ingredients` / `steps` をpayloadに含め、backend側で全置き換えする。
-- 空の材料行・工程行は送信前に除外する。
+- Shop scopeと認可はbackendに任せ、PrepTask作成時もfrontendから `shop_id` は送らない。
+- Add to Prepは新routeを作らず、Recipe Detail内の小さなパネルとして表示する。
+- 仕込み日はMVPでは今日を初期値にし、日付入力で変更可能にする。
+- 予定数量 / 予定単位はRecipeの基準量 / 基準単位を初期値にする。
+- 保存成功後は `/prep` へ移動し、追加結果をPrep Todayで確認する。
+- Add to Prepフォームには原価情報を表示しない。
 - DRF validation errorはMVPでは汎用メッセージ + backend response文字列で表示する。
-- Recipe削除UI、PrepTask作成フォーム、画像アップロード、材料ごとの原価内訳表示はまだ実装しない。
+- PrepTask編集・削除UI、PrepTask作成専用ページ、Prep Action Modal本格実装はまだ実装しない。
 
 ## Key Files
 
-- `frontend/src/api/recipes.ts`
-- `frontend/src/api/categories.ts`
+- `frontend/src/api/prepTasks.ts`
 - `frontend/src/api/units.ts`
-- `frontend/src/api/ingredients.ts`
-- `frontend/src/pages/RecipeFormPage.tsx`
-- `frontend/src/pages/RecipeListPage.tsx`
 - `frontend/src/pages/RecipeDetailPage.tsx`
-- `frontend/src/App.tsx`
 - `README.md`
 - `docs/product/screens.md`
 - `docs/handoff/archive/frontend-implementation.md`
@@ -121,8 +109,8 @@ MVP対象:
 
 ## Next Recommended Tasks
 
-1. PrepTask作成フォームまたは「レシピから仕込みに追加」導線を実装する
-2. SettingsでCategory / Unitの管理画面を整える
+1. SettingsでCategory / Unitの管理画面を整える
+2. PrepTask作成専用フォームが必要か、Recipe Detail導線だけで足りるか検証する
 3. Recipe / Ingredient削除UIの要否とタイミングを決める
 4. Recipe formの入力補助や並び替えを必要に応じて整える
 5. docs / tests / handoff を更新する
@@ -141,6 +129,7 @@ MVP対象:
 - Prep Action Modalを入れるか、カード内ボタンのまま進めるか
 - Recipe formで材料行・工程行の並び替えUIを入れるか
 - Recipe formで原価プレビューを表示するか
+- Recipe Detail以外からPrepTaskを作成する専用導線が必要か
 
 ## Notes for Next Agent
 
@@ -152,6 +141,9 @@ MVP対象:
 - Ingredient API clientは `frontend/src/api/ingredients.ts`。
 - Unit API clientは `frontend/src/api/units.ts`。
 - Recipe Formは `frontend/src/pages/RecipeFormPage.tsx`。
+- PrepTask API clientは `frontend/src/api/prepTasks.ts`。
+- Recipe Detail内のAdd to Prepパネルから `createPrepTask` を呼ぶ。
+- 保存成功後は `/prep` へ移動する。
 - Recipe編集保存では `ingredients` / `steps` をpayloadに含め、backendのnested replacementに合わせる。
 - Ingredient選択時、Ingredientの `usage_unit` を材料行Unitに自動設定している。
 - 工程番号は保存時に表示順で再採番している。
@@ -160,5 +152,5 @@ MVP対象:
 ## Suggested Commit Message
 
 ```text
-feat(frontend): add recipe create and edit forms
+feat(frontend): add recipe to prep flow
 ```

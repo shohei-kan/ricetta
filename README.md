@@ -390,6 +390,8 @@ done
 3バッチ
 ```
 
+FrontendではRecipe Detailの「今日の仕込みに追加」から、レシピの基準量・基準単位を初期値にしてPrepTaskを作成できます。保存成功後は `/prep` へ移動し、今日の仕込み一覧でstatus更新できます。
+
 ## 5. Dashboard
 
 Dashboard は、単なるホーム画面ではなく「今日の現場」を確認する画面です。

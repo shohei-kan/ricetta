@@ -1,5 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
+import { ApiError } from '../api/api'
+import { createPrepTask } from '../api/prepTasks'
 import { fetchRecipeDetail, type RecipeDetail } from '../api/recipes'
+import { fetchUnits, type Unit } from '../api/units'
 
 type RecipeDetailPageProps = {
   id: number
@@ -73,6 +76,8 @@ function RecipeDetailContent({
   navigate: (path: string) => void
   recipe: RecipeDetail
 }) {
+  const [showPrepForm, setShowPrepForm] = useState(false)
+
   return (
     <>
       <header className="mb-6 rounded-xl border border-[#e3d8c9] bg-[#fffaf2] p-5 shadow-sm">
@@ -90,13 +95,22 @@ function RecipeDetailContent({
             {recipe.description}
           </p>
         )}
-        <button
-          className="mt-5 rounded-lg bg-[#7b4f2f] px-5 py-3 text-base font-semibold text-white transition hover:bg-[#694225]"
-          onClick={() => navigate(`/recipes/${recipe.id}/edit`)}
-          type="button"
-        >
-          編集
-        </button>
+        <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+          <button
+            className="rounded-lg bg-[#7b4f2f] px-5 py-3 text-base font-semibold text-white transition hover:bg-[#694225]"
+            onClick={() => setShowPrepForm((current) => !current)}
+            type="button"
+          >
+            今日の仕込みに追加
+          </button>
+          <button
+            className="rounded-lg bg-[#ebe1d2] px-5 py-3 text-base font-semibold text-[#5d5148] transition hover:bg-[#e0d4c4]"
+            onClick={() => navigate(`/recipes/${recipe.id}/edit`)}
+            type="button"
+          >
+            編集
+          </button>
+        </div>
       </header>
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.75fr)]">
@@ -148,6 +162,14 @@ function RecipeDetailContent({
         </main>
 
         <aside className="space-y-5">
+          {showPrepForm && (
+            <AddToPrepPanel
+              navigate={navigate}
+              onCancel={() => setShowPrepForm(false)}
+              recipe={recipe}
+            />
+          )}
+
           <CostSummaryCard recipe={recipe} />
 
           <section className="rounded-xl border border-[#e3d8c9] bg-[#fffaf2] p-5 shadow-sm">
@@ -166,6 +188,179 @@ function RecipeDetailContent({
         </aside>
       </div>
     </>
+  )
+}
+
+function AddToPrepPanel({
+  navigate,
+  onCancel,
+  recipe,
+}: {
+  navigate: (path: string) => void
+  onCancel: () => void
+  recipe: RecipeDetail
+}) {
+  const [units, setUnits] = useState<Unit[]>([])
+  const [unitsLoading, setUnitsLoading] = useState(true)
+  const [unitError, setUnitError] = useState<string | null>(null)
+  const [date, setDate] = useState(getTodayDate)
+  const [plannedQuantity, setPlannedQuantity] = useState(recipe.base_yield_quantity)
+  const [plannedUnitId, setPlannedUnitId] = useState(String(recipe.base_yield_unit.id))
+  const [memo, setMemo] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const [validationErrors, setValidationErrors] = useState<string[]>([])
+
+  useEffect(() => {
+    let active = true
+
+    async function loadUnits() {
+      setUnitsLoading(true)
+      setUnitError(null)
+      try {
+        const response = await fetchUnits()
+        if (active) {
+          setUnits(ensureBaseUnit(response, recipe.base_yield_unit))
+        }
+      } catch {
+        if (active) {
+          setUnitError('単位一覧を読み込めませんでした。')
+          setUnits([{
+            id: recipe.base_yield_unit.id,
+            name: recipe.base_yield_unit.name,
+            unit_type: 'custom',
+            is_default: false,
+          }])
+        }
+      } finally {
+        if (active) {
+          setUnitsLoading(false)
+        }
+      }
+    }
+
+    void loadUnits()
+    return () => {
+      active = false
+    }
+  }, [recipe.base_yield_unit])
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const errors = validatePrepForm({ date, plannedQuantity, plannedUnitId, recipeId: recipe.id })
+    setValidationErrors(errors)
+    setSaveError(null)
+
+    if (errors.length > 0) {
+      return
+    }
+
+    setSaving(true)
+    try {
+      await createPrepTask({
+        date,
+        recipe_id: recipe.id,
+        planned_quantity: plannedQuantity,
+        planned_unit_id: Number(plannedUnitId),
+        memo: memo.trim(),
+      })
+      navigate('/prep')
+    } catch (caught) {
+      setSaveError(formatSaveError(caught))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <section className="rounded-xl border border-[#d8c3ad] bg-[#fff7eb] p-5 shadow-sm">
+      <h2 className="text-xl font-bold text-[#34291f]">今日の仕込みに追加</h2>
+      <p className="mt-2 text-sm leading-6 text-[#75685e]">
+        基準量を初期値にして、今日の仕込みボードへ追加します。
+      </p>
+
+      {unitError && <p className="mt-3 text-sm font-semibold text-[#a23d2d]">{unitError}</p>}
+
+      <form className="mt-4 space-y-4" onSubmit={handleSubmit}>
+        <label className="block">
+          <span className="text-sm font-semibold text-[#4b4037]">仕込み日 *</span>
+          <input
+            className="mt-2 min-h-12 w-full rounded-lg border border-[#d7cbbb] bg-white px-4 text-base text-[#2b2621] outline-none ring-[#b88458] transition focus:ring-2"
+            onChange={(event) => setDate(event.target.value)}
+            type="date"
+            value={date}
+          />
+        </label>
+
+        <label className="block">
+          <span className="text-sm font-semibold text-[#4b4037]">予定数量 *</span>
+          <input
+            className="mt-2 min-h-12 w-full rounded-lg border border-[#d7cbbb] bg-white px-4 text-base text-[#2b2621] outline-none ring-[#b88458] transition focus:ring-2"
+            inputMode="decimal"
+            onChange={(event) => setPlannedQuantity(event.target.value)}
+            value={plannedQuantity}
+          />
+        </label>
+
+        <label className="block">
+          <span className="text-sm font-semibold text-[#4b4037]">予定単位 *</span>
+          <select
+            className="mt-2 min-h-12 w-full rounded-lg border border-[#d7cbbb] bg-white px-4 text-base text-[#2b2621] outline-none ring-[#b88458] transition focus:ring-2 disabled:bg-[#eee7db] disabled:text-[#8a7a6d]"
+            disabled={unitsLoading}
+            onChange={(event) => setPlannedUnitId(event.target.value)}
+            value={plannedUnitId}
+          >
+            <option value="">選択してください</option>
+            {units.map((unit) => (
+              <option key={unit.id} value={unit.id}>
+                {unit.name}
+              </option>
+            ))}
+          </select>
+          {unitsLoading && <span className="mt-2 block text-xs text-[#75685e]">単位を読み込んでいます...</span>}
+        </label>
+
+        <label className="block">
+          <span className="text-sm font-semibold text-[#4b4037]">メモ</span>
+          <textarea
+            className="mt-2 min-h-20 w-full rounded-lg border border-[#d7cbbb] bg-white px-4 py-3 text-base text-[#2b2621] outline-none ring-[#b88458] transition focus:ring-2"
+            onChange={(event) => setMemo(event.target.value)}
+            value={memo}
+          />
+        </label>
+
+        {(validationErrors.length > 0 || saveError) && (
+          <div className="rounded-lg border border-[#f1c8c0] bg-[#fff0ed] p-4 text-[#a23d2d]">
+            <p className="font-bold">仕込みへの追加に失敗しました。入力内容を確認してください。</p>
+            {saveError && <p className="mt-2 text-sm leading-6">{saveError}</p>}
+            {validationErrors.length > 0 && (
+              <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">
+                {validationErrors.map((error) => (
+                  <li key={error}>{error}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <button
+            className="rounded-lg bg-[#7b4f2f] px-4 py-3 text-base font-semibold text-white transition hover:bg-[#694225] disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={saving || unitsLoading}
+            type="submit"
+          >
+            {saving ? '追加中...' : '仕込みに追加'}
+          </button>
+          <button
+            className="rounded-lg bg-[#ebe1d2] px-4 py-3 text-base font-semibold text-[#5d5148] transition hover:bg-[#e0d4c4]"
+            onClick={onCancel}
+            type="button"
+          >
+            キャンセル
+          </button>
+        </div>
+      </form>
+    </section>
   )
 }
 
@@ -198,6 +393,69 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
       <span className="text-lg font-bold text-[#332820]">{value}</span>
     </div>
   )
+}
+
+function ensureBaseUnit(units: Unit[], baseUnit: RecipeDetail['base_yield_unit']) {
+  if (units.some((unit) => unit.id === baseUnit.id)) {
+    return units
+  }
+  return [
+    {
+      id: baseUnit.id,
+      name: baseUnit.name,
+      unit_type: 'custom' as const,
+      is_default: false,
+    },
+    ...units,
+  ]
+}
+
+function validatePrepForm({
+  date,
+  plannedQuantity,
+  plannedUnitId,
+  recipeId,
+}: {
+  date: string
+  plannedQuantity: string
+  plannedUnitId: string
+  recipeId: number
+}) {
+  const errors: string[] = []
+  if (!date) {
+    errors.push('仕込み日を入力してください。')
+  }
+  if (!recipeId) {
+    errors.push('レシピを選択してください。')
+  }
+  const quantity = Number(plannedQuantity)
+  if (!plannedQuantity || Number.isNaN(quantity)) {
+    errors.push('予定数量を入力してください。')
+  } else if (quantity <= 0) {
+    errors.push('予定数量は0より大きい値を入力してください。')
+  }
+  if (!plannedUnitId) {
+    errors.push('予定単位を選択してください。')
+  }
+  return errors
+}
+
+function getTodayDate() {
+  const today = new Date()
+  const year = today.getFullYear()
+  const month = String(today.getMonth() + 1).padStart(2, '0')
+  const day = String(today.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+function formatSaveError(caught: unknown) {
+  if (caught instanceof ApiError) {
+    if (typeof caught.data === 'string') {
+      return caught.data
+    }
+    return JSON.stringify(caught.data)
+  }
+  return '仕込みへの追加に失敗しました。入力内容を確認してください。'
 }
 
 function goBack(navigate: (path: string) => void) {

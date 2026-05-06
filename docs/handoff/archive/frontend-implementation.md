@@ -87,6 +87,43 @@ Ingredient作成・編集フォームを実装した。
 - Frontend build: pass
 - Frontend lint: pass
 
+## 2026-05-06 Add recipe to prep flow
+
+Recipe Detailから今日の仕込みへ追加する導線を実装した。
+
+### Summary
+
+- `frontend/src/api/prepTasks.ts` に `createPrepTask` を追加
+- `POST /api/v1/prep-tasks/` でPrepTaskを作成
+- Recipe Detailに「今日の仕込みに追加」ボタンを追加
+- Recipe Detail内にAdd to Prepパネルを追加
+- 仕込み日、予定数量、予定単位、メモを入力できるようにした
+- 予定単位選択肢を `GET /api/v1/units/` から取得
+- 最低限のfrontend validationを追加
+- backend validation errorを表示
+
+### Decisions
+
+- frontendから `shop_id` は送らない。
+- Add to Prepは新routeを作らず、Recipe Detail内のパネルとして表示する。
+- 仕込み日は今日を初期値にし、日付入力で変更可能にする。
+- 予定数量 / 予定単位はRecipeの基準量 / 基準単位を初期値にする。
+- Unit取得失敗時もRecipeの基準単位をfallbackとして表示する。
+- 保存成功後は `/prep` へ移動する。
+- Add to Prepフォームには原価情報を表示しない。
+- PrepTask編集・削除UI、PrepAction Modal本格実装はまだ実装しない。
+
+### Key Files
+
+- `frontend/src/api/prepTasks.ts`
+- `frontend/src/pages/RecipeDetailPage.tsx`
+- `docs/handoff/latest.md`
+
+### Verification
+
+- Frontend build: pass
+- Frontend lint: pass
+
 ## 2026-05-06 Recipe create and edit forms
 
 Recipe作成・編集画面を実装した。

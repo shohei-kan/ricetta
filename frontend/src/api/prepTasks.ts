@@ -25,9 +25,25 @@ export type PrepTaskListResponse = {
   tasks: PrepTask[]
 }
 
+export type PrepTaskCreatePayload = {
+  date: string
+  recipe_id: number
+  planned_quantity: string
+  planned_unit_id: number
+  memo?: string
+  sort_order?: number
+}
+
 export function fetchPrepTasks(date?: string): Promise<PrepTaskListResponse> {
   const query = date ? `?date=${encodeURIComponent(date)}` : ''
   return apiRequest(`/prep-tasks/${query}`)
+}
+
+export function createPrepTask(payload: PrepTaskCreatePayload): Promise<PrepTask> {
+  return apiRequest('/prep-tasks/', {
+    method: 'POST',
+    body: payload,
+  })
 }
 
 export function updatePrepTaskStatus(
