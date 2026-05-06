@@ -134,11 +134,13 @@ UI方針：
 - カード型
 - アイコンなし
 - 現在地を明確に表示
+- `md` 以上の幅ではSidebarを表示し、スマホでは下部ナビに切り替える
+- 親Layoutは `md:flex` とし、Sidebarは約120pxの左カラム、mainは `flex-1 min-w-0` として表示する
 
 項目：
 
 ```text
-ホーム
+Dashboard
 仕込み
 レシピ
 材料
@@ -163,7 +165,7 @@ UI方針：
 ```text
 Ricetta
 
-[ ホーム ]
+[ Dashboard ]
 [ 仕込み ]
 [ レシピ ]
 [ 材料 ]

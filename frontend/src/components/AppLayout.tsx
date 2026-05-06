@@ -4,7 +4,7 @@ import { useAuth } from '../auth/useAuth'
 export type RoutePath = '/dashboard' | '/prep' | '/recipes' | '/ingredients' | '/settings'
 
 const navItems: Array<{ path: RoutePath; label: string }> = [
-  { path: '/dashboard', label: 'ホーム' },
+  { path: '/dashboard', label: 'Dashboard' },
   { path: '/prep', label: '仕込み' },
   { path: '/recipes', label: 'レシピ' },
   { path: '/ingredients', label: '材料' },
@@ -21,8 +21,8 @@ export function AppLayout({ children, currentPath, navigate }: AppLayoutProps) {
   const { logout, session } = useAuth()
 
   return (
-    <div className="min-h-screen bg-[#f7f4ee] text-[#2b2621]">
-      <aside className="fixed left-0 top-0 hidden h-screen w-[120px] border-r border-[#e5ddcf] bg-[#fffaf2] px-3 py-4 md:flex md:flex-col">
+    <div className="min-h-screen bg-[#f7f4ee] text-[#2b2621] md:flex">
+      <aside className="sticky top-0 hidden h-screen w-[120px] shrink-0 border-r border-[#e5ddcf] bg-[#fffaf2] px-3 py-4 md:flex md:flex-col">
         <button
           className="mb-5 rounded-lg px-2 py-3 text-left text-xl font-semibold text-[#382c22]"
           onClick={() => navigate('/dashboard')}
@@ -59,7 +59,7 @@ export function AppLayout({ children, currentPath, navigate }: AppLayoutProps) {
         </button>
       </aside>
 
-      <main className="min-h-screen pb-24 md:ml-[120px] md:pb-0">
+      <main className="min-h-screen min-w-0 flex-1 pb-24 md:pb-0">
         <header className="sticky top-0 z-10 border-b border-[#e6ded3] bg-[#f7f4ee]/95 px-5 py-4 backdrop-blur md:hidden">
           <div className="flex items-center justify-between">
             <button

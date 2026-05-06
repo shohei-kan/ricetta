@@ -10,11 +10,11 @@ Ricetta
 
 ## Status
 
-Phase 13 Frontend Add Recipe to Prep implemented
+Frontend tablet sidebar layout fixed
 
 ## Summary
 
-Recipe Detailから今日の仕込みへ追加する導線まで実装済み。`/recipes/:id` の「今日の仕込みに追加」からPrepTaskを作成し、保存成功後に `/prep` へ移動してPrep Todayに表示できる。
+AppLayoutのresponsive navigationを修正済み。Tailwind v4環境でresponsive variantが生成されていなかったため、CSS entryを修正し、タブレット横 / PC幅では約120pxの左Sidebarを常時表示、スマホでは下部ナビを表示する。
 
 ## Current Goal
 
@@ -22,43 +22,34 @@ Recipe Detailから今日の仕込みへ追加する導線まで実装済み。`
 
 ## What Was Done
 
-- `frontend/src/api/prepTasks.ts` に `createPrepTask` を追加
-- `POST /api/v1/prep-tasks/` でPrepTaskを作成できるようにした
-- Recipe Detailに「今日の仕込みに追加」ボタンを追加
-- Recipe Detail内にAdd to Prepパネルを追加
-- Add to Prepで仕込み日、予定数量、予定単位、メモを入力できるようにした
-- 仕込み日の初期値を今日にした
-- 仕込み日は `<input type="date">` で変更可能にした
-- 予定数量の初期値にRecipeの `base_yield_quantity` を使うようにした
-- 予定単位の初期値にRecipeの `base_yield_unit.id` を使うようにした
-- 予定単位の選択肢を `GET /api/v1/units/` から取得
-- Unit取得失敗時もRecipeの基準単位を選択肢として表示できるfallbackを追加
-- 保存成功後は `/prep` へ遷移する方針にした
-- date / recipe_id / planned_quantity / planned_unit_id の最低限frontend validationを追加
-- backend validation errorをパネル上に表示
-- 保存失敗時に入力内容が消えないようにした
-- README / product screens / handoffを更新
+- `frontend/src/components/AppLayout.tsx` のSidebar layoutを修正
+- `frontend/src/index.css` をTailwind v4形式の `@import "tailwindcss";` に変更
+- 親Layoutを `md:flex` に変更
+- Sidebarを `hidden md:flex w-[120px] shrink-0` の左カラムとして表示する形に変更
+- `fixed` + `md:ml-[120px]` 構成をやめ、mainを `flex-1 min-w-0` に変更
+- タブレット横 / PC幅でSidebar、スマホで下部ナビになる構成を明確化
+- Sidebarのラベルを `Dashboard` / `仕込み` / `レシピ` / `材料` / `設定` に変更
+- `/recipes/:id` / `/recipes/new` / `/recipes/:id/edit` は親メニュー「レシピ」がactiveになることを確認
+- `/ingredients/:id` / `/ingredients/new` / `/ingredients/:id/edit` は親メニュー「材料」がactiveになることを確認
+- build後のCSSに `@media (width>=48rem)` と `md:flex` / `md:hidden` が生成されることを確認
+- UI guidelines / handoffを更新
 
 ## Key Decisions
 
-- frontendから `shop_id` は送らない。
-- Shop scopeと認可はbackendに任せ、PrepTask作成時もfrontendから `shop_id` は送らない。
-- Add to Prepは新routeを作らず、Recipe Detail内の小さなパネルとして表示する。
-- 仕込み日はMVPでは今日を初期値にし、日付入力で変更可能にする。
-- 予定数量 / 予定単位はRecipeの基準量 / 基準単位を初期値にする。
-- 保存成功後は `/prep` へ移動し、追加結果をPrep Todayで確認する。
-- Add to Prepフォームには原価情報を表示しない。
-- DRF validation errorはMVPでは汎用メッセージ + backend response文字列で表示する。
-- PrepTask編集・削除UI、PrepTask作成専用ページ、Prep Action Modal本格実装はまだ実装しない。
+- AppLayoutは全Protected pagesの共通Layoutとして使う。
+- AppLayout適用漏れではなく、Tailwind responsive CSS未生成がSidebar非表示の原因だった。
+- `@tailwind base/components/utilities` のままでは現環境で `md:` 系が生成されていなかったため、Tailwind v4の `@import "tailwindcss";` に揃えた。
+- タブレット横 / PCでは `md` breakpointからSidebarを表示する。
+- Sidebarは開閉なし、テキストのみ、約120pxのカード型ナビにする。
+- active stateはApp.tsxの `toRoutePath()` で親メニューへ正規化する。
+- スマホではSidebarを出さず、下部ナビを表示する。
 
 ## Key Files
 
-- `frontend/src/api/prepTasks.ts`
-- `frontend/src/api/units.ts`
-- `frontend/src/pages/RecipeDetailPage.tsx`
-- `README.md`
-- `docs/product/screens.md`
-- `docs/handoff/archive/frontend-implementation.md`
+- `frontend/src/components/AppLayout.tsx`
+- `frontend/src/index.css`
+- `frontend/src/App.tsx`
+- `docs/product/ui-guidelines.md`
 
 ## Verification
 
@@ -152,5 +143,5 @@ MVP対象:
 ## Suggested Commit Message
 
 ```text
-feat(frontend): add recipe to prep flow
+fix(frontend): show tablet sidebar layout
 ```
