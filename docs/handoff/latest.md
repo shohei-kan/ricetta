@@ -10,46 +10,55 @@ Ricetta
 
 ## Status
 
-Frontend tablet sidebar layout fixed
+Phase 14 Frontend Settings Category / Unit Management implemented
 
 ## Summary
 
-AppLayoutのresponsive navigationを修正済み。Tailwind v4環境でresponsive variantが生成されていなかったため、CSS entryを修正し、タブレット横 / PC幅では約120pxの左Sidebarを常時表示、スマホでは下部ナビを表示する。
+Settings画面でCategory / Unit管理を実装済み。`/settings` でレシピカテゴリと単位を一覧表示し、Categoryの作成・編集・削除、店舗独自Unitの作成・編集・削除ができる。標準Unitはreadonly表示にした。
 
 ## Current Goal
 
-次はSettings画面またはPrepTask作成の補助導線を整え、運用に必要な設定・導線を固める。
+次は削除UIや日付切り替えなど、MVP運用で必要な仕上げ範囲を決める。
 
 ## What Was Done
 
-- `frontend/src/components/AppLayout.tsx` のSidebar layoutを修正
-- `frontend/src/index.css` をTailwind v4形式の `@import "tailwindcss";` に変更
-- 親Layoutを `md:flex` に変更
-- Sidebarを `hidden md:flex w-[120px] shrink-0` の左カラムとして表示する形に変更
-- `fixed` + `md:ml-[120px]` 構成をやめ、mainを `flex-1 min-w-0` に変更
-- タブレット横 / PC幅でSidebar、スマホで下部ナビになる構成を明確化
-- Sidebarのラベルを `Dashboard` / `仕込み` / `レシピ` / `材料` / `設定` に変更
-- `/recipes/:id` / `/recipes/new` / `/recipes/:id/edit` は親メニュー「レシピ」がactiveになることを確認
-- `/ingredients/:id` / `/ingredients/new` / `/ingredients/:id/edit` は親メニュー「材料」がactiveになることを確認
-- build後のCSSに `@media (width>=48rem)` と `md:flex` / `md:hidden` が生成されることを確認
-- UI guidelines / handoffを更新
+- `frontend/src/api/categories.ts` に `createCategory` / `updateCategory` / `deleteCategory` を追加
+- `frontend/src/api/units.ts` に `createUnit` / `updateUnit` / `deleteUnit` を追加
+- Unit型に `is_standard` / `sort_order` / `is_active` を追加
+- `/settings` placeholderをSettingsPageへ差し替え
+- `frontend/src/pages/SettingsPage.tsx` を追加
+- Category一覧を表示
+- Category作成フォームを追加
+- Category編集・削除を追加
+- Unit一覧を表示
+- Unit作成フォームを追加
+- 店舗独自Unitの編集・削除を追加
+- 標準Unitは編集・削除ボタンを出さないreadonly表示にした
+- 保存成功 / 削除成功後は一覧を再取得する方針にした
+- loading / empty / error / save error / delete errorを追加
+- README / product screens / handoffを更新
 
 ## Key Decisions
 
-- AppLayoutは全Protected pagesの共通Layoutとして使う。
-- AppLayout適用漏れではなく、Tailwind responsive CSS未生成がSidebar非表示の原因だった。
-- `@tailwind base/components/utilities` のままでは現環境で `md:` 系が生成されていなかったため、Tailwind v4の `@import "tailwindcss";` に揃えた。
-- タブレット横 / PCでは `md` breakpointからSidebarを表示する。
-- Sidebarは開閉なし、テキストのみ、約120pxのカード型ナビにする。
-- active stateはApp.tsxの `toRoutePath()` で親メニューへ正規化する。
-- スマホではSidebarを出さず、下部ナビを表示する。
+- SettingsはMVPではCategory / Unit管理に限定する。
+- frontendから `shop_id` は送らない。
+- Categoryは現在Shopのものだけbackend responseとして扱う。
+- Unitは標準Unit + 現在Shop Unitを表示する。
+- 標準Unitはfrontendでも編集・削除不可にする。
+- 編集UIはMVPでは作成フォームが編集フォームに切り替わる簡易方式にする。
+- 削除は `window.confirm()` で確認する。
+- 保存/削除成功後は楽観的更新ではなく一覧再取得する。
 
 ## Key Files
 
-- `frontend/src/components/AppLayout.tsx`
-- `frontend/src/index.css`
+- `frontend/src/api/categories.ts`
+- `frontend/src/api/units.ts`
+- `frontend/src/pages/SettingsPage.tsx`
 - `frontend/src/App.tsx`
-- `docs/product/ui-guidelines.md`
+- `frontend/src/pages/RecipeDetailPage.tsx`
+- `README.md`
+- `docs/product/screens.md`
+- `docs/handoff/archive/frontend-implementation.md`
 
 ## Verification
 
@@ -100,10 +109,10 @@ MVP対象:
 
 ## Next Recommended Tasks
 
-1. SettingsでCategory / Unitの管理画面を整える
-2. PrepTask作成専用フォームが必要か、Recipe Detail導線だけで足りるか検証する
-3. Recipe / Ingredient削除UIの要否とタイミングを決める
-4. Recipe formの入力補助や並び替えを必要に応じて整える
+1. Recipe / Ingredient削除UIの要否とタイミングを決める
+2. Prep Todayの日付切り替えUIを実装するか検証する
+3. Recipe formの入力補助や並び替えを必要に応じて整える
+4. MVPリリース前の画面動作確認チェックリストを作る
 5. docs / tests / handoff を更新する
 
 ## Open Questions
@@ -121,6 +130,7 @@ MVP対象:
 - Recipe formで材料行・工程行の並び替えUIを入れるか
 - Recipe formで原価プレビューを表示するか
 - Recipe Detail以外からPrepTaskを作成する専用導線が必要か
+- Settingsで店舗情報編集をMVPに含めるか
 
 ## Notes for Next Agent
 
@@ -131,6 +141,8 @@ MVP対象:
 - Category API clientは `frontend/src/api/categories.ts`。
 - Ingredient API clientは `frontend/src/api/ingredients.ts`。
 - Unit API clientは `frontend/src/api/units.ts`。
+- Settings Pageは `frontend/src/pages/SettingsPage.tsx`。
+- 標準Unitは `is_standard` を見てreadonly表示している。
 - Recipe Formは `frontend/src/pages/RecipeFormPage.tsx`。
 - PrepTask API clientは `frontend/src/api/prepTasks.ts`。
 - Recipe Detail内のAdd to Prepパネルから `createPrepTask` を呼ぶ。
@@ -143,5 +155,5 @@ MVP対象:
 ## Suggested Commit Message
 
 ```text
-fix(frontend): show tablet sidebar layout
+feat(frontend): add category and unit settings
 ```

@@ -228,8 +228,11 @@ function AddToPrepPanel({
           setUnits([{
             id: recipe.base_yield_unit.id,
             name: recipe.base_yield_unit.name,
+            is_active: true,
             unit_type: 'custom',
             is_default: false,
+            is_standard: false,
+            sort_order: 0,
           }])
         }
       } finally {
@@ -403,8 +406,11 @@ function ensureBaseUnit(units: Unit[], baseUnit: RecipeDetail['base_yield_unit']
     {
       id: baseUnit.id,
       name: baseUnit.name,
+      is_active: true,
       unit_type: 'custom' as const,
       is_default: false,
+      is_standard: false,
+      sort_order: 0,
     },
     ...units,
   ]

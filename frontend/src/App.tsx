@@ -7,11 +7,11 @@ import { IngredientDetailPage } from './pages/IngredientDetailPage'
 import { IngredientFormPage } from './pages/IngredientFormPage'
 import { IngredientListPage } from './pages/IngredientListPage'
 import { LoginPage } from './pages/LoginPage'
-import { PlaceholderPage } from './pages/PlaceholderPage'
 import { PrepTodayPage } from './pages/PrepTodayPage'
 import { RecipeDetailPage } from './pages/RecipeDetailPage'
 import { RecipeFormPage } from './pages/RecipeFormPage'
 import { RecipeListPage } from './pages/RecipeListPage'
+import { SettingsPage } from './pages/SettingsPage'
 
 const protectedPaths: RoutePath[] = [
   '/dashboard',
@@ -20,16 +20,6 @@ const protectedPaths: RoutePath[] = [
   '/ingredients',
   '/settings',
 ]
-
-const placeholderContent: Record<
-  Exclude<RoutePath, '/dashboard' | '/prep' | '/recipes' | '/ingredients'>,
-  { title: string; description: string }
-> = {
-  '/settings': {
-    title: '設定',
-    description: '店舗情報、カテゴリ、単位設定は後続フェーズで整えます。',
-  },
-}
 
 function App() {
   return (
@@ -135,12 +125,7 @@ function renderRoute(path: string, routePath: RoutePath, navigate: (path: string
     return <IngredientListPage navigate={navigate} />
   }
 
-  return (
-    <PlaceholderPage
-      description={placeholderContent[routePath].description}
-      title={placeholderContent[routePath].title}
-    />
-  )
+  return <SettingsPage />
 }
 
 function RedirectTo({

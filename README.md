@@ -405,7 +405,16 @@ Dashboard は、単なるホーム画面ではなく「今日の現場」を確�
 - クイックアクション
 - ミニサマリー
 
-Frontend foundationでは `/login`、`/dashboard`、`/prep`、`/recipes`、`/ingredients`、`/settings` のルートを用意しています。`/dashboard` はDashboard APIを表示し、`/prep` はPrepTask APIを使って今日の仕込み一覧とstatus更新を行います。`/recipes` はRecipe APIを使って一覧・詳細・作成・編集を扱います。`/ingredients` はIngredient APIを使って一覧・詳細・作成・編集を扱います。`/settings` は後続フェーズのplaceholderです。
+Frontend foundationでは `/login`、`/dashboard`、`/prep`、`/recipes`、`/ingredients`、`/settings` のルートを用意しています。`/dashboard` はDashboard APIを表示し、`/prep` はPrepTask APIを使って今日の仕込み一覧とstatus更新を行います。`/recipes` はRecipe APIを使って一覧・詳細・作成・編集を扱います。`/ingredients` はIngredient APIを使って一覧・詳細・作成・編集を扱います。`/settings` はCategory / Unit APIを使ってレシピカテゴリと単位を管理します。
+
+## 6. Settings
+
+MVPのSettingsでは、レシピ台帳の運用に必要な最小設定として以下だけを扱います。
+
+- レシピカテゴリ
+- 単位
+
+Categoryは現在Shopのカテゴリのみ作成・編集・削除できます。Unitは標準Unitと現在Shopの店舗独自Unitを表示し、店舗独自Unitのみ作成・編集・削除できます。標準Unitは編集・削除できません。
 
 ## UI Policy
 

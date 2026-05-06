@@ -87,6 +87,43 @@ Ingredient作成・編集フォームを実装した。
 - Frontend build: pass
 - Frontend lint: pass
 
+## 2026-05-06 Category and unit settings
+
+Settings画面でCategory / Unit管理を実装した。
+
+### Summary
+
+- `frontend/src/api/categories.ts` に作成・更新・削除clientを追加
+- `frontend/src/api/units.ts` に作成・更新・削除clientを追加
+- `/settings` placeholderをSettingsPageに差し替え
+- Category一覧 / 作成 / 編集 / 削除を追加
+- Unit一覧 / 作成 / 編集 / 削除を追加
+- 標準Unitをreadonly表示にした
+- loading / empty / error / save error / delete errorを追加
+
+### Decisions
+
+- frontendから `shop_id` は送らない。
+- SettingsはMVPではCategory / Unit管理に限定する。
+- 編集UIは作成フォームが編集フォームに切り替わる簡易方式にする。
+- 標準Unitは編集・削除ボタンを出さず、店舗独自Unitのみ編集・削除可能にする。
+- 保存/削除成功後は一覧を再取得する。
+- 削除時は `window.confirm()` を使う。
+- ユーザー管理、店舗情報編集、請求設定は実装しない。
+
+### Key Files
+
+- `frontend/src/api/categories.ts`
+- `frontend/src/api/units.ts`
+- `frontend/src/pages/SettingsPage.tsx`
+- `frontend/src/App.tsx`
+- `docs/handoff/latest.md`
+
+### Verification
+
+- Frontend build: pass
+- Frontend lint: pass
+
 ## 2026-05-06 Add recipe to prep flow
 
 Recipe Detailから今日の仕込みへ追加する導線を実装した。
