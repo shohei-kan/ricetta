@@ -399,7 +399,7 @@ Dashboard は、単なるホーム画面ではなく「今日の現場」を確�
 - クイックアクション
 - ミニサマリー
 
-Frontend foundationでは `/login`、`/dashboard`、`/prep`、`/recipes`、`/ingredients`、`/settings` のルートを用意しています。`/dashboard` はDashboard APIを表示し、`/prep` などの業務画面は後続フェーズのplaceholderです。
+Frontend foundationでは `/login`、`/dashboard`、`/prep`、`/recipes`、`/ingredients`、`/settings` のルートを用意しています。`/dashboard` はDashboard APIを表示し、`/prep` はPrepTask APIを使って今日の仕込み一覧とstatus更新を行います。`/recipes` はRecipe APIを使って一覧と詳細を表示します。`/ingredients` などの業務画面は後続フェーズのplaceholderです。
 
 ## UI Policy
 

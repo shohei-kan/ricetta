@@ -5,6 +5,9 @@ import { AppLayout, type RoutePath } from './components/AppLayout'
 import { DashboardPage } from './pages/DashboardPage'
 import { LoginPage } from './pages/LoginPage'
 import { PlaceholderPage } from './pages/PlaceholderPage'
+import { PrepTodayPage } from './pages/PrepTodayPage'
+import { RecipeDetailPage } from './pages/RecipeDetailPage'
+import { RecipeListPage } from './pages/RecipeListPage'
 
 const protectedPaths: RoutePath[] = [
   '/dashboard',
@@ -14,15 +17,10 @@ const protectedPaths: RoutePath[] = [
   '/settings',
 ]
 
-const placeholderContent: Record<RoutePath, { title: string; description: string }> = {
-  '/dashboard': {
-    title: '今日の現場',
-    description: '',
-  },
-  '/prep': {
-    title: '今日の仕込み',
-    description: 'PrepTask APIと接続する画面は次フェーズで実装します。',
-  },
+const placeholderContent: Record<
+  Exclude<RoutePath, '/dashboard' | '/prep'>,
+  { title: string; description: string }
+> = {
   '/recipes': {
     title: 'レシピ',
     description: 'レシピ一覧・詳細・編集画面は次フェーズ以降で実装します。',
@@ -91,15 +89,34 @@ function AppRouter() {
 
   return (
     <AppLayout currentPath={routePath} navigate={navigateToRoute(navigate)}>
-      {routePath === '/dashboard' ? (
-        <DashboardPage navigate={navigate} />
-      ) : (
-        <PlaceholderPage
-          description={placeholderContent[routePath].description}
-          title={placeholderContent[routePath].title}
-        />
-      )}
+      {renderRoute(path, routePath, navigate)}
     </AppLayout>
+  )
+}
+
+function renderRoute(path: string, routePath: RoutePath, navigate: (path: string) => void) {
+  if (routePath === '/dashboard') {
+    return <DashboardPage navigate={navigate} />
+  }
+
+  if (routePath === '/prep') {
+    return <PrepTodayPage navigate={navigate} />
+  }
+
+  const recipeId = getRecipeId(path)
+  if (recipeId !== null) {
+    return <RecipeDetailPage id={recipeId} navigate={navigate} />
+  }
+
+  if (routePath === '/recipes') {
+    return <RecipeListPage navigate={navigate} />
+  }
+
+  return (
+    <PlaceholderPage
+      description={placeholderContent[routePath].description}
+      title={placeholderContent[routePath].title}
+    />
   )
 }
 
@@ -122,7 +139,18 @@ function getCurrentPath() {
 }
 
 function toRoutePath(path: string): RoutePath | null {
+  if (getRecipeId(path) !== null) {
+    return '/recipes'
+  }
   return protectedPaths.includes(path as RoutePath) ? (path as RoutePath) : null
+}
+
+function getRecipeId(path: string): number | null {
+  const match = path.match(/^\/recipes\/(\d+)$/)
+  if (!match) {
+    return null
+  }
+  return Number(match[1])
 }
 
 function navigateToRoute(navigate: (path: string) => void) {

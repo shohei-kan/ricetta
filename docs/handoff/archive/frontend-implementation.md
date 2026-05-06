@@ -47,3 +47,74 @@ Figma MakeのRicetta MVP Wireframesは、画面全体の雰囲気、柔らかい
 - Backend tests: pass
 - Frontend build: pass
 - Frontend lint: pass
+
+## 2026-05-06 Recipe list and detail views
+
+Recipe List / Detail画面を実装した。
+
+### Summary
+
+- `frontend/src/api/recipes.ts` を追加
+- `GET /api/v1/recipes/` でレシピ一覧を取得
+- `GET /api/v1/recipes/{id}/` でレシピ詳細を取得
+- `/recipes` placeholderをRecipe List画面に差し替え
+- `/recipes/:id` routingを追加
+- Recipe Listに検索欄、Recipeカード、loading / empty / errorを追加
+- Recipe Detailに戻るボタン、材料、作り方、注意点、アレルゲン、原価情報カードを追加
+- Prep TodayのカードからRecipe Detailへ移動できる「レシピを見る」導線を追加
+
+### Decisions
+
+- Recipe Detailでは材料欄と原価情報を分離する。
+- 材料欄には材料ごとの原価、単価、仕入情報、換算情報を表示しない。
+- 原価情報は `cost_summary` のみを使い、専用カードに集約する。
+- Recipe作成・編集フォームはまだ実装しない。
+
+### Key Files
+
+- `frontend/src/api/recipes.ts`
+- `frontend/src/pages/RecipeListPage.tsx`
+- `frontend/src/pages/RecipeDetailPage.tsx`
+- `frontend/src/pages/PrepTodayPage.tsx`
+- `frontend/src/App.tsx`
+- `docs/handoff/latest.md`
+
+### Verification
+
+- Frontend build: pass
+- Frontend lint: pass
+
+## 2026-05-06 Prep today status board
+
+Prep Today画面を実装した。
+
+### Summary
+
+- `frontend/src/api/prepTasks.ts` を追加
+- `GET /api/v1/prep-tasks/?date=YYYY-MM-DD` で今日の仕込み一覧を取得
+- `PATCH /api/v1/prep-tasks/{id}/status/` でstatus更新
+- `/prep` placeholderをPrep Today画面に差し替え
+- 未着手 / 作業中 / 完了のsummaryを表示
+- status別にPrepTaskカードを表示
+- タブレット横 / PCでは3カラム、スマホでは縦1カラム
+- カード内にstatus更新ボタンを配置
+- loading / empty / error / status更新errorを追加
+
+### Decisions
+
+- status更新後はMVPでは一覧を再取得する。
+- 日付は今日固定で取得し、日付切り替えUIは後続フェーズに残す。
+- ドラッグ&ドロップ、Prep Action Modal、PrepTask作成フォームは実装しない。
+- PrepTaskカードに原価情報は表示しない。
+
+### Key Files
+
+- `frontend/src/api/prepTasks.ts`
+- `frontend/src/pages/PrepTodayPage.tsx`
+- `frontend/src/App.tsx`
+- `docs/handoff/latest.md`
+
+### Verification
+
+- Frontend build: pass
+- Frontend lint: pass

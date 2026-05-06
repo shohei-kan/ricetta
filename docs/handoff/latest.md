@@ -10,59 +10,52 @@ Ricetta
 
 ## Status
 
-Phase 7 Frontend Foundation implemented
+Phase 9 Frontend Recipe List / Detail implemented
 
 ## Summary
 
-Frontend Foundation / Auth / Layout / Dashboardまで実装済み。Django Session Auth向けのCSRF取得API、frontend API client、Auth state、Login画面、Protected route、Responsive App Layout、Dashboard画面、主要placeholder routesが入った。
+Recipe List / Detail画面まで実装済み。`/recipes` でRecipe APIの一覧を表示し、`/recipes/:id` でRecipe Detailを確認できる。Prep TodayのカードからRecipe Detailへ移動できる導線も入った。
 
 ## Current Goal
 
-次はPrep Today画面へ進み、PrepTask APIを使って今日の仕込み一覧とstatus更新を画面から操作できるようにする。
+次はIngredient frontendまたはRecipe作成・編集frontendへ進み、台帳に登録・編集できる範囲を広げる。
 
 ## What Was Done
 
-- `GET /api/v1/auth/csrf/` を追加
-- frontend API clientを追加し、`credentials: "include"` とunsafe methodの `X-CSRFToken` 送信に対応
-- `AuthProvider` / `useAuth` を追加し、`/api/v1/auth/me/` でログイン状態を確認
-- `/login` 画面を追加し、CSRF取得後にSession Auth loginする流れを実装
-- `/dashboard` `/prep` `/recipes` `/ingredients` `/settings` をProtected route化
-- 共通App Layoutを追加
-- スマホは下部ナビ、タブレット横 / PCは約120pxの固定テキストSidebar
-- Dashboard APIを表示するDashboard画面を追加
-- `/prep` `/recipes` `/ingredients` `/settings` にplaceholder画面を追加
-- Figma Makeの雰囲気を参考に、柔らかい背景、カード、余白、2カラムDashboardをTailwindで実装
-- API docs / README / handoffを更新
+- `frontend/src/api/recipes.ts` を追加
+- `GET /api/v1/recipes/` を呼ぶRecipe List API clientを追加
+- `GET /api/v1/recipes/{id}/` を呼ぶRecipe Detail API clientを追加
+- `/recipes` placeholderをRecipe List画面へ差し替え
+- `/recipes/:id` の軽量History API routingを追加
+- Recipe Listに検索欄、Recipeカード、loading / empty / errorを追加
+- Recipeカードにレシピ名、カテゴリ、基準量、更新日を表示
+- Recipe Detailに戻るボタンを追加
+- Recipe Detailにレシピ名、カテゴリ、基準量、説明、材料、作り方、注意点、アレルゲン、原価情報を表示
+- Recipe Detailでは材料欄と原価情報を分離
+- 原価情報カードは `cost_summary` のみを使って表示
+- Prep TodayのPrepTaskカードに「レシピを見る」ボタンを追加
+- README / product screens / handoffを更新
 
 ## Key Decisions
 
 - frontendから `shop_id` は送らない。
-- Shop scopeと最終的な認可判断はbackendに任せる。
-- Session AuthのPOST前には `GET /api/v1/auth/csrf/` でCSRF cookieを取得する。
-- API clientのbase URLは `/api/v1` とし、Vite dev proxyを前提にする。
-- Auth stateはMVPではReact Context + hooksで管理する。
-- RoutingはMVPでは追加dependencyなしの軽量History API実装にした。
-- Figma Makeコードは丸ごと移植せず、レイアウト・余白・カード感・サイドバー方針の参考に留めた。
-- Placeholderは導線確認用に留め、Recipe / Ingredient / PrepTaskの本格CRUD画面はまだ作り込まない。
+- Shop scopeと認可はbackendに任せ、Recipe画面はbackend responseを表示する。
+- Recipe Detailの材料欄には材料名、使用量、単位、memoだけを表示する。
+- 材料ごとの原価、単価、仕入情報、換算情報は表示しない。
+- Recipe全体の原価情報は `cost_summary` だけを使って専用カードに集約する。
+- Recipe作成・編集・削除UIはまだ実装しない。
+- `/recipes/:id` ではSidebar / bottom nav上の現在地は `レシピ` として扱う。
+- Detailの戻るボタンは `window.history.back()` を基本にし、履歴がなければ `/recipes` に戻す。
 
 ## Key Files
 
-- `backend/api/views.py`
-- `backend/api/urls.py`
-- `backend/api/tests.py`
+- `frontend/src/api/recipes.ts`
+- `frontend/src/pages/RecipeListPage.tsx`
+- `frontend/src/pages/RecipeDetailPage.tsx`
+- `frontend/src/pages/PrepTodayPage.tsx`
 - `frontend/src/App.tsx`
-- `frontend/src/auth/AuthContext.tsx`
-- `frontend/src/auth/auth-context.ts`
-- `frontend/src/auth/useAuth.ts`
-- `frontend/src/api/api.ts`
-- `frontend/src/api/auth.ts`
-- `frontend/src/api/dashboard.ts`
-- `frontend/src/components/AppLayout.tsx`
-- `frontend/src/pages/LoginPage.tsx`
-- `frontend/src/pages/DashboardPage.tsx`
-- `frontend/src/pages/PlaceholderPage.tsx`
-- `frontend/src/index.css`
-- `docs/api/api-design.md`
+- `README.md`
+- `docs/product/screens.md`
 - `docs/handoff/archive/frontend-implementation.md`
 
 ## Verification
@@ -70,10 +63,6 @@ Frontend Foundation / Auth / Layout / Dashboardまで実装済み。Django Sessi
 直近の確認結果:
 
 ```bash
-docker compose run --rm backend python manage.py check
-docker compose run --rm backend python manage.py makemigrations --check --dry-run
-docker compose run --rm backend python manage.py test
-
 cd frontend
 npm run build
 npm run lint
@@ -81,11 +70,10 @@ npm run lint
 
 Result:
 
-- Backend check: pass
-- Migration check: pass
-- Backend tests: pass
 - Frontend build: pass
 - Frontend lint: pass
+
+Backend codeは今回変更していない。
 
 ## Current Product Scope
 
@@ -119,10 +107,10 @@ MVP対象:
 
 ## Next Recommended Tasks
 
-1. Prep Today画面を実装する
-2. PrepTask APIの一覧を表示し、summaryとtasksを画面に出す
-3. `PATCH /api/v1/prep-tasks/{id}/status/` でstatus更新UIを作る
-4. 空・読み込み・保存失敗状態を整える
+1. Ingredient list / detail frontendを実装する
+2. Recipe作成・編集frontendの入力設計を固める
+3. Recipe作成時にIngredient / Unit / Categoryを選べるUIを作る
+4. Recipe DetailからEditへ進む導線を追加する
 5. docs / tests / handoff を更新する
 
 ## Open Questions
@@ -135,19 +123,24 @@ MVP対象:
 - PrepTask deleteを将来論理削除へ変えるか
 - Dashboardの `frequent_recipes` を将来どの期間で集計するか
 - 本番frontendでSession Auth / CSRF / CORSの境界をどの構成にするか
+- Prep Todayの日付切り替えUIをどのタイミングで入れるか
+- Prep Action Modalを入れるか、カード内ボタンのまま進めるか
+- Recipe作成・編集フォームでnested replacement方針をどう見せるか
 
 ## Notes for Next Agent
 
 - Login開発用アカウントは `owner@example.com` / `password`。
 - frontendは `shop_id` を送らず、backend responseを表示する。
 - API clientは `frontend/src/api/api.ts`。
-- Auth stateは `frontend/src/auth/`。
-- Dashboard画面は `GET /api/v1/dashboard/` を表示する。
-- PrepTask status更新は `PATCH /api/v1/prep-tasks/{id}/status/` を使う。
-- Figma Makeのデザインは雰囲気とレイアウト参考で、既存frontend構成に合わせて再実装している。
+- Recipe API clientは `frontend/src/api/recipes.ts`。
+- Recipe Listは `frontend/src/pages/RecipeListPage.tsx`。
+- Recipe Detailは `frontend/src/pages/RecipeDetailPage.tsx`。
+- Prep TodayからRecipe Detailへは `navigate(/recipes/:id)` で移動する。
+- Recipe Detailの材料欄には原価情報を混ぜない。
+- 原価情報カードは `cost_summary` のみを使う。
 
 ## Suggested Commit Message
 
 ```text
-feat(frontend): add auth layout and dashboard foundation
+feat(frontend): add recipe list and detail views
 ```
