@@ -286,6 +286,8 @@ GitHub Actions runs on PR and push to main.
 
 材料欄には原価情報を混ぜず、原価は専用の「原価情報」カードに集約します。
 
+Frontendでは `/recipes` でレシピ一覧、`/recipes/{id}` でレシピ詳細、`/recipes/new` で新規作成、`/recipes/{id}/edit` で編集ができます。Recipe作成・編集ではCategory / Unit / IngredientをAPIから取得し、RecipeIngredient / RecipeStepをnested replacement方針で保存します。
+
 ## 2. Ingredients
 
 材料を登録・管理します。
@@ -401,7 +403,7 @@ Dashboard は、単なるホーム画面ではなく「今日の現場」を確�
 - クイックアクション
 - ミニサマリー
 
-Frontend foundationでは `/login`、`/dashboard`、`/prep`、`/recipes`、`/ingredients`、`/settings` のルートを用意しています。`/dashboard` はDashboard APIを表示し、`/prep` はPrepTask APIを使って今日の仕込み一覧とstatus更新を行います。`/recipes` はRecipe APIを使って一覧と詳細を表示します。`/ingredients` はIngredient APIを使って一覧・詳細・作成・編集を扱います。`/settings` は後続フェーズのplaceholderです。
+Frontend foundationでは `/login`、`/dashboard`、`/prep`、`/recipes`、`/ingredients`、`/settings` のルートを用意しています。`/dashboard` はDashboard APIを表示し、`/prep` はPrepTask APIを使って今日の仕込み一覧とstatus更新を行います。`/recipes` はRecipe APIを使って一覧・詳細・作成・編集を扱います。`/ingredients` はIngredient APIを使って一覧・詳細・作成・編集を扱います。`/settings` は後続フェーズのplaceholderです。
 
 ## UI Policy
 

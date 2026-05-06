@@ -10,6 +10,7 @@ import { LoginPage } from './pages/LoginPage'
 import { PlaceholderPage } from './pages/PlaceholderPage'
 import { PrepTodayPage } from './pages/PrepTodayPage'
 import { RecipeDetailPage } from './pages/RecipeDetailPage'
+import { RecipeFormPage } from './pages/RecipeFormPage'
 import { RecipeListPage } from './pages/RecipeListPage'
 
 const protectedPaths: RoutePath[] = [
@@ -98,6 +99,15 @@ function renderRoute(path: string, routePath: RoutePath, navigate: (path: string
     return <PrepTodayPage navigate={navigate} />
   }
 
+  if (path === '/recipes/new') {
+    return <RecipeFormPage key="recipe-new" navigate={navigate} />
+  }
+
+  const recipeEditId = getRecipeEditId(path)
+  if (recipeEditId !== null) {
+    return <RecipeFormPage id={recipeEditId} key={`recipe-edit-${recipeEditId}`} navigate={navigate} />
+  }
+
   const recipeId = getRecipeId(path)
   if (recipeId !== null) {
     return <RecipeDetailPage id={recipeId} navigate={navigate} />
@@ -152,6 +162,9 @@ function getCurrentPath() {
 }
 
 function toRoutePath(path: string): RoutePath | null {
+  if (path === '/recipes/new' || getRecipeEditId(path) !== null) {
+    return '/recipes'
+  }
   if (getRecipeId(path) !== null) {
     return '/recipes'
   }
@@ -166,6 +179,14 @@ function toRoutePath(path: string): RoutePath | null {
 
 function getRecipeId(path: string): number | null {
   const match = path.match(/^\/recipes\/(\d+)$/)
+  if (!match) {
+    return null
+  }
+  return Number(match[1])
+}
+
+function getRecipeEditId(path: string): number | null {
+  const match = path.match(/^\/recipes\/(\d+)\/edit$/)
   if (!match) {
     return null
   }

@@ -47,14 +47,23 @@ export function RecipeListPage({ navigate }: RecipeListPageProps) {
 
   return (
     <div className="mx-auto max-w-6xl px-5 py-6 md:px-7 md:py-8">
-      <div className="mb-6">
-        <p className="text-sm font-semibold tracking-[0.14em] text-[#9b6b43]">RECIPES</p>
-        <h1 className="mt-2 text-3xl font-bold tracking-normal text-[#332820] md:text-4xl">
-          レシピ
-        </h1>
-        <p className="mt-2 text-base leading-7 text-[#75685e]">
-          仕込み場で確認するレシピ台帳です。材料と作り方をすぐ開けるようにします。
-        </p>
+      <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div>
+          <p className="text-sm font-semibold tracking-[0.14em] text-[#9b6b43]">RECIPES</p>
+          <h1 className="mt-2 text-3xl font-bold tracking-normal text-[#332820] md:text-4xl">
+            レシピ
+          </h1>
+          <p className="mt-2 text-base leading-7 text-[#75685e]">
+            仕込み場で確認するレシピ台帳です。材料と作り方をすぐ開けるようにします。
+          </p>
+        </div>
+        <button
+          className="rounded-lg bg-[#7b4f2f] px-5 py-3 text-base font-semibold text-white transition hover:bg-[#694225]"
+          onClick={() => navigate('/recipes/new')}
+          type="button"
+        >
+          レシピを追加
+        </button>
       </div>
 
       <form

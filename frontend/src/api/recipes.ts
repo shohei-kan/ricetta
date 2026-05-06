@@ -63,6 +63,35 @@ export type RecipeDetail = {
   cost_summary: RecipeCostSummary
 }
 
+export type RecipeIngredientFormPayload = {
+  ingredient_id: number
+  quantity: string
+  unit_id: number
+  sort_order?: number
+  memo?: string
+}
+
+export type RecipeStepFormPayload = {
+  step_number: number
+  instruction: string
+  image?: string | null
+  memo?: string
+}
+
+export type RecipeFormPayload = {
+  name: string
+  category_id?: number | null
+  description?: string
+  main_image?: string | null
+  base_yield_quantity: string
+  base_yield_unit_id: number
+  selling_price?: string | null
+  notes?: string
+  allergen_notes?: string
+  ingredients: RecipeIngredientFormPayload[]
+  steps: RecipeStepFormPayload[]
+}
+
 export function fetchRecipes(params: { q?: string; category?: string | number } = {}) {
   const query = new URLSearchParams()
   if (params.q) {
@@ -78,4 +107,18 @@ export function fetchRecipes(params: { q?: string; category?: string | number } 
 
 export function fetchRecipeDetail(id: number) {
   return apiRequest<RecipeDetail>(`/recipes/${id}/`)
+}
+
+export function createRecipe(payload: RecipeFormPayload) {
+  return apiRequest<RecipeDetail>('/recipes/', {
+    method: 'POST',
+    body: payload,
+  })
+}
+
+export function updateRecipe(id: number, payload: RecipeFormPayload) {
+  return apiRequest<RecipeDetail>(`/recipes/${id}/`, {
+    method: 'PATCH',
+    body: payload,
+  })
 }

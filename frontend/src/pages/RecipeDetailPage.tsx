@@ -61,12 +61,18 @@ export function RecipeDetailPage({ id, navigate }: RecipeDetailPageProps) {
         </div>
       )}
 
-      {!loading && !error && recipe && <RecipeDetailContent recipe={recipe} />}
+      {!loading && !error && recipe && <RecipeDetailContent navigate={navigate} recipe={recipe} />}
     </div>
   )
 }
 
-function RecipeDetailContent({ recipe }: { recipe: RecipeDetail }) {
+function RecipeDetailContent({
+  navigate,
+  recipe,
+}: {
+  navigate: (path: string) => void
+  recipe: RecipeDetail
+}) {
   return (
     <>
       <header className="mb-6 rounded-xl border border-[#e3d8c9] bg-[#fffaf2] p-5 shadow-sm">
@@ -84,6 +90,13 @@ function RecipeDetailContent({ recipe }: { recipe: RecipeDetail }) {
             {recipe.description}
           </p>
         )}
+        <button
+          className="mt-5 rounded-lg bg-[#7b4f2f] px-5 py-3 text-base font-semibold text-white transition hover:bg-[#694225]"
+          onClick={() => navigate(`/recipes/${recipe.id}/edit`)}
+          type="button"
+        >
+          編集
+        </button>
       </header>
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.75fr)]">

@@ -87,6 +87,50 @@ Ingredient作成・編集フォームを実装した。
 - Frontend build: pass
 - Frontend lint: pass
 
+## 2026-05-06 Recipe create and edit forms
+
+Recipe作成・編集画面を実装した。
+
+### Summary
+
+- `frontend/src/api/recipes.ts` に `createRecipe` / `updateRecipe` を追加
+- `frontend/src/api/categories.ts` を追加
+- `/recipes/new` routeを追加
+- `/recipes/:id/edit` routeを追加
+- `frontend/src/pages/RecipeFormPage.tsx` を追加
+- Recipe Listから作成画面へ移動できる導線を追加
+- Recipe Detailから編集画面へ移動できる導線を追加
+- Category / Unit / Ingredient選択肢をAPIから取得
+- Recipe基本情報、材料行、工程行、管理情報のフォームを追加
+- 材料行と工程行の追加・削除を追加
+- 最低限のfrontend validationを追加
+- backend validation errorを表示
+
+### Decisions
+
+- frontendから `shop_id` は送らない。
+- 編集保存時は現在フォームにある `ingredients` / `steps` をpayloadに含め、backendのnested replacement方針に合わせる。
+- Ingredient選択時に、Ingredientの `usage_unit` を材料行Unitへ自動設定する。
+- 工程番号は保存時に表示順で再採番する。
+- 空の材料行・工程行は送信前に除外する。
+- 材料行には原価情報を表示しない。
+- Recipe削除UI、PrepTask作成フォーム、画像アップロードはまだ実装しない。
+
+### Key Files
+
+- `frontend/src/api/recipes.ts`
+- `frontend/src/api/categories.ts`
+- `frontend/src/pages/RecipeFormPage.tsx`
+- `frontend/src/pages/RecipeListPage.tsx`
+- `frontend/src/pages/RecipeDetailPage.tsx`
+- `frontend/src/App.tsx`
+- `docs/handoff/latest.md`
+
+### Verification
+
+- Frontend build: pass
+- Frontend lint: pass
+
 ## 2026-05-06 Ingredient list and detail views
 
 Ingredient List / Detail画面を実装した。
