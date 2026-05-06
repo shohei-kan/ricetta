@@ -57,14 +57,23 @@ export function IngredientListPage({ navigate }: IngredientListPageProps) {
 
   return (
     <div className="mx-auto max-w-6xl px-5 py-6 md:px-7 md:py-8">
-      <div className="mb-6">
-        <p className="text-sm font-semibold tracking-[0.14em] text-[#9b6b43]">INGREDIENTS</p>
-        <h1 className="mt-2 text-3xl font-bold tracking-normal text-[#332820] md:text-4xl">
-          材料
-        </h1>
-        <p className="mt-2 text-base leading-7 text-[#75685e]">
-          仕入先、原価計算モード、単価を確認する材料マスターです。
-        </p>
+      <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <p className="text-sm font-semibold tracking-[0.14em] text-[#9b6b43]">INGREDIENTS</p>
+          <h1 className="mt-2 text-3xl font-bold tracking-normal text-[#332820] md:text-4xl">
+            材料
+          </h1>
+          <p className="mt-2 text-base leading-7 text-[#75685e]">
+            仕入先、原価計算モード、単価を確認する材料マスターです。
+          </p>
+        </div>
+        <button
+          className="rounded-lg bg-[#7b4f2f] px-5 py-3 text-base font-semibold text-white transition hover:bg-[#694225]"
+          onClick={() => navigate('/ingredients/new')}
+          type="button"
+        >
+          材料を追加
+        </button>
       </div>
 
       <form

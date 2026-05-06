@@ -48,6 +48,45 @@ Figma MakeのRicetta MVP Wireframesは、画面全体の雰囲気、柔らかい
 - Frontend build: pass
 - Frontend lint: pass
 
+## 2026-05-06 Ingredient create and edit forms
+
+Ingredient作成・編集フォームを実装した。
+
+### Summary
+
+- `frontend/src/api/ingredients.ts` に `createIngredient` / `updateIngredient` を追加
+- `frontend/src/api/units.ts` を追加
+- `/ingredients/new` routeを追加
+- `/ingredients/:id/edit` routeを追加
+- `frontend/src/pages/IngredientFormPage.tsx` を追加
+- Ingredient Listから作成画面へ移動できる導線を追加
+- Ingredient Detailから編集画面へ移動できる導線を追加
+- `cost_mode` ごとの入力切り替えを追加
+- 最低限のfrontend validationを追加
+- backend validation errorを表示
+
+### Decisions
+
+- `same_unit` は仕入単位を選ぶと使用単位も同じ値に自動設定する。
+- `conversion` は換算元単位を仕入単位、換算先単位を使用単位に自動設定する。
+- 保存失敗時も入力内容は消さない。
+- Ingredient削除UI、Unit作成・編集UIはまだ実装しない。
+
+### Key Files
+
+- `frontend/src/api/ingredients.ts`
+- `frontend/src/api/units.ts`
+- `frontend/src/pages/IngredientFormPage.tsx`
+- `frontend/src/pages/IngredientListPage.tsx`
+- `frontend/src/pages/IngredientDetailPage.tsx`
+- `frontend/src/App.tsx`
+- `docs/handoff/latest.md`
+
+### Verification
+
+- Frontend build: pass
+- Frontend lint: pass
+
 ## 2026-05-06 Ingredient list and detail views
 
 Ingredient List / Detail画面を実装した。

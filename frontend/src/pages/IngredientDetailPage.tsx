@@ -80,12 +80,20 @@ export function IngredientDetailPage({ id, navigate }: IngredientDetailPageProps
         </div>
       )}
 
-      {!loading && !error && ingredient && <IngredientDetailContent ingredient={ingredient} />}
+      {!loading && !error && ingredient && (
+        <IngredientDetailContent ingredient={ingredient} navigate={navigate} />
+      )}
     </div>
   )
 }
 
-function IngredientDetailContent({ ingredient }: { ingredient: IngredientDetail }) {
+function IngredientDetailContent({
+  ingredient,
+  navigate,
+}: {
+  ingredient: IngredientDetail
+  navigate: (path: string) => void
+}) {
   const mode = costModeText[ingredient.cost_mode]
 
   return (
@@ -98,6 +106,13 @@ function IngredientDetailContent({ ingredient }: { ingredient: IngredientDetail 
         <p className="mt-4 text-xl font-bold text-[#6f4f36]">
           {ingredient.unit_cost_label ?? '計算なし'}
         </p>
+        <button
+          className="mt-5 rounded-lg bg-[#7b4f2f] px-5 py-3 text-base font-semibold text-white transition hover:bg-[#694225]"
+          onClick={() => navigate(`/ingredients/${ingredient.id}/edit`)}
+          type="button"
+        >
+          編集
+        </button>
       </header>
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(340px,0.9fr)]">

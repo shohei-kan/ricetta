@@ -13,12 +13,13 @@ MVPで扱う画面は以下です。
 | 05_Recipe_List | レシピ一覧 | レシピを探す |
 | 06_Recipe_Detail | レシピ詳細 | 材料・作り方・原価を確認する |
 | 07_Recipe_Edit | レシピ作成/編集 | レシピを登録・編集する |
-| 08_Settings | 設定 | カテゴリ・単位・店舗情報を管理する |
+| 08_Ingredient_List | 材料一覧 | 材料マスターを探す |
+| 09_Ingredient_Detail | 材料詳細 | 仕入・換算・単価を確認する |
+| 10_Ingredient_Edit | 材料作成/編集 | 材料を登録・編集する |
+| 11_Settings | 設定 | カテゴリ・単位・店舗情報を管理する |
 
 補助画面：
 
-- Ingredient List
-- Ingredient Form
 - Category Settings
 - Unit Settings
 
@@ -451,9 +452,9 @@ Recipe Detailとは違い、原価計算モードや単価表示を確認でき�
 
 - 検索
 - 材料詳細へ遷移
-- 新規材料作成へ遷移（後続フェーズ）
+- 新規材料作成へ遷移
 
-MVP初期frontendでは、検索と一覧・詳細閲覧を先に実装します。作成・編集フォームは後続フェーズで実装します。
+MVP初期frontendでは、検索と一覧・詳細閲覧、作成・編集フォームを実装します。削除UIは後続フェーズで実装します。
 
 ## 09_Ingredient_Detail
 
@@ -489,9 +490,69 @@ Ingredient Detailは材料マスター管理寄りの画面なので、原価・
 
 - 戻る
 - 原価情報確認
-- 編集へ遷移（後続フェーズ）
+- 編集へ遷移
 
-## 10_Settings
+## 10_Ingredient_Edit
+
+### 目的
+
+材料を新規作成・編集する画面です。
+
+### 主な表示項目
+
+- 戻るボタン
+- 材料名
+- 仕入先
+- メモ
+- 原価計算モード
+- 仕入数量
+- 仕入単位
+- 仕入価格
+- 使用単位
+- 換算元数量
+- 換算元単位
+- 換算先数量
+- 換算先単位
+- 保存ボタン
+
+### cost_modeごとの表示
+
+`none`:
+
+- 材料名
+- 仕入先
+- メモ
+- 原価計算モード
+
+`same_unit`:
+
+- 仕入数量
+- 仕入単位
+- 仕入価格
+- 使用単位
+
+MVPでは、仕入単位を選ぶと使用単位も同じ値に自動設定します。
+
+`conversion`:
+
+- 仕入数量
+- 仕入単位
+- 仕入価格
+- 使用単位
+- 換算元数量
+- 換算先数量
+
+MVPでは、換算元単位は仕入単位、換算先単位は使用単位に自動設定します。
+
+### 主な操作
+
+- 保存
+- キャンセル
+- 戻る
+
+保存失敗時は入力内容を消さず、frontend validationとbackend validation errorを表示します。
+
+## 11_Settings
 
 ### 目的
 
@@ -592,7 +653,7 @@ Ingredient Detailは材料マスター管理寄りの画面なので、原価・
 
 ```text
 02_Dashboard
-→ 08_Settings
+→ 11_Settings
 ```
 
 材料管理：
@@ -601,6 +662,7 @@ Ingredient Detailは材料マスター管理寄りの画面なので、原価・
 02_Dashboard
 → 08_Ingredient_List
 → 09_Ingredient_Detail
+→ 10_Ingredient_Edit
 ```
 
 ## 画面設計の重要方針

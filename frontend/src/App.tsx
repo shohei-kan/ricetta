@@ -4,6 +4,7 @@ import { useAuth } from './auth/useAuth'
 import { AppLayout, type RoutePath } from './components/AppLayout'
 import { DashboardPage } from './pages/DashboardPage'
 import { IngredientDetailPage } from './pages/IngredientDetailPage'
+import { IngredientFormPage } from './pages/IngredientFormPage'
 import { IngredientListPage } from './pages/IngredientListPage'
 import { LoginPage } from './pages/LoginPage'
 import { PlaceholderPage } from './pages/PlaceholderPage'
@@ -106,6 +107,15 @@ function renderRoute(path: string, routePath: RoutePath, navigate: (path: string
     return <RecipeListPage navigate={navigate} />
   }
 
+  if (path === '/ingredients/new') {
+    return <IngredientFormPage navigate={navigate} />
+  }
+
+  const ingredientEditId = getIngredientEditId(path)
+  if (ingredientEditId !== null) {
+    return <IngredientFormPage id={ingredientEditId} navigate={navigate} />
+  }
+
   const ingredientId = getIngredientId(path)
   if (ingredientId !== null) {
     return <IngredientDetailPage id={ingredientId} navigate={navigate} />
@@ -148,6 +158,9 @@ function toRoutePath(path: string): RoutePath | null {
   if (getIngredientId(path) !== null) {
     return '/ingredients'
   }
+  if (path === '/ingredients/new' || getIngredientEditId(path) !== null) {
+    return '/ingredients'
+  }
   return protectedPaths.includes(path as RoutePath) ? (path as RoutePath) : null
 }
 
@@ -161,6 +174,14 @@ function getRecipeId(path: string): number | null {
 
 function getIngredientId(path: string): number | null {
   const match = path.match(/^\/ingredients\/(\d+)$/)
+  if (!match) {
+    return null
+  }
+  return Number(match[1])
+}
+
+function getIngredientEditId(path: string): number | null {
+  const match = path.match(/^\/ingredients\/(\d+)\/edit$/)
   if (!match) {
     return null
   }

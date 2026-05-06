@@ -10,45 +10,53 @@ Ricetta
 
 ## Status
 
-Phase 10 Frontend Ingredient List / Detail implemented
+Phase 11 Frontend Ingredient Create / Edit implemented
 
 ## Summary
 
-Ingredient List / Detail画面まで実装済み。`/ingredients` でIngredient APIの一覧を表示し、`/ingredients/:id` で材料詳細、原価計算モード、仕入情報、換算情報、単価表示を確認できる。
+Ingredient作成・編集画面まで実装済み。`/ingredients/new` で材料を新規作成し、`/ingredients/:id/edit` で既存材料を編集できる。`cost_mode` ごとの入力切り替え、Unit選択、最低限のfrontend validation、backend validation error表示が入った。
 
 ## Current Goal
 
-次はRecipe作成・編集frontendまたはIngredient作成・編集frontendへ進み、台帳に登録・編集できる範囲を広げる。
+次はRecipe作成・編集frontendへ進み、Ingredient / Unit / Categoryを選びながらレシピを登録・編集できる状態にする。
 
 ## What Was Done
 
-- `frontend/src/api/ingredients.ts` を追加
-- `GET /api/v1/ingredients/` を呼ぶIngredient List API clientを追加
-- `GET /api/v1/ingredients/{id}/` を呼ぶIngredient Detail API clientを追加
-- `/ingredients` placeholderをIngredient List画面へ差し替え
-- `/ingredients/:id` の軽量History API routingを追加
-- Ingredient Listに検索欄、Ingredientカード、loading / empty / errorを追加
-- Ingredientカードに材料名、仕入先、原価計算モード、`unit_cost_label` を表示
-- Ingredient Detailに戻るボタンを追加
-- Ingredient Detailに材料名、仕入先、memo、原価計算モード、仕入情報、使用単位、換算情報、`unit_cost_label` を表示
-- `none` / `same_unit` / `conversion` ごとに表示内容を整理
+- `frontend/src/api/ingredients.ts` に `createIngredient` / `updateIngredient` を追加
+- `frontend/src/api/units.ts` を追加
+- `GET /api/v1/units/` でUnit選択肢を取得
+- `/ingredients/new` routeを追加
+- `/ingredients/:id/edit` routeを追加
+- `frontend/src/pages/IngredientFormPage.tsx` を追加
+- Ingredient Listに「材料を追加」導線を追加
+- Ingredient Detailに「編集」導線を追加
+- 作成成功後は作成されたIngredient Detailへ遷移
+- 編集成功後はIngredient Detailへ遷移
+- `cost_mode=none` / `same_unit` / `conversion` ごとの入力切り替えを追加
+- `same_unit` では仕入単位を選ぶと使用単位も同じ値に自動設定
+- `conversion` では換算元単位を仕入単位、換算先単位を使用単位に自動設定
+- name必須、数量・価格・Unit必須などの最低限frontend validationを追加
+- backend validation errorをフォーム上に表示
+- 保存失敗時に入力内容が消えないようにした
 - README / product screens / handoffを更新
 
 ## Key Decisions
 
 - frontendから `shop_id` は送らない。
-- Shop scopeと認可はbackendに任せ、Ingredient画面はbackend responseを表示する。
-- Ingredient Detailは材料マスター管理寄りの画面なので、原価・換算情報を表示する。
-- Recipe Detailとは役割を分け、Recipe Detailの材料欄には原価・仕入・換算情報を混ぜない。
-- `cost_mode` は日本語ラベルと短い説明で表示する。
-- `unit_cost_label` が `null` の場合は「計算なし」と表示する。
-- Ingredient作成・編集・削除UIはまだ実装しない。
-- `/ingredients/:id` ではSidebar / bottom nav上の現在地は `材料` として扱う。
-- Detailの戻るボタンは `window.history.back()` を基本にし、履歴がなければ `/ingredients` に戻す。
+- Shop scopeと認可はbackendに任せ、Ingredient作成・編集はbackend validationに従う。
+- MVPではフォームを重くしすぎず、`cost_mode` ごとに必要な入力だけ表示する。
+- `same_unit` は使用単位を手動変更させず、仕入単位と同じ値に固定する。
+- `conversion` は換算元単位 / 換算先単位を手動入力させず、仕入単位 / 使用単位から自動設定する。
+- 送信時、`none` では価格・単位・換算情報を `null` にして保存する。
+- 送信時、`same_unit` では換算情報を `null` にして保存する。
+- DRF validation errorはMVPでは汎用メッセージ + backend response文字列で表示する。
+- Ingredient削除UI、Unit作成・編集UI、Recipe作成・編集UIはまだ実装しない。
 
 ## Key Files
 
 - `frontend/src/api/ingredients.ts`
+- `frontend/src/api/units.ts`
+- `frontend/src/pages/IngredientFormPage.tsx`
 - `frontend/src/pages/IngredientListPage.tsx`
 - `frontend/src/pages/IngredientDetailPage.tsx`
 - `frontend/src/App.tsx`
@@ -105,9 +113,9 @@ MVP対象:
 
 ## Next Recommended Tasks
 
-1. Recipe作成・編集frontendの入力設計を固める
+1. Recipe作成・編集frontendを実装する
 2. Recipe作成時にIngredient / Unit / Categoryを選べるUIを作る
-3. Ingredient作成・編集frontendを実装する
+3. RecipeIngredient / RecipeStepのnested replacement方針に合わせたフォーム保存を実装する
 4. SettingsでCategory / Unitの管理画面を整える
 5. docs / tests / handoff を更新する
 
@@ -123,7 +131,6 @@ MVP対象:
 - 本番frontendでSession Auth / CSRF / CORSの境界をどの構成にするか
 - Prep Todayの日付切り替えUIをどのタイミングで入れるか
 - Prep Action Modalを入れるか、カード内ボタンのまま進めるか
-- Ingredient作成・編集フォームでcost_modeごとの入力切り替えをどう設計するか
 - Recipe作成・編集フォームでnested replacement方針をどう見せるか
 
 ## Notes for Next Agent
@@ -132,14 +139,14 @@ MVP対象:
 - frontendは `shop_id` を送らず、backend responseを表示する。
 - API clientは `frontend/src/api/api.ts`。
 - Ingredient API clientは `frontend/src/api/ingredients.ts`。
-- Ingredient Listは `frontend/src/pages/IngredientListPage.tsx`。
-- Ingredient Detailは `frontend/src/pages/IngredientDetailPage.tsx`。
-- Recipe Detailの材料欄には原価情報を混ぜない。
-- Ingredient Detailでは原価計算モード、仕入情報、換算情報、単価表示を表示してよい。
-- `unit_cost_label` がない材料は「計算なし」と表示している。
+- Unit API clientは `frontend/src/api/units.ts`。
+- Ingredient Formは `frontend/src/pages/IngredientFormPage.tsx`。
+- `same_unit` は `usage_unit_id = purchase_unit_id` で送信する。
+- `conversion` は `conversion_from_unit_id = purchase_unit_id`、`conversion_to_unit_id = usage_unit_id` で送信する。
+- `none` では価格・単位・換算情報を `null` にして送信する。
 
 ## Suggested Commit Message
 
 ```text
-feat(frontend): add ingredient list and detail views
+feat(frontend): add ingredient create and edit forms
 ```
