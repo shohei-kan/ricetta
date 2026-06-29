@@ -344,6 +344,24 @@ shop: 〇〇食堂
 
 このアカウントはローカル開発専用です。
 
+### Portfolio Demo Data
+
+ポートフォリオ掲載用スクリーンショットやAWS公開デモ環境では、同じサンプルデータを再現できます。
+
+```bash
+docker compose exec backend python manage.py seed_portfolio_data
+```
+
+作成されるデモログイン:
+
+```text
+owner: owner@example.com / password
+staff: staff@example.com / password
+shop: 〇〇食堂
+```
+
+`seed_portfolio_data` は撮影・公開デモ用の開発データです。本番運用データとしては使いません。既存データが重複しにくいように冪等に作成し、カポナータをRecipe DetailとCost Summary確認用の主役レシピとして用意します。
+
 ### Local frontend development
 
 backendとdatabaseをDockerで起動したまま、frontendだけホストで起動できます。

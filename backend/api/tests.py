@@ -1,8 +1,10 @@
 # pyright: reportAttributeAccessIssue=false
 
 from datetime import timedelta
+from io import StringIO
 
 from django.contrib.auth import get_user_model
+from django.core.management import call_command
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -1503,3 +1505,57 @@ class DashboardApiTests(ApiTestCase):
         self.assertEqual(response.data["stats"]["ingredient_count"], 1)
         self.assertEqual(response.data["stats"]["prep_task_count"], 1)
         self.assertEqual(response.data["alerts"], [])
+
+
+class PortfolioSeedCommandTests(TestCase):
+    def test_seed_portfolio_data_creates_demo_records_idempotently(self):
+        call_command("seed_portfolio_data", stdout=StringIO())
+
+        User = get_user_model()
+        owner = User.objects.get(username="owner@example.com")
+        staff = User.objects.get(username="staff@example.com")
+        shop = Shop.objects.get(name="〇〇食堂")
+
+        owner_membership = Membership.objects.get(user=owner, shop=shop)
+        staff_membership = Membership.objects.get(user=staff, shop=shop)
+        self.assertEqual(owner_membership.role, Membership.Role.OWNER)
+        self.assertEqual(staff_membership.role, Membership.Role.STAFF)
+
+        self.assertEqual(Category.objects.filter(shop=shop).count(), 4)
+        for unit_name in ["g", "kg", "ml", "L", "個", "本", "枚", "食分"]:
+            self.assertTrue(Unit.objects.filter(shop=None, name=unit_name).exists())
+
+        caponata = Recipe.objects.get(shop=shop, name="カポナータ")
+        self.assertEqual(caponata.ingredients.count(), 12)
+        self.assertEqual(caponata.steps.count(), 6)
+        self.assertIsNotNone(caponata.selling_price)
+
+        prep_statuses = {
+            task.recipe.name: task.status
+            for task in PrepTask.objects.filter(shop=shop).select_related("recipe")
+        }
+        self.assertEqual(prep_statuses["トマトソース"], PrepTask.Status.DOING)
+        self.assertEqual(prep_statuses["ピクルス"], PrepTask.Status.TODO)
+        self.assertEqual(prep_statuses["カポナータ"], PrepTask.Status.TODO)
+        self.assertEqual(prep_statuses["クレームブリュレ"], PrepTask.Status.DONE)
+
+        first_counts = {
+            "users": User.objects.count(),
+            "memberships": Membership.objects.count(),
+            "recipes": Recipe.objects.count(),
+            "recipe_ingredients": RecipeIngredient.objects.count(),
+            "recipe_steps": RecipeStep.objects.count(),
+            "prep_tasks": PrepTask.objects.count(),
+        }
+
+        call_command("seed_portfolio_data", stdout=StringIO())
+
+        self.assertEqual(User.objects.count(), first_counts["users"])
+        self.assertEqual(Membership.objects.count(), first_counts["memberships"])
+        self.assertEqual(Recipe.objects.count(), first_counts["recipes"])
+        self.assertEqual(
+            RecipeIngredient.objects.count(),
+            first_counts["recipe_ingredients"],
+        )
+        self.assertEqual(RecipeStep.objects.count(), first_counts["recipe_steps"])
+        self.assertEqual(PrepTask.objects.count(), first_counts["prep_tasks"])
