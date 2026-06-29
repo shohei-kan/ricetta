@@ -60,11 +60,15 @@ UIは「紙より探しやすく、Excelより読みやすく、大規模業務�
 
 | Dashboard | Today's Prep |
 |---|---|
-| TODO: add screenshot | TODO: add screenshot |
+| ![Dashboard screen](frontend/src/assets/images/screenshots/dashboard.png) | ![Today's Prep screen](frontend/src/assets/images/screenshots/prep-today.png) |
 
 | Recipe Detail | Cost Summary |
 |---|---|
-| TODO: add screenshot | TODO: add screenshot |
+| ![Recipe Detail screen](frontend/src/assets/images/screenshots/recipe-detail.png) | ![Cost Summary screen](frontend/src/assets/images/screenshots/cost-summary.png) |
+
+| Account |
+|---|
+| ![Account screen](frontend/src/assets/images/screenshots/account.png) |
 
 ## Main Features
 
@@ -494,7 +498,8 @@ MVPの主要なbackend APIとfrontend画面は実装済みです。
 
 ## Future Improvements
 
-- Dashboard / Today's Prep / Recipe Detail / Cost Summaryのスクリーンショット追加
+- AWS公開デモURLの追加
+- スマホ幅スクリーンショットの追加
 - Accountでのメールアドレス変更、パスワード変更
 - 複数店舗切り替え
 - staffの詳細な権限設計

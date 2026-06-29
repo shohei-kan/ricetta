@@ -28,7 +28,6 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         units = self._seed_units()
-        shop = self._seed_shop(options["shop_name"])
         owner = self._seed_user(
             email=options["owner_email"],
             password=options["password"],
@@ -41,6 +40,7 @@ class Command(BaseCommand):
             first_name="佐藤",
             last_name="花子",
         )
+        shop = self._seed_shop(options["shop_name"], owner)
 
         self._seed_membership(owner, shop, Membership.Role.OWNER, "山田 太郎")
         self._seed_membership(staff, shop, Membership.Role.STAFF, "佐藤 花子")
@@ -95,17 +95,27 @@ class Command(BaseCommand):
         unit.save()
         return unit
 
-    def _seed_shop(self, shop_name):
-        shop, _ = Shop.objects.update_or_create(
-            name=shop_name,
-            defaults={
-                "business_type": "小さな食堂・惣菜店",
-                "memo": (
-                    "ポートフォリオ撮影・AWS公開デモ用のサンプル店舗です。"
-                    "本番運用データではありません。"
-                ),
-            },
+    def _seed_shop(self, shop_name, owner):
+        current_membership = (
+            Membership.objects.select_related("shop")
+            .filter(user=owner, is_active=True)
+            .order_by("id")
+            .first()
         )
+        if current_membership is not None:
+            shop = current_membership.shop
+        else:
+            shop = Shop.objects.filter(name=shop_name).order_by("id").first()
+            if shop is None:
+                shop = Shop()
+
+        shop.name = shop_name
+        shop.business_type = "小さな食堂・惣菜店"
+        shop.memo = (
+            "ポートフォリオ撮影・AWS公開デモ用のサンプル店舗です。"
+            "本番運用データではありません。"
+        )
+        shop.save()
         return shop
 
     def _seed_user(self, email, password, first_name, last_name):
@@ -130,15 +140,29 @@ class Command(BaseCommand):
         return user
 
     def _seed_membership(self, user, shop, role, display_name):
-        Membership.objects.update_or_create(
-            user=user,
-            shop=shop,
-            defaults={
-                "role": role,
-                "display_name": display_name,
-                "is_active": True,
-            },
+        primary = (
+            Membership.objects.filter(user=user, is_active=True)
+            .order_by("id")
+            .first()
         )
+        existing = Membership.objects.filter(user=user, shop=shop).order_by("id").first()
+
+        if primary is None:
+            membership = existing or Membership(user=user, shop=shop)
+        elif primary.shop == shop:
+            membership = primary
+        elif existing is not None:
+            primary.is_active = False
+            primary.save()
+            membership = existing
+        else:
+            primary.shop = shop
+            membership = primary
+
+        membership.role = role
+        membership.display_name = display_name
+        membership.is_active = True
+        membership.save()
 
     def _seed_categories(self, shop):
         category_names = ["前菜", "ソース・仕込み", "惣菜", "デザート"]

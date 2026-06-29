@@ -10,7 +10,7 @@ Ricetta
 
 ## Status
 
-Portfolio demo seed command added
+Portfolio demo data and README screenshots added
 
 ## Summary
 
@@ -18,7 +18,7 @@ Portfolio demo seed command added
 
 ## Current Goal
 
-AWS公開デモ前に `seed_portfolio_data` 実行後の各画面をブラウザで確認し、READMEのスクリーンショット欄を埋める。
+AWS公開デモ前に実ブラウザでPC・スマホ幅を目視確認し、公開URLが決まったらREADMEに追記する。
 
 ## Current State
 
@@ -32,6 +32,8 @@ AWS公開デモ前に `seed_portfolio_data` 実行後の各画面をブラウザ
 - `docker compose exec backend python manage.py seed_portfolio_data` で撮影・公開デモ用データを作成できる。
 - デモログインは `owner@example.com` / `password` と `staff@example.com` / `password`。
 - デモ店舗は既定で `〇〇食堂`。カポナータをRecipe DetailとCost Summary確認用の主役レシピとして作り込んでいる。
+- `seed_portfolio_data` は既存ownerの現在Shopを優先してデモ店舗化するため、古いMembershipが残っていてもownerログインでデモデータが見える。
+- READMEにDashboard、Today's Prep、Recipe Detail、Cost Summary、Accountのスクリーンショットを掲載している。
 
 ## What Was Done
 
@@ -55,6 +57,8 @@ AWS公開デモ前に `seed_portfolio_data` 実行後の各画面をブラウザ
 - カポナータに12材料、6工程、メモ、販売価格、原価計算用の材料単価を設定した。
 - `seed_portfolio_data` の冪等性テストを追加した。
 - READMEにポートフォリオデモデータ作成コマンドを追記した。
+- 既存ownerが別Shopに所属している場合、デモデータが見えない問題を修正し、owner / staffの現在Shopにデモデータが入るようにした。
+- READMEのスクリーンショットTODOを実画像に置き換えた。
 
 ## Key Decisions
 
@@ -65,6 +69,7 @@ AWS公開デモ前に `seed_portfolio_data` 実行後の各画面をブラウザ
 - Account Phase 1 + 2ではメール・パスワードを変更しない。
 - localhostのtrusted originsは開発専用とし、本番では環境変数で本番Originだけに上書きする。
 - `seed_portfolio_data` の既定店舗名は、既存の開発ログインと現在Shop選択がずれにくいよう `〇〇食堂` にする。
+- 既存ownerに有効Membershipがある場合は、その現在Shopをデモ店舗として更新する。
 - デモseed対象レシピの材料・手順は、何度実行しても同じ見た目になるよう対象レシピ配下を入れ替える。
 
 ## Key Files
@@ -74,6 +79,7 @@ AWS公開デモ前に `seed_portfolio_data` 実行後の各画面をブラウザ
 - `backend/api/views.py`
 - `backend/api/tests.py`
 - `backend/api/management/commands/seed_portfolio_data.py`
+- `frontend/src/assets/images/screenshots/`
 - `backend/ricetta/settings.py`
 - `.env.example`
 - `README.md`
@@ -109,6 +115,7 @@ Result:
 - `Origin: http://localhost:5173` から `PATCH /auth/me/`, `PATCH /shop/me/`: HTTP 200
 - `Origin: http://localhost:5174` から `PATCH /auth/me/`, `PATCH /shop/me/`: HTTP 200
 - `seed_portfolio_data` は2回連続実行して成功。
+- 修正版seed投入後、owner / staffの現在Shopにレシピ4件・材料20件・仕込み4件が存在することを確認。
 - in-app browserが利用できず、PC・スマホの自動目視確認は未実施。
 
 ## Current Product Scope
@@ -132,9 +139,9 @@ Result:
 
 1. ownerで `/account` の店舗情報・表示名更新とログアウトを確認する。
 2. staffで店舗情報が閲覧のみ、表示名は更新可能であることを確認する。
-3. `seed_portfolio_data` 後のDashboard、Recipe Detail、Cost Summary、Prep Todayを撮影する。
-4. READMEのスクリーンショットTODO欄を実画像リンクに置き換える。
-5. 390px前後のスマホ幅と1024px前後のタブレット横幅を確認する。
+3. 390px前後のスマホ幅と1024px前後のタブレット横幅を確認する。
+4. AWS公開デモURLが決まったらREADMEに追記する。
+5. 必要ならスマホ幅スクリーンショットもREADMEに追加する。
 
 ## Open Questions
 
@@ -146,6 +153,7 @@ Result:
 - 開発用ログインは `owner@example.com` / `password`。
 - staff確認用ログインは `staff@example.com` / `password`。
 - ポートフォリオ撮影・公開デモ用データは `seed_portfolio_data` で再作成できる。
+- 既存DBでは古いMembershipが残ることがあるため、画面が空なら `seed_portfolio_data` を再実行して現在Shopへデモデータを寄せる。
 - 現在Membershipは有効MembershipのID順先頭を採用する。
 - 店舗更新権限は `get_current_owner_membership()` で強制する。
 - 表示名更新後はfrontendの `refreshMe()` でsession表示を同期する。

@@ -1559,3 +1559,41 @@ class PortfolioSeedCommandTests(TestCase):
         )
         self.assertEqual(RecipeStep.objects.count(), first_counts["recipe_steps"])
         self.assertEqual(PrepTask.objects.count(), first_counts["prep_tasks"])
+
+    def test_seed_portfolio_data_uses_existing_owner_current_shop(self):
+        User = get_user_model()
+        owner = User.objects.create_user(
+            username="owner@example.com",
+            email="owner@example.com",
+            password="old-password",
+        )
+        old_shop = Shop.objects.create(name="bar musica.")
+        Membership.objects.create(
+            user=owner,
+            shop=old_shop,
+            role=Membership.Role.OWNER,
+            display_name="旧オーナー",
+        )
+
+        call_command("seed_portfolio_data", stdout=StringIO())
+
+        current_membership = (
+            Membership.objects.select_related("shop")
+            .filter(user=owner, is_active=True)
+            .order_by("id")
+            .first()
+        )
+        self.assertIsNotNone(current_membership)
+        self.assertEqual(current_membership.shop.name, "〇〇食堂")
+        self.assertEqual(current_membership.role, Membership.Role.OWNER)
+        self.assertEqual(
+            Recipe.objects.filter(shop=current_membership.shop, is_active=True).count(),
+            4,
+        )
+        self.assertEqual(
+            Ingredient.objects.filter(
+                shop=current_membership.shop,
+                is_active=True,
+            ).count(),
+            20,
+        )
