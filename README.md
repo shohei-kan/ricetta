@@ -2,24 +2,35 @@
 
 小さな飲食店のための、レシピ台帳。
 
-Ricetta（リチェッタ）は、個人経営のカフェ・バー・小料理屋・惣菜店など、小規模飲食店向けのレシピ管理SaaSです。
+<p align="center">
+  <img src="frontend/src/assets/brand/ricetta_logo_full.png" alt="Ricetta" width="520">
+</p>
 
-紙、Excel、ホワイトボード、口頭に散らばりがちなレシピ・原価・仕込み情報を、スマホ・タブレット・PCで確認できるようにします。
+## Portfolio Summary
 
-## Product Concept
+Ricetta（リチェッタ）は、飲食店運営経験をもとに企画・設計・実装した、小規模飲食店向けのレシピ管理Webアプリです。
 
-Ricetta は、小さな飲食店のために以下を整理するアプリです。
+React / TypeScriptによるフロントエンドと、Django REST Framework / PostgreSQLによるバックエンドを分離し、REST APIを通じてレシピ・材料・原価・仕込みタスクを管理します。
 
-- レシピ
-- 材料
-- 分量
-- 作り方
-- 原価
-- 今日の仕込み
+特にバックエンドでは、以下を重視して実装しました。
 
-特に、厨房や仕込み場でホワイトボードに書いていた「今日の仕込み」を、レシピとつなげて管理できることを重視します。
+- Membershipを利用した店舗単位のデータ分離
+- クライアントから送られる `shop_id` を信用しないShopスコープ
+- Django Session認証とCSRF保護
+- 材料ごとの単位換算を含む原価計算
+- Recipe / RecipeIngredient / RecipeStepのnested write
+- owner / staffの権限制御
+- Django・frontend双方を検証するCI
 
-基本の体験は以下です。
+将来的なSaaS化を想定していますが、現在はレシピ台帳と今日の仕込みボードを成立させるMVPとして開発しています。
+
+## Background
+
+飲食店の現場では、レシピ、仕込み量、材料原価、作業手順が紙・Excel・ホワイトボード・口頭説明に分散しやすく、情報が属人化しがちです。
+
+特に小規模店舗では、大規模な業務システムを導入するほどではない一方、味の再現性や引き継ぎ、日々の仕込み、原価の把握には継続的な情報管理が必要です。
+
+Ricettaでは飲食店運営で感じたこの課題に対して、まず以下の業務フローを一つのアプリにつなげることを目指しました。
 
 ```text
 レシピを登録する
@@ -31,94 +42,273 @@ Ricetta は、小さな飲食店のために以下を整理するアプリです
 作業が終わったら完了にする
 ```
 
-## Target Users
+## Product Concept
 
-初期ターゲットは、個人経営・小規模飲食店です。
+Ricettaが整理する情報は以下です。
 
-想定する店舗：
+- レシピ、分量、作り方
+- 材料、仕入単位、使用単位
+- 材料原価とレシピ原価
+- 今日の仕込み量と進捗
+- 店舗内のカテゴリと単位
 
-- カフェ
-- バー
-- 小料理屋
-- ビストロ
-- 惣菜店
-- 弁当店
-- ベーカリー
-- キッチンカー
-- 1〜3店舗程度の小規模飲食店
+対象は、カフェ、バー、小料理屋、ビストロ、惣菜店、弁当店、ベーカリー、キッチンカーなどの小規模飲食店です。
+
+UIは「紙より探しやすく、Excelより読みやすく、大規模業務システムより軽い」ことを意識し、スマホ・タブレット横向き・PCに対応しています。
+
+## Screenshots
+
+| Dashboard | Today's Prep |
+|---|---|
+| TODO: add screenshot | TODO: add screenshot |
+
+| Recipe Detail | Cost Summary |
+|---|---|
+| TODO: add screenshot | TODO: add screenshot |
+
+## Main Features
+
+### Recipe management
+
+- レシピ一覧、検索、詳細、作成、編集
+- 基準量、材料行、作り方、注意点、アレルゲンの管理
+- 材料情報と管理用の原価情報を分けた詳細表示
+- RecipeIngredient / RecipeStepを含むnested write
+
+### Ingredient and cost management
+
+- 材料一覧、検索、詳細、作成、編集
+- 仕入先、仕入数量、仕入価格、使用単位の管理
+- `none` / `same_unit` / `conversion` の原価計算モード
+- kgとg、Lとml、缶からgなどの1段階換算
+- レシピ全体の材料原価、原価率、粗利の計算
+
+### Today's Prep
+
+- レシピ詳細から仕込みタスクを作成
+- `todo` / `doing` / `done` の3状態をタップで更新
+- 日付、予定数量、予定単位、メモの管理
+- 当日の状態別件数とタスク一覧の表示
+
+### Dashboard
+
+- 今日の仕込みサマリー
+- 次に行う仕込み
+- よく使うレシピ
+- レシピ・材料・仕込み件数
+
+### Account and settings
+
+- 店舗情報とログイン中ユーザー情報の表示
+- ownerによる店舗名・業態・メモの編集
+- owner / staffによる自分の店舗内表示名の編集
+- カテゴリと店舗独自単位の管理
+- Accountページからのログアウト
+
+### Responsive UI
+
+- スマホでは下部ナビゲーション
+- タブレット横向き・PCでは固定サイドバー
+- 厨房でも読みやすい文字サイズとタップ領域
+- 空状態、通信中、エラー状態の表示
 
 ## MVP Scope
 
-### In Scope
+### Implemented
 
-MVPでは、以下を実装対象にします。
+- Login / logout
+- Shop-scoped account and data access
+- Recipe / Ingredient / PrepTask CRUD
+- Ingredient cost modes and recipe cost summary
+- Dashboard
+- Category / Unit settings
+- Account表示、表示名更新、owner限定の店舗情報更新
+- Smartphone / tablet landscape / PC layouts
 
-- ログイン / ログアウト
-- 店舗アカウント
-- 店舗ごとのデータ分離
-- レシピ一覧
-- レシピ詳細
-- レシピ作成 / 編集
-- 材料作成 / 編集
-- 材料ごとの原価計算モード
-- レシピごとの材料原価計算
-- 今日の仕込み一覧
-- 仕込みタスクのステータス変更
-- スマホ対応
-- タブレット横向き対応
+### Not implemented
 
-### Out of Scope
-
-MVPでは以下を実装しません。
-
-- Stripe決済
-- Checkout
-- Billing Portal
-- POS連携
-- 複数店舗管理
-- 在庫自動減算
-- 高度な発注管理
-- AI自動分類
-- 栄養計算
-- HACCP帳票
-- 高度な権限管理
-- 店舗端末モード
-- 本格的な仕込みログ / 使用期限 / 残量アラート
-
-まずは、レシピ台帳と今日の仕込みボードを成立させることを優先します。
+- Accountでのメールアドレス変更、パスワード変更
+- 複数店舗切り替えUI
+- Stripe、Checkout、Billing Portal
+- POS連携、在庫自動減算、高度な発注管理
+- 栄養計算、HACCP帳票
+- 画像アップロード
+- 詳細なstaff権限管理
+- 本格的な仕込みログ、使用期限、残量アラート
 
 ## Tech Stack
 
-Frontend:
+| Layer | Technology |
+|---|---|
+| Frontend | React 19, TypeScript 6, Vite 8, Tailwind CSS 4 |
+| Backend | Python 3.11, Django 5.2, Django REST Framework 3.16 |
+| Database | PostgreSQL 15 |
+| Authentication | Django Session Authentication, CSRF protection |
+| Development | Docker Compose, Node.js 22 |
+| CI | GitHub Actions |
 
-- React
-- Vite
-- TypeScript
-- Tailwind CSS
-- shadcn/ui
-- TanStack Query
-- React Hook Form
-- Zod
+現時点のfrontendはReact標準のstate / effectとFetch APIを中心に実装しています。TanStack Query、React Hook Form、Zod、shadcn/uiは未導入です。
 
-Backend:
+## Why This Stack?
 
-- Django 5.2 LTS
-- Django REST Framework
-- PostgreSQL
+### React / TypeScript
 
-Development:
+一覧、詳細、入力フォーム、ステータス更新など、状態を持つ画面をコンポーネントとして分け、APIレスポンスとフォーム値を型で確認しながら実装するために採用しました。
 
-- Docker Compose
+### Tailwind CSS
 
-Future:
+スマホ・タブレット・PCのレイアウトを同じコンポーネント内で調整し、厨房向けの余白、文字サイズ、タップ領域を素早く検証するために採用しました。
 
-- Stripe Checkout / Billing
+### Django REST Framework
+
+認証、Serializer validation、権限、QuerySetの店舗スコープをバックエンドへ集約し、Recipe、Ingredient、PrepTaskなどの業務データをREST APIとして扱うために採用しました。
+
+### PostgreSQL
+
+User、Membership、Shop、Recipe、Ingredient、Unit、PrepTaskなど、関係性と整合性が重要なデータを扱うために採用しました。
+
+### Docker Compose
+
+frontend、backend、databaseを同じ手順で起動し、ローカル環境とCIで利用するバージョン差を小さくするために採用しました。
+
+## Architecture
+
+```text
+[Browser]
+   |
+   | React / TypeScript / Vite
+   | /api proxy, Session Cookie, CSRF Token
+   v
+[Frontend Container :5173]
+   |
+   | REST API
+   v
+[Backend Container :8000]
+   | Django REST Framework
+   | Django ORM
+   v
+[PostgreSQL Container :5432]
+```
+
+Docker Composeでのホスト公開ポートは以下です。
+
+| Service | Host | Container |
+|---|---:|---:|
+| Frontend | 5174 | 5173 |
+| Backend | 8010 | 8000 |
+| PostgreSQL | 5433 | 5432 |
+
+frontendとbackendは分離し、画面表示・一時的なUI状態はfrontend、認証・権限・validation・原価計算・永続化はbackendが担当します。
+
+## Backend Design Highlights
+
+### Shop-scoped data access
+
+Ricettaでは、店舗ごとにデータを分離するため、ログイン中ユーザーの有効なMembershipから現在のShopをサーバー側で決定します。
+
+```text
+request.user
+→ active Membership
+→ current Shop
+→ QuerySetをshopでfilter
+```
+
+クライアントから送信された `shop_id` は信用せず、QuerySetの絞り込みと作成時のShop設定をAPI側で行います。別店舗のIDを指定されても、一覧・詳細・更新・削除からアクセスできないことをテストしています。
+
+現在のMVPは1ユーザー1店舗運用を前提とし、有効なMembershipのID順先頭を現在店舗として使用します。複数店舗切り替えは未実装です。
+
+### Session authentication and CSRF protection
+
+frontendはDjango Session Authenticationを利用します。ログイン前に `GET /api/v1/auth/csrf/` でCSRF Cookieを取得し、POST / PATCH / PUT / DELETEでは `credentials: "include"` と `X-CSRFToken` を送信します。
+
+ローカル開発ではViteの `http://localhost:5173` とDocker frontendの `http://localhost:5174` をtrusted originに設定しています。本番では環境変数から本番Originだけを指定する想定です。
+
+### Role-based shop editing
+
+Membershipには `owner` / `staff` のroleがあります。店舗情報の更新では、現在MembershipがownerであることをAPI側で確認し、staffからの更新には403を返します。表示名はowner / staffとも自分のMembershipだけを更新できます。
+
+### Ingredient cost calculation modes
+
+材料ごとに原価計算方法が異なるため、以下の3種類を用意しています。
+
+| Mode | Behavior | Example |
+|---|---|---|
+| `none` | 原価計算に含めない | 水、飾り |
+| `same_unit` | 仕入単位のまま単価を計算 | 卵1個30円 |
+| `conversion` | 仕入単位から使用単位へ1段階換算 | 1缶400g、200g使用 |
+
+最終的なレシピ原価はbackendで計算し、frontendは `cost_summary` を表示します。販売価格がない場合、原価率と粗利は `null` として扱います。
+
+### Nested recipe update
+
+Recipe作成・編集では、RecipeIngredient / RecipeStepをレシピ本体とまとめて受け取ります。
+
+更新時は、リクエストに含まれた材料行・手順を置き換えるnested replacement方針です。Serializerで、現在ShopのCategory / Ingredientと、標準Unitまたは現在ShopのUnitだけを参照できるよう制御しています。
+
+### Validation and logical deletion
+
+- Serializerで数量、価格、単位、Shopスコープを再検証
+- Recipe / Ingredient / Categoryは `is_active=false` による論理削除
+- 標準Unitは編集・削除不可
+- frontendからの入力を認可判断に使用しない
+
+## Data Model Overview
+
+```text
+User
+  | 1:N
+  v
+Membership ---- N:1 ----> Shop
+                           | 1:N
+                           +----> Category
+                           +----> Ingredient ----> Unit
+                           +----> Recipe
+                           |        | 1:N
+                           |        +----> RecipeIngredient ----> Ingredient
+                           |        +----> RecipeStep
+                           |
+                           +----> PrepTask ----> Recipe / Unit
+```
+
+`Unit.shop` はnullableです。`shop=null` は全店舗で利用できる標準Unit、Shopが設定されたUnitは店舗独自Unitとして扱います。
+
+詳細は [docs/data/data-model.md](docs/data/data-model.md) を参照してください。
+
+## API Overview
 
 API prefix:
 
 ```text
 /api/v1/
 ```
+
+Main resources:
+
+- Auth / Account
+- Shop
+- Dashboard
+- Recipes
+- Ingredients
+- PrepTasks
+- Categories
+- Units
+
+Representative endpoints:
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| GET | `/api/v1/auth/csrf/` | CSRF Cookie取得 |
+| POST | `/api/v1/auth/login/` | ログイン |
+| GET / PATCH | `/api/v1/auth/me/` | 現在ユーザー取得、表示名更新 |
+| GET / PATCH | `/api/v1/shop/me/` | 現在店舗取得、ownerによる更新 |
+| GET | `/api/v1/dashboard/` | 今日の現場サマリー |
+| GET / POST | `/api/v1/recipes/` | レシピ一覧・作成 |
+| GET / PATCH / DELETE | `/api/v1/recipes/{id}/` | レシピ詳細・更新・論理削除 |
+| GET / POST | `/api/v1/ingredients/` | 材料一覧・作成 |
+| GET / POST | `/api/v1/prep-tasks/` | 仕込み一覧・作成 |
+| PATCH | `/api/v1/prep-tasks/{id}/status/` | 仕込みstatus更新 |
+
+リクエスト・レスポンスとvalidation errorの詳細は [docs/api/api-design.md](docs/api/api-design.md) を参照してください。
 
 ## Setup
 
@@ -129,82 +319,20 @@ API prefix:
 
 ### Quick Start
 
-1. Clone the repository
-2. Copy `.env.example` to `.env`
-3. Fill in `.env` values as needed
-4. Run `docker compose up --build`
-5. Open http://localhost:5174 for frontend
-6. Backend API at http://localhost:8010
-
 ```bash
+git clone <repository-url>
+cd ricetta
 cp .env.example .env
-docker compose up --build
+docker compose up --build -d
+docker compose exec backend python manage.py migrate
+docker compose exec backend python manage.py seed_initial_data
 ```
 
-Docker Compose reads the project root `.env`. The backend container also loads it with `env_file: .env`.
+起動後に以下へアクセスします。
 
-For backend-to-database connections inside Docker, use:
-
-```text
-POSTGRES_HOST=db
-POSTGRES_PORT=5432
-```
-
-For host tools such as TablePlus, connect to PostgreSQL at `localhost:5433`.
-
-The Compose file also provides development defaults for PostgreSQL variables:
-
-```text
-POSTGRES_DB=ricetta
-POSTGRES_USER=ricetta
-POSTGRES_PASSWORD=ricetta
-POSTGRES_HOST=db
-POSTGRES_PORT=5432
-POSTGRES_HOST_PORT=5433
-```
-
-### Docker Verification
-
-```bash
-cp .env.example .env
-docker compose down
-docker compose up -d db
-docker compose run --rm backend python -c "import os; print(os.getenv('POSTGRES_DB'), os.getenv('POSTGRES_HOST'))"
-docker compose run --rm backend python -c "import django; print(django.get_version())"
-docker compose run --rm backend python manage.py check
-docker compose run --rm backend python manage.py makemigrations --check --dry-run
-docker compose run --rm backend python manage.py test
-```
-
-Expected environment check output:
-
-```text
-ricetta db
-```
-
-### Health Check
-
-```bash
-curl http://localhost:8010/api/v1/health/
-```
-
-Response:
-
-```json
-{
-  "status": "ok"
-}
-```
-
-### Initial Development Data
-
-Backend migration 後、開発用の標準単位・Shop・Ownerユーザー・Membership・初期カテゴリを作成できます。
-
-```bash
-cd backend
-python manage.py migrate
-python manage.py seed_initial_data
-```
+- Frontend: http://localhost:5174
+- Backend API: http://localhost:8010/api/v1/
+- PostgreSQL（ホストツール用）: `localhost:5433`
 
 開発用ログイン:
 
@@ -214,318 +342,11 @@ password: password
 shop: 〇〇食堂
 ```
 
-このユーザーとShopはローカル開発用です。本番データとしては使いません。
+このアカウントはローカル開発専用です。
 
-### Auth / Shop Scope
+### Local frontend development
 
-MVPでは Django標準User を使います。メールログインは `username=email` として扱い、API認証は Django Session Auth + DRF Basic Auth で開始します。
-
-主要データはサーバー側でログイン中ユーザーの有効な `Membership` から現在の `Shop` を特定します。フロントから送られた `shop_id` は信用しません。
-
-主なAPI:
-
-- `GET /api/v1/auth/csrf/`
-- `POST /api/v1/auth/login/`
-- `POST /api/v1/auth/logout/`
-- `GET /api/v1/auth/me/`
-- `GET /api/v1/shop/me/`
-- `PATCH /api/v1/shop/me/`
-- `GET /api/v1/dashboard/`
-- `GET /api/v1/categories/`
-- `GET /api/v1/units/`
-- `GET /api/v1/ingredients/`
-- `POST /api/v1/ingredients/`
-- `GET /api/v1/ingredients/{id}/`
-- `PATCH /api/v1/ingredients/{id}/`
-- `DELETE /api/v1/ingredients/{id}/`
-- `GET /api/v1/recipes/`
-- `POST /api/v1/recipes/`
-- `GET /api/v1/recipes/{id}/`
-- `PATCH /api/v1/recipes/{id}/`
-- `DELETE /api/v1/recipes/{id}/`
-- `GET /api/v1/prep-tasks/`
-- `POST /api/v1/prep-tasks/`
-- `GET /api/v1/prep-tasks/{id}/`
-- `PATCH /api/v1/prep-tasks/{id}/`
-- `DELETE /api/v1/prep-tasks/{id}/`
-- `PATCH /api/v1/prep-tasks/{id}/status/`
-
-Recipe API は現在Shopにスコープされます。作成時の `shop_id` は受け取らず、RecipeIngredientで指定できるIngredientは現在Shopの有効なIngredientのみ、Unitは標準Unitまたは現在ShopのUnitのみです。Recipe detailの材料欄には原価内訳を混ぜず、全体の原価情報は `cost_summary` に集約します。
-
-PrepTask API も現在Shopにスコープされます。日付指定の一覧は `summary` と `tasks` を返し、`PATCH /api/v1/prep-tasks/{id}/status/` で `todo` / `doing` / `done` を更新できます。
-
-Dashboard API は現在Shopの「今日の現場」情報として、仕込みsummary、次にやる仕込み、よく使うレシピ、ミニサマリー、空の `alerts` を返します。
-
-FrontendはDjango Session Authを前提に、ログイン前に `GET /api/v1/auth/csrf/` でCSRF cookieを取得します。POST / PATCH / DELETEでは `credentials: "include"` と `X-CSRFToken` を送ります。`shop_id` はfrontendから送らず、backendがログイン中ユーザーのMembershipからShopを決定します。
-
-## CI
-
-GitHub Actions runs on PR and push to main.
-
-- Backend: Django check, migration check, tests
-- Frontend: Build and lint
-
-## Main Features
-
-## 1. Recipes
-
-レシピを登録・管理します。
-
-主な項目：
-
-- レシピ名
-- カテゴリ
-- 説明
-- 完成写真
-- 基準量
-- 基準単位
-- 材料
-- 作り方
-- 注意点
-- アレルゲン
-- 販売価格
-- 原価情報
-
-レシピ詳細では、現場で見やすいことを優先します。
-
-材料欄には原価情報を混ぜず、原価は専用の「原価情報」カードに集約します。
-
-Frontendでは `/recipes` でレシピ一覧、`/recipes/{id}` でレシピ詳細、`/recipes/new` で新規作成、`/recipes/{id}/edit` で編集ができます。Recipe作成・編集ではCategory / Unit / IngredientをAPIから取得し、RecipeIngredient / RecipeStepをnested replacement方針で保存します。
-
-## 2. Ingredients
-
-材料を登録・管理します。
-
-主な項目：
-
-- 材料名
-- 仕入先
-- メモ
-- 原価計算モード
-- 仕入数量
-- 仕入単位
-- 仕入価格
-- 使用単位
-- 換算情報
-
-Frontendでは `/ingredients` で材料一覧、`/ingredients/{id}` で材料詳細、`/ingredients/new` で新規作成、`/ingredients/{id}/edit` で編集ができます。Ingredient Detailは材料マスター管理画面なので、Recipe Detailとは違い、原価計算モード、仕入情報、換算情報、単価表示を表示します。
-
-## 3. Ingredient Cost Mode
-
-材料ごとに原価計算方法を選択できます。
-
-```text
-none
-same_unit
-conversion
-```
-
-### none
-
-原価計算しない。
-
-例：
-
-- 水
-- 塩少々
-- 飾り
-
-### same_unit
-
-仕入単位のまま計算する。
-
-例：
-
-```text
-卵 1個 = 30円
-3個使用 → 90円
-```
-
-### conversion
-
-使用単位に換算して計算する。
-
-例：
-
-```text
-ホールトマト 1缶 = 180円
-1缶 = 400g
-200g使用 → 90円
-```
-
-MVPでは、1段階の簡易換算まで対応します。
-
-対応例：
-
-- kg ⇔ g
-- L ⇔ ml
-- 缶 → g
-- 袋 → g
-- 本 → ml
-
-MVPでは、歩留まり・廃棄率・加熱後重量・複数段階換算は扱いません。
-
-## 4. Today's Prep
-
-ホワイトボードに書いていた「今日の仕込み」を置き換える機能です。
-
-ステータス：
-
-```text
-todo
-doing
-done
-```
-
-画面表示：
-
-```text
-未着手
-作業中
-完了
-```
-
-操作はドラッグではなく、タップを基本にします。
-
-仕込みカード例：
-
-```text
-トマトソース
-3バッチ
-```
-
-FrontendではRecipe Detailの「今日の仕込みに追加」から、レシピの基準量・基準単位を初期値にしてPrepTaskを作成できます。保存成功後は `/prep` へ移動し、今日の仕込み一覧でstatus更新できます。
-
-## 5. Dashboard
-
-Dashboard は、単なるホーム画面ではなく「今日の現場」を確認する画面です。
-
-表示例：
-
-- 今日の仕込みサマリー
-- 次にやること
-- 期限注意
-- よく使うレシピ
-- クイックアクション
-- ミニサマリー
-
-Frontend foundationでは `/login`、`/dashboard`、`/prep`、`/recipes`、`/ingredients`、`/settings` のルートを用意しています。`/dashboard` はDashboard APIを表示し、`/prep` はPrepTask APIを使って今日の仕込み一覧とstatus更新を行います。`/recipes` はRecipe APIを使って一覧・詳細・作成・編集を扱います。`/ingredients` はIngredient APIを使って一覧・詳細・作成・編集を扱います。`/settings` はCategory / Unit APIを使ってレシピカテゴリと単位を管理します。
-
-## 6. Settings
-
-MVPのSettingsでは、レシピ台帳の運用に必要な最小設定として以下だけを扱います。
-
-- レシピカテゴリ
-- 単位
-
-Categoryは現在Shopのカテゴリのみ作成・編集・削除できます。Unitは標準Unitと現在Shopの店舗独自Unitを表示し、店舗独自Unitのみ作成・編集・削除できます。標準Unitは編集・削除できません。
-
-## UI Policy
-
-Ricetta のUIは、以下を重視します。
-
-- 小規模飲食店向け
-- 清潔感
-- 柔らかい業務アプリ感
-- 厨房タブレットで見やすい
-- 文字は大きめ
-- タップしやすい
-- 複雑な操作を避ける
-- アイコンより文字で分かりやすくする
-
-### Navigation
-
-スマホ：
-
-- 下部ナビ
-
-タブレット横・PC：
-
-- 120px程度の固定サイドバー
-- テキストのみ
-- カード型
-- 常時表示
-
-サイドバー項目：
-
-```text
-ホーム
-仕込み
-レシピ
-材料
-設定
-```
-
-## Documentation
-
-主要ドキュメント：
-
-```text
-docs/planning/concept.md
-docs/planning/mvp-requirements.md
-docs/product/screens.md
-docs/data/data-model.md
-docs/api/api-design.md
-AGENTS.md
-README.md
-```
-
-### Planning
-
-企画・要件定義系のドキュメントです。
-
-```text
-docs/planning/concept.md
-docs/planning/mvp-requirements.md
-```
-
-### Product
-
-画面・UI仕様系のドキュメントです。
-
-```text
-docs/product/screens.md
-```
-
-### Data
-
-データモデル設計です。
-
-```text
-docs/data/data-model.md
-```
-
-### API
-
-API設計です。
-
-```text
-docs/api/api-design.md
-```
-
-### AGENTS.md
-
-Codex / AI agent 向けの作業ルールです。
-
-## Development Setup
-
-> このセクションは実装開始後に更新します。
-
-想定コマンド例：
-
-```bash
-docker compose up -d
-```
-
-Backend:
-
-```bash
-cd backend
-python manage.py migrate
-python manage.py runserver
-```
-
-Frontend:
+backendとdatabaseをDockerで起動したまま、frontendだけホストで起動できます。
 
 ```bash
 cd frontend
@@ -533,118 +354,134 @@ npm install
 npm run dev
 ```
 
+ローカルViteは http://localhost:5173 で起動し、APIを http://localhost:8010 へproxyします。
+
+### Common commands
+
+```bash
+# Start
+docker compose up -d
+
+# Stop
+docker compose down
+
+# Backend checks
+docker compose exec backend python manage.py check
+docker compose exec backend python manage.py makemigrations --check --dry-run
+docker compose exec backend python manage.py test
+
+# Frontend checks
+cd frontend
+npm run lint
+npm run build
+```
+
 ## Environment Variables
 
-> このセクションは `.env.example` 作成時に更新します。
+主要な環境変数は `.env.example` に定義しています。
 
-想定する環境変数：
+| Variable | Purpose | Development value |
+|---|---|---|
+| `DJANGO_SECRET_KEY` | Django secret key | 開発用ダミー値 |
+| `DJANGO_DEBUG` | Debug mode | `True` |
+| `DJANGO_ALLOWED_HOSTS` | 許可Host | `localhost,127.0.0.1,backend` |
+| `DJANGO_CSRF_TRUSTED_ORIGINS` | unsafe methodを許可するOrigin | `http://localhost:5173,http://localhost:5174` |
+| `POSTGRES_DB` | Database name | `ricetta` |
+| `POSTGRES_USER` | Database user | `ricetta` |
+| `POSTGRES_PASSWORD` | Database password | `ricetta` |
+| `POSTGRES_HOST` | Docker内Database host | `db` |
+| `POSTGRES_PORT` | Docker内Database port | `5432` |
+| `POSTGRES_HOST_PORT` | Host公開Database port | `5433` |
+| `FRONTEND_ORIGIN` | 開発frontend URL | `http://localhost:5174` |
+| `BACKEND_ORIGIN` | 開発backend URL | `http://localhost:8010` |
 
-```env
-DJANGO_SECRET_KEY=
-DJANGO_DEBUG=
-DJANGO_ALLOWED_HOSTS=
-DJANGO_CSRF_TRUSTED_ORIGINS=http://localhost:5173,http://localhost:5174
-DATABASE_URL=
-POSTGRES_DB=
-POSTGRES_USER=
-POSTGRES_PASSWORD=
-FRONTEND_ORIGIN=
-```
+localhostのtrusted originsは開発専用です。本番環境では `DJANGO_SECRET_KEY` を安全な値へ変更し、`DJANGO_ALLOWED_HOSTS` と `DJANGO_CSRF_TRUSTED_ORIGINS` に本番環境の値だけを設定します。
 
-`DJANGO_CSRF_TRUSTED_ORIGINS` はカンマ区切りで指定します。上記のlocalhost Originは開発用です。本番環境では本番frontendのOriginだけを設定してください。
+`.env` はコミットしません。
 
-将来的なStripe関連：
+## Test / CI
 
-```env
-STRIPE_SECRET_KEY=
-STRIPE_WEBHOOK_SECRET=
-STRIPE_PRICE_ID_STARTER=
-STRIPE_PRICE_ID_SHOP=
-STRIPE_PRICE_ID_PRO=
-```
+GitHub Actionsはpull requestと `main` へのpushで実行されます。
 
-StripeはMVPでは使用しません。
+### Backend
 
-## API
+- Python 3.11
+- PostgreSQL 15 service container
+- `python manage.py check`
+- `python manage.py makemigrations --check --dry-run`
+- `python manage.py test`
 
-API prefix:
+テストでは、認証必須、他店舗データへのアクセス拒否、Recipe / Ingredient / PrepTask CRUD、原価計算モード、nested recipe write、Accountのowner / staff権限などを確認しています。
 
-```text
-/api/v1/
-```
+### Frontend
 
-MVP API:
+- Node.js 22
+- `npm ci`
+- `npm run build`
+- `npm run lint`
 
-- Auth
-- Shop
-- Dashboard
-- Recipes
-- Ingredients
-- PrepTasks
-- Categories
-- Units
+frontendの自動UIテストは未導入です。
 
-詳細は以下を参照します。
+## Challenges and Learnings
 
-```text
-docs/api/api-design.md
-```
+### 業務フローをデータモデルへ落とし込むこと
 
-## Implementation Order
+飲食店では、レシピ・材料・仕込み内容が紙の上では一続きでも、システムでは責務と更新単位を分ける必要があります。
 
-推奨実装順：
+Recipe / Ingredient / PrepTask / Unit / Categoryを分け、RecipeIngredientを通じてレシピと材料を接続することで、現場での見やすさとデータ整合性の両立を考えました。
 
-```text
-1. Project scaffold
-2. Docker Compose
-3. Backend models
-4. Auth / Shop scope
-5. Categories / Units seed data
-6. Ingredients
-7. Recipes
-8. Cost calculation
-9. PrepTasks
-10. Dashboard API
-11. Frontend layout
-12. Frontend screens
-13. Form integration
-14. UI polish
-```
+### 店舗スコープを認可として扱うこと
 
-MVPでは、Stripe、複数店舗管理、在庫自動減算から始めないこと。
+単に `shop_id` をAPIで受け取る実装では、別店舗のIDを指定される危険があります。
 
-## Git / Commit
+現在ユーザーのMembershipからShopを解決し、QuerySet・Serializer・作成処理の各層でスコープを守ることで、マルチテナントを想定したデータアクセスを学びました。
 
-Conventional Commits を使います。
+### 原価計算の単位変換
 
-例：
+飲食店の材料は、仕入単位と使用単位が一致しないことがあります。たとえば缶で仕入れ、レシピではg単位で使用します。
 
-```text
-docs(planning): add Ricetta MVP requirements
-feat(api): add ingredient cost mode
-feat(frontend): add tablet sidebar layout
-fix(cost): handle missing selling price
-refactor(recipe): split recipe detail components
-```
+MVPでは複雑な歩留まり計算まで広げず、1段階換算に限定することで、実用性と実装範囲のバランスを取りました。
+
+### Session認証とCSRF
+
+Session認証では、ログイン可否だけでなくunsafe methodのCSRF Cookie、header、trusted originまで揃える必要があります。
+
+Vite proxyを使うローカル環境でもOrigin checkingを通せるよう、開発Originと本番Originを環境変数で分離しました。
+
+## Documentation
+
+- [MVP requirements](docs/planning/mvp-requirements.md)
+- [MVP roadmap](docs/planning/mvp-roadmap.md)
+- [Screen specifications](docs/product/screens.md)
+- [UI guidelines](docs/product/ui-guidelines.md)
+- [Data model](docs/data/data-model.md)
+- [API design](docs/api/api-design.md)
+- [Architecture decisions](docs/decisions/)
+- [Latest handoff](docs/handoff/latest.md)
+- [Handoff archive](docs/handoff/archive/index.md)
+- [Agent instructions](AGENTS.md)
 
 ## Current Status
 
-Initial planning phase.
+MVPの主要なbackend APIとfrontend画面は実装済みです。
 
-Prepared documents:
+- Login / logout / Account Phase 1 + 2
+- Shop scopeとowner限定店舗編集
+- Recipe / Ingredient / PrepTask / Dashboard / Category / Unit
+- 原価計算とnested recipe write
+- スマホ・タブレット横向き・PCレイアウト
+- Docker Compose開発環境とGitHub Actions CI
 
-- Concept
-- MVP requirements
-- Screens
-- Data model
-- API design
-- AGENTS.md
+未デプロイのローカル開発段階です。最新の作業状況と確認事項は [docs/handoff/latest.md](docs/handoff/latest.md) を参照してください。
 
-Next recommended documents:
+## Future Improvements
 
-- docs/planning/mvp-roadmap.md
-- docs/product/ui-guidelines.md
-- docs/decisions/0001-mvp-scope.md
-- docs/decisions/0002-shop-scope.md
-- docs/decisions/0003-cost-calculation-mode.md
-- docs/decisions/0004-tablet-navigation.md
+- Dashboard / Today's Prep / Recipe Detail / Cost Summaryのスクリーンショット追加
+- Accountでのメールアドレス変更、パスワード変更
+- 複数店舗切り替え
+- staffの詳細な権限設計
+- 画像アップロード
+- frontendの自動テスト
+- サーバー状態・フォーム管理ライブラリ導入の検討
+- 本番デプロイとproduction settings
+- Stripe Billing、POS、在庫連携の段階的な検討

@@ -45,6 +45,8 @@ Account Phase 1 + 2 implemented; local CSRF origins fixed
 - `DJANGO_CSRF_TRUSTED_ORIGINS` を追加し、開発既定値へViteの5173 / 5174を設定した。
 - backendを再起動し、両OriginからAccount関連PATCHが200になることを確認した。
 - 完了履歴を `archive/frontend-implementation.md` と `archive/backend-foundation.md` に保存した。
+- READMEをAccount機能、owner / staff権限、CSRF開発Origin、現在ステータスに合わせて更新した。
+- READMEを転職用ポートフォリオ向けに再構成し、背景、技術選定、Architecture、backend設計、データモデル、学びを追加した。
 
 ## Key Decisions
 
