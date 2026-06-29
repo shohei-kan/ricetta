@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { ApiError } from '../api/api'
+import { ricettaLogoFull } from '../assets'
 import { useAuth } from '../auth/useAuth'
 
 type LoginPageProps = {
@@ -35,12 +36,12 @@ export function LoginPage({ navigate }: LoginPageProps) {
   return (
     <main className="min-h-screen bg-[#f7f3ec] px-5 py-8 text-[#2a241f]">
       <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-md flex-col justify-center">
-        <div className="mb-8">
-          <p className="mb-3 text-sm font-bold text-[#c76738]">Recipe Notebook</p>
-          <h1 className="text-4xl font-bold tracking-normal text-[#2e2822]">Ricetta</h1>
-          <p className="mt-3 text-lg leading-8 text-[#6f6258]">
-            小さな飲食店のための、レシピ台帳。
-          </p>
+        <div className="mb-6 flex justify-center md:mb-8">
+          <img
+            alt="Ricetta"
+            className="block h-auto w-full max-w-80 md:max-w-120"
+            src={ricettaLogoFull}
+          />
         </div>
 
         <form

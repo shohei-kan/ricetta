@@ -1,5 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { fetchRecipes, type RecipeListItem } from '../api/recipes'
+import { emptyRecipeAdd, emptyRecipeSearch, leafSprigSimple } from '../assets'
+import { EmptyState } from '../components/EmptyState'
 
 type RecipeListPageProps = {
   navigate: (path: string) => void
@@ -50,9 +52,17 @@ export function RecipeListPage({ navigate }: RecipeListPageProps) {
       <div className="mb-6 flex flex-col gap-4 border-b border-[#ded2c2] pb-5 md:flex-row md:items-end md:justify-between">
         <div>
           <p className="text-sm font-bold text-[#c76738]">Recipes</p>
-          <h1 className="mt-2 text-3xl font-bold tracking-normal text-[#2e2822] md:text-4xl">
-            レシピ一覧
-          </h1>
+          <div className="mt-2 flex items-center gap-3">
+            <h1 className="text-3xl font-bold tracking-normal text-[#2e2822] md:text-4xl">
+              レシピ一覧
+            </h1>
+            <img
+              alt=""
+              aria-hidden="true"
+              className="pointer-events-none h-10 w-10 select-none object-contain opacity-85 md:h-12 md:w-12"
+              src={leafSprigSimple}
+            />
+          </div>
           <p className="mt-2 text-base leading-7 text-[#75685e]">
             仕込み場で確認するレシピ台帳です。材料と作り方をすぐ開けるようにします。
           </p>
@@ -99,8 +109,11 @@ export function RecipeListPage({ navigate }: RecipeListPageProps) {
 
       {!loading && !error && recipes.length === 0 && (
         <div className="rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-6 text-[#75685e] shadow-sm">
-          <p className="text-lg font-bold text-[#34291f]">レシピがまだありません。</p>
-          <p className="mt-2">最初のレシピを登録しましょう。</p>
+          <EmptyState
+            description={query ? '検索条件を変えて、もう一度お試しください。' : '最初のレシピを登録しましょう。'}
+            imageSrc={query ? emptyRecipeSearch : emptyRecipeAdd}
+            title={query ? '該当するレシピが見つかりません。' : 'レシピがまだありません。'}
+          />
         </div>
       )}
 
@@ -128,7 +141,7 @@ function RecipeCard({
       onClick={() => navigate(`/recipes/${recipe.id}`)}
       type="button"
     >
-      <div className="mb-4 flex aspect-[16/7] items-center justify-center rounded-lg bg-[#eee5d8] text-base font-bold text-[#8a7a6d]">
+      <div className="mb-4 flex aspect-16/7 items-center justify-center rounded-lg bg-[#eee5d8] text-base font-bold text-[#8a7a6d]">
         写真
       </div>
       <p className="text-sm font-bold text-[#78936f]">

@@ -117,7 +117,8 @@ class Unit(TimeStampedModel):
         ]
 
     def __str__(self):
-        scope = "standard" if self.shop_id is None else self.shop.name
+        shop = self.shop
+        scope = "standard" if shop is None else shop.name
         return f"{self.name} ({scope})"
 
 
@@ -210,31 +211,43 @@ class Ingredient(TimeStampedModel):
     @property
     def unit_cost_label(self):
         unit_cost = self._unit_cost()
-        if unit_cost is None or self.usage_unit_id is None:
+        usage_unit = self.usage_unit
+        if unit_cost is None or usage_unit is None:
             return None
-        return f"{self._format_decimal(unit_cost)}円 / {self.usage_unit.name}"
+        return f"{self._format_decimal(unit_cost)}円 / {usage_unit.name}"
 
     def _unit_cost(self):
         try:
             if self.cost_mode == self.CostMode.SAME_UNIT:
-                if self.purchase_price is None or not self.purchase_quantity:
+                purchase_price = self.purchase_price
+                purchase_quantity = self.purchase_quantity
+                if (
+                    purchase_price is None
+                    or purchase_quantity is None
+                    or purchase_quantity == 0
+                ):
                     return None
-                return Decimal(self.purchase_price) / Decimal(self.purchase_quantity)
+                return purchase_price / purchase_quantity
             if self.cost_mode == self.CostMode.CONVERSION:
-                if self.purchase_price is None:
-                    return None
-                required_positive_values = [
-                    self.purchase_quantity,
-                    self.conversion_from_quantity,
-                    self.conversion_to_quantity,
-                ]
-                if any(value in (None, 0) for value in required_positive_values):
+                purchase_price = self.purchase_price
+                purchase_quantity = self.purchase_quantity
+                conversion_from_quantity = self.conversion_from_quantity
+                conversion_to_quantity = self.conversion_to_quantity
+                if (
+                    purchase_price is None
+                    or purchase_quantity is None
+                    or conversion_from_quantity is None
+                    or conversion_to_quantity is None
+                    or purchase_quantity == 0
+                    or conversion_from_quantity == 0
+                    or conversion_to_quantity == 0
+                ):
                     return None
                 return (
-                    Decimal(self.purchase_price)
-                    * Decimal(self.conversion_from_quantity)
-                    / Decimal(self.purchase_quantity)
-                    / Decimal(self.conversion_to_quantity)
+                    purchase_price
+                    * conversion_from_quantity
+                    / purchase_quantity
+                    / conversion_to_quantity
                 )
         except (InvalidOperation, ZeroDivisionError):
             return None

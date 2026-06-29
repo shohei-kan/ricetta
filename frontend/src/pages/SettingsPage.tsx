@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { leafSprigSimple } from '../assets'
 import { ApiError } from '../api/api'
 import {
   createCategory,
@@ -252,9 +253,17 @@ export function SettingsPage() {
     <div className="mx-auto max-w-7xl px-5 py-6 md:px-8 md:py-8">
       <div className="mb-6 border-b border-[#ded2c2] pb-5">
         <p className="text-sm font-bold text-[#c76738]">Settings</p>
-        <h1 className="mt-2 text-3xl font-bold tracking-normal text-[#2e2822] md:text-4xl">
-          設定
-        </h1>
+        <div className="mt-2 flex items-center gap-3">
+          <h1 className="text-3xl font-bold tracking-normal text-[#2e2822] md:text-4xl">
+            設定
+          </h1>
+          <img
+            alt=""
+            aria-hidden="true"
+            className="pointer-events-none h-7 w-7 select-none object-contain opacity-65"
+            src={leafSprigSimple}
+          />
+        </div>
         <p className="mt-2 text-base leading-7 text-[#75685e]">
           MVPではレシピ台帳の運用に必要なカテゴリと単位だけを管理します。
         </p>

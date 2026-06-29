@@ -220,7 +220,7 @@ export function IngredientFormPage({ id, navigate }: IngredientFormPageProps) {
   }
 
   return (
-    <div className="mx-auto max-w-[1040px] px-5 py-6 md:px-8 md:py-8">
+    <div className="mx-auto max-w-260 px-5 py-6 md:px-8 md:py-8">
       <button
         className="mb-5 rounded-lg border border-[#dfd1bf] bg-[#fffdf9] px-4 py-3 text-base font-bold text-[#5d5148] transition hover:bg-[#fbf7f0]"
         onClick={() => goBack(isEdit, id, navigate)}

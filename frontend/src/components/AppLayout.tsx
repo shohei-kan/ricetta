@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { ricettaLogoSimple } from '../assets'
 import { useAuth } from '../auth/useAuth'
 
 export type RoutePath = '/dashboard' | '/prep' | '/recipes' | '/ingredients' | '/settings'
@@ -22,13 +23,15 @@ export function AppLayout({ children, currentPath, navigate }: AppLayoutProps) {
 
   return (
     <div className="min-h-screen bg-[#f7f3ec] text-[#2a241f] md:flex">
-      <aside className="sticky top-0 hidden h-screen w-[120px] shrink-0 border-r border-[#ded2c2] bg-[#fffdf9] md:flex md:flex-col">
+      <aside className="sticky top-0 hidden h-screen w-30 shrink-0 border-r border-[#ded2c2] bg-[#fffdf9] md:flex md:flex-col">
         <button
-          className="border-b border-[#ded2c2] px-4 py-6 text-left text-xl font-bold text-[#2e2822]"
+          className="flex min-h-24 items-center justify-center border-b border-[#ded2c2] py-5"
           onClick={() => navigate('/dashboard')}
           type="button"
         >
-          Ricetta
+          <span className="flex w-29.5 justify-center overflow-hidden">
+            <img alt="Ricetta" className="h-auto w-37 max-w-none" src={ricettaLogoSimple} />
+          </span>
         </button>
         <nav className="flex flex-1 flex-col gap-5 px-3 py-7">
           {navItems.map((item) => (
@@ -53,7 +56,7 @@ export function AppLayout({ children, currentPath, navigate }: AppLayoutProps) {
           </p>
         </div>
         <button
-          className="mx-3 mb-4 rounded-lg px-3 py-2 text-left text-sm font-semibold text-[#776b60] hover:bg-[#f1e9dd]"
+          className="mx-3 mb-4 whitespace-nowrap rounded-lg px-1.5 py-2 text-center text-[13px] font-semibold break-keep text-[#776b60] hover:bg-[#f1e9dd]"
           onClick={() => void logout()}
           type="button"
         >
@@ -65,11 +68,11 @@ export function AppLayout({ children, currentPath, navigate }: AppLayoutProps) {
         <header className="sticky top-0 z-10 border-b border-[#ded2c2] bg-[#fffdf9]/95 px-5 py-4 backdrop-blur md:hidden">
           <div className="flex items-center justify-between">
             <button
-              className="text-xl font-bold text-[#2e2822]"
+              className="flex min-h-10 items-center"
               onClick={() => navigate('/dashboard')}
               type="button"
             >
-              Ricetta
+              <img alt="Ricetta" className="h-auto w-28" src={ricettaLogoSimple} />
             </button>
             <button
               className="rounded-lg border border-[#dfd1bf] bg-[#fbf7f0] px-4 py-2 text-sm font-bold text-[#5d5148]"

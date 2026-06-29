@@ -1,9 +1,11 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { emptyIngredients, emptyRecipeSearch } from '../assets'
 import {
   fetchIngredients,
   type IngredientCostMode,
   type IngredientListItem,
 } from '../api/ingredients'
+import { EmptyState } from '../components/EmptyState'
 
 type IngredientListPageProps = {
   navigate: (path: string) => void
@@ -109,8 +111,11 @@ export function IngredientListPage({ navigate }: IngredientListPageProps) {
 
       {!loading && !error && ingredients.length === 0 && (
         <div className="rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-6 text-[#75685e] shadow-sm">
-          <p className="text-lg font-bold text-[#34291f]">材料がまだありません。</p>
-          <p className="mt-2">最初の材料を登録しましょう。</p>
+          <EmptyState
+            description={query ? '検索条件を変えて、もう一度お試しください。' : '最初の材料を登録しましょう。'}
+            imageSrc={query ? emptyRecipeSearch : emptyIngredients}
+            title={query ? '該当する材料が見つかりません。' : '材料がまだありません。'}
+          />
         </div>
       )}
 

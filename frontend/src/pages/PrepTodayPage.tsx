@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { emptyPrepBoard } from '../assets'
 import {
   fetchPrepTasks,
   updatePrepTaskStatus,
@@ -6,6 +7,7 @@ import {
   type PrepTaskListResponse,
   type PrepTaskStatus,
 } from '../api/prepTasks'
+import { EmptyState as EmptyStateContent } from '../components/EmptyState'
 
 const statusLabels: Record<PrepTaskStatus, string> = {
   todo: '未着手',
@@ -98,7 +100,7 @@ export function PrepTodayPage({ navigate }: PrepTodayPageProps) {
         {data && (
           <div className="grid grid-cols-3 gap-2 rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-3 shadow-sm">
             {statusOrder.map((status) => (
-              <div className={`min-w-[88px] rounded-lg border px-3 py-3 text-center ${columnTone(status)}`} key={status}>
+              <div className={`min-w-22 rounded-lg border px-3 py-3 text-center ${columnTone(status)}`} key={status}>
                 <p className="text-sm font-bold">{statusLabels[status]}</p>
                 <p className="mt-1 text-2xl font-bold">{data.summary[status]}</p>
               </div>
@@ -158,7 +160,7 @@ function StatusColumn({
   updatingTaskId: number | null
 }) {
   return (
-    <section className={`min-h-[520px] rounded-xl border p-5 ${columnSurface(status)}`}>
+    <section className={`min-h-130 rounded-xl border p-5 ${columnSurface(status)}`}>
       <div className="mb-5 border-b border-current/10 pb-4">
         <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">{label}</h2>
@@ -275,8 +277,11 @@ function LoadingState() {
 function EmptyState() {
   return (
     <div className="rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-6 text-[#75685e] shadow-sm">
-      <p className="text-lg font-bold text-[#34291f]">今日の仕込みはまだありません。</p>
-      <p className="mt-2">レシピから仕込みを追加しましょう。</p>
+      <EmptyStateContent
+        description="レシピから仕込みを追加しましょう。"
+        imageSrc={emptyPrepBoard}
+        title="今日の仕込みはまだありません。"
+      />
     </div>
   )
 }

@@ -1,10 +1,12 @@
 import { useEffect, useState, type ReactNode } from 'react'
+import { checklistBoardLeaf, emptyRecipeAdd, leafSprigSimple } from '../assets'
 import {
   fetchDashboard,
   type DashboardData,
   type DashboardTask,
   type StatusKey,
 } from '../api/dashboard'
+import { EmptyState } from '../components/EmptyState'
 
 type DashboardPageProps = {
   navigate: (path: string) => void
@@ -63,16 +65,24 @@ export function DashboardPage({ navigate }: DashboardPageProps) {
         <section className="space-y-5">
           <div className="rounded-xl border-2 border-[#c76738] bg-[#fffdf9] p-5 shadow-[0_14px_28px_rgba(113,73,44,0.12)] md:p-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h2 className="text-2xl font-bold text-[#2e2822]">今日の仕込み</h2>
-                <p className="mt-1 text-sm text-[#75685e]">ホワイトボード代わりの進捗確認</p>
+              <div className="flex items-center gap-4">
+                <img
+                  alt=""
+                  aria-hidden="true"
+                  className="pointer-events-none hidden h-20 w-20 shrink-0 select-none object-contain opacity-85 sm:block"
+                  src={checklistBoardLeaf}
+                />
+                <div>
+                  <h2 className="text-2xl font-bold text-[#2e2822]">今日の仕込み</h2>
+                  <p className="mt-1 text-sm text-[#75685e]">ホワイトボード代わりの進捗確認</p>
+                </div>
               </div>
               <button
-                className="rounded-lg bg-[#c76738] px-5 py-3 text-base font-bold text-white shadow-[0_8px_18px_rgba(198,103,56,0.22)] transition hover:bg-[#b65b31]"
+                className="shrink-0 whitespace-nowrap rounded-lg bg-[#c76738] px-4 py-3 text-base font-bold break-keep text-white shadow-[0_8px_18px_rgba(198,103,56,0.22)] transition hover:bg-[#b65b31]"
                 onClick={() => navigate('/prep')}
                 type="button"
               >
-                今日の仕込みを見る
+                仕込みを見る
               </button>
             </div>
 
@@ -119,7 +129,12 @@ export function DashboardPage({ navigate }: DashboardPageProps) {
                   </div>
                 ))
               ) : (
-                <p className="text-[#75685e]">まだ表示できるレシピがありません。</p>
+                <EmptyState
+                  compact
+                  description="レシピを登録すると、ここからすぐに開けます。"
+                  imageSrc={emptyRecipeAdd}
+                  title="まだ表示できるレシピがありません。"
+                />
               )}
             </div>
           </div>
@@ -135,11 +150,21 @@ export function DashboardPage({ navigate }: DashboardPageProps) {
 
           <div className="rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-5 shadow-sm">
             <h2 className="text-xl font-bold text-[#2e2822]">期限注意</h2>
-            <p className="mt-4 rounded-lg border border-[#eadfce] bg-white px-4 py-4 text-[#75685e]">
-              {dashboard.alerts.length === 0
-                ? '現在注意はありません。'
-                : `${dashboard.alerts.length}件の注意があります。`}
-            </p>
+            {dashboard.alerts.length === 0 ? (
+              <div className="mt-4 flex items-center gap-3 rounded-lg border border-[#eadfce] bg-white px-4 py-3 text-[#75685e]">
+                <img
+                  alt=""
+                  aria-hidden="true"
+                  className="pointer-events-none h-10 w-10 shrink-0 select-none object-contain opacity-85"
+                  src={leafSprigSimple}
+                />
+                <p>現在注意はありません。</p>
+              </div>
+            ) : (
+              <p className="mt-4 rounded-lg border border-[#eadfce] bg-white px-4 py-4 text-[#75685e]">
+                {dashboard.alerts.length}件の注意があります。
+              </p>
+            )}
           </div>
         </aside>
       </div>
