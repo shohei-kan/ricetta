@@ -133,8 +133,8 @@ API prefix:
 2. Copy `.env.example` to `.env`
 3. Fill in `.env` values as needed
 4. Run `docker compose up --build`
-5. Open http://localhost:5173 for frontend
-6. Backend API at http://localhost:8000
+5. Open http://localhost:5174 for frontend
+6. Backend API at http://localhost:8010
 
 ```bash
 cp .env.example .env
@@ -147,7 +147,10 @@ For backend-to-database connections inside Docker, use:
 
 ```text
 POSTGRES_HOST=db
+POSTGRES_PORT=5432
 ```
+
+For host tools such as TablePlus, connect to PostgreSQL at `localhost:5433`.
 
 The Compose file also provides development defaults for PostgreSQL variables:
 
@@ -157,6 +160,7 @@ POSTGRES_USER=ricetta
 POSTGRES_PASSWORD=ricetta
 POSTGRES_HOST=db
 POSTGRES_PORT=5432
+POSTGRES_HOST_PORT=5433
 ```
 
 ### Docker Verification
@@ -181,7 +185,7 @@ ricetta db
 ### Health Check
 
 ```bash
-curl http://localhost:8000/api/v1/health/
+curl http://localhost:8010/api/v1/health/
 ```
 
 Response:

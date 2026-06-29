@@ -2,7 +2,7 @@
 
 ## Date
 
-2026-05-06
+2026-05-10
 
 ## Project
 
@@ -10,72 +10,80 @@ Ricetta
 
 ## Status
 
-Phase 14 Frontend Settings Category / Unit Management implemented
+Docker development startup fixed
 
 ## Summary
 
-Settings画面でCategory / Unit管理を実装済み。`/settings` でレシピカテゴリと単位を一覧表示し、Categoryの作成・編集・削除、店舗独自Unitの作成・編集・削除ができる。標準Unitはreadonly表示にした。
+Docker開発環境の起動エラーを修正した。frontendはVite 8の要求に合わせてNode.js 22へ更新し、backendはDocker内部でPostgreSQLへ `db:5432` 接続する構成を確認した。ホスト側PostgreSQL公開ポートは `localhost:5433`。
 
 ## Current Goal
 
-次は削除UIや日付切り替えなど、MVP運用で必要な仕上げ範囲を決める。
+次はブラウザで `http://localhost:5174` を開き、ログイン後の主要画面とAPI proxyの実操作を確認する。
+
+## Current State
+
+- `docker compose up --build -d` で db / backend / frontend が起動する。
+- dbはコンテナ内 `5432`、ホスト公開 `5433`。
+- backendは `POSTGRES_HOST=db` / `POSTGRES_PORT=5432` で接続する。
+- frontendはNode.js `v22.22.2` でVite dev serverが起動する。
+- frontendのDocker内API proxyは `http://backend:8000` を向く。
 
 ## What Was Done
 
-- `frontend/src/api/categories.ts` に `createCategory` / `updateCategory` / `deleteCategory` を追加
-- `frontend/src/api/units.ts` に `createUnit` / `updateUnit` / `deleteUnit` を追加
-- Unit型に `is_standard` / `sort_order` / `is_active` を追加
-- `/settings` placeholderをSettingsPageへ差し替え
-- `frontend/src/pages/SettingsPage.tsx` を追加
-- Category一覧を表示
-- Category作成フォームを追加
-- Category編集・削除を追加
-- Unit一覧を表示
-- Unit作成フォームを追加
-- 店舗独自Unitの編集・削除を追加
-- 標準Unitは編集・削除ボタンを出さないreadonly表示にした
-- 保存成功 / 削除成功後は一覧を再取得する方針にした
-- loading / empty / error / save error / delete errorを追加
-- README / product screens / handoffを更新
+- `frontend/Dockerfile` のベースイメージをNode 22へ更新した。
+- Alpine/musl系のVite native binding問題を避けるため `node:22-bookworm-slim` を採用した。
+- `docker-compose.yml` のdb公開ポートを `5433:5432` にし、backendのDB接続ポートは `5432` のまま維持した。
+- frontend serviceに `VITE_API_PROXY_TARGET=http://backend:8000` を追加した。
+- frontend起動時に `npm ci` を実行し、`/app/node_modules` volume内の依存をコンテナ環境に合わせるようにした。
+- Vite proxy targetを環境変数で切り替えられるようにした。
+- `.env.example` / local `.env` / READMEの開発ポート説明を更新した。
 
 ## Key Decisions
 
-- SettingsはMVPではCategory / Unit管理に限定する。
-- frontendから `shop_id` は送らない。
-- Categoryは現在Shopのものだけbackend responseとして扱う。
-- Unitは標準Unit + 現在Shop Unitを表示する。
-- 標準Unitはfrontendでも編集・削除不可にする。
-- 編集UIはMVPでは作成フォームが編集フォームに切り替わる簡易方式にする。
-- 削除は `window.confirm()` で確認する。
-- 保存/削除成功後は楽観的更新ではなく一覧再取得する。
+- Docker Compose内部通信ではホスト公開ポートではなくコンテナポートを使う。backend -> db は `db:5432`。
+- ホストからDBを見る場合だけ `localhost:5433` を使う。
+- Docker内frontendからbackendへproxyするため、Django `ALLOWED_HOSTS` には `backend` を含める。
+- `/app/node_modules` volumeが古い optional native dependencyを保持するとViteが落ちるため、frontendコンテナ起動時に `npm ci` する。
 
 ## Key Files
 
-- `frontend/src/api/categories.ts`
-- `frontend/src/api/units.ts`
-- `frontend/src/pages/SettingsPage.tsx`
-- `frontend/src/App.tsx`
-- `frontend/src/pages/RecipeDetailPage.tsx`
+- `docker-compose.yml`
+- `frontend/Dockerfile`
+- `frontend/vite.config.ts`
+- `.env.example`
+- `.env`
 - `README.md`
-- `docs/product/screens.md`
-- `docs/handoff/archive/frontend-implementation.md`
+- `docs/handoff/latest.md`
 
 ## Verification
 
-直近の確認結果:
+実行済み:
 
 ```bash
-cd frontend
-npm run build
-npm run lint
+docker compose config
+docker compose down
+docker compose up --build
+docker compose up --build -d
+docker compose ps
+docker compose exec frontend node -v
+docker compose exec backend python manage.py check
+docker compose exec backend python -c "import os, socket; print(os.getenv('POSTGRES_HOST'), os.getenv('POSTGRES_PORT')); s=socket.create_connection(('db', 5432), 3); print('db socket ok'); s.close()"
+docker compose exec frontend node -e "fetch('http://backend:8000/api/v1/health/').then(async r=>{console.log(r.status); console.log(await r.text())})"
+docker compose exec frontend npm run build
+docker compose exec frontend npm run lint
 ```
 
 Result:
 
+- Docker config: backend `POSTGRES_PORT=5432`, db published `5433:5432`, frontend published `5174:5173`
+- `docker compose up --build`: db ready, backend running, frontend Vite ready
+- Frontend Node: `v22.22.2`
+- Backend check: pass
+- Backend -> db socket: `db 5432`, `db socket ok`
+- Frontend -> backend proxy target health request: HTTP 401 with auth-required JSON, meaning host/proxy reaches Django
 - Frontend build: pass
 - Frontend lint: pass
-
-Backend codeは今回変更していない。
+- このCodex実行環境からホスト公開ポートへの直接 `curl localhost:5174/8010` は接続できなかったが、`docker compose ps` ではpublish済み。ユーザーのMacブラウザ/TablePlus側で最終確認する。
 
 ## Current Product Scope
 
@@ -92,6 +100,7 @@ MVP対象:
 - Prep task status update
 - Smartphone layout
 - Tablet landscape layout
+- SettingsでCategory / Unit管理
 
 ## Out of Scope for MVP
 
@@ -106,14 +115,15 @@ MVP対象:
 - Advanced role management
 - Shop device mode
 - Full prep inventory / expiry alerts
+- Drag-and-drop prep operation
+- Image upload implementation
 
 ## Next Recommended Tasks
 
-1. Recipe / Ingredient削除UIの要否とタイミングを決める
-2. Prep Todayの日付切り替えUIを実装するか検証する
-3. Recipe formの入力補助や並び替えを必要に応じて整える
-4. MVPリリース前の画面動作確認チェックリストを作る
-5. docs / tests / handoff を更新する
+1. Macのブラウザで `http://localhost:5174` を開いて主要画面を確認する
+2. TablePlus等で `localhost:5433` / db `ricetta` / user `ricetta` へ接続できるか確認する
+3. 必要ならホスト公開ポートをREADMEの開発環境説明にさらに詳しく追記する
+4. UI polish後のスマホ幅・タブレット横・PC幅の目視確認を続ける
 
 ## Open Questions
 
@@ -137,23 +147,14 @@ MVP対象:
 - Login開発用アカウントは `owner@example.com` / `password`。
 - frontendは `shop_id` を送らず、backend responseを表示する。
 - API clientは `frontend/src/api/api.ts`。
-- Recipe API clientは `frontend/src/api/recipes.ts`。
-- Category API clientは `frontend/src/api/categories.ts`。
-- Ingredient API clientは `frontend/src/api/ingredients.ts`。
-- Unit API clientは `frontend/src/api/units.ts`。
-- Settings Pageは `frontend/src/pages/SettingsPage.tsx`。
-- 標準Unitは `is_standard` を見てreadonly表示している。
-- Recipe Formは `frontend/src/pages/RecipeFormPage.tsx`。
-- PrepTask API clientは `frontend/src/api/prepTasks.ts`。
-- Recipe Detail内のAdd to Prepパネルから `createPrepTask` を呼ぶ。
-- 保存成功後は `/prep` へ移動する。
-- Recipe編集保存では `ingredients` / `steps` をpayloadに含め、backendのnested replacementに合わせる。
-- Ingredient選択時、Ingredientの `usage_unit` を材料行Unitに自動設定している。
-- 工程番号は保存時に表示順で再採番している。
-- 空の材料行・工程行は送信前に除外している。
+- Docker起動URLは frontend `http://localhost:5174`、backend `http://localhost:8010`、DB host access `localhost:5433`。
+- Docker内部では backend -> db は必ず `db:5432`。
+- frontend Dockerfileは `node:22-bookworm-slim`。Vite/Rolldownのnative bindingを安定させるためAlpineは避けている。
+- frontend serviceは起動時に `npm ci` する。`/app/node_modules` volumeが古い依存を保持する問題への対策。
+- frontend Docker内API proxyは `VITE_API_PROXY_TARGET=http://backend:8000`。
 
 ## Suggested Commit Message
 
 ```text
-feat(frontend): add category and unit settings
+fix(docker): align ricetta dev ports and update frontend node
 ```

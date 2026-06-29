@@ -6,7 +6,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-ricetta}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ricetta}
     ports:
-      - "${POSTGRES_HOST_PORT:-5432}:5432"
+      - "${POSTGRES_HOST_PORT:-5433}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
@@ -17,14 +17,14 @@ services:
     environment:
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-django-insecure-dev-only-change-me}
       DJANGO_DEBUG: ${DJANGO_DEBUG:-True}
-      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,backend}
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1},backend
       POSTGRES_DB: ${POSTGRES_DB:-ricetta}
       POSTGRES_USER: ${POSTGRES_USER:-ricetta}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ricetta}
       POSTGRES_HOST: db
       POSTGRES_PORT: 5432
     ports:
-      - "8000:8000"
+      - "8010:8000"
     depends_on:
       - db
     volumes:
@@ -33,12 +33,14 @@ services:
 
   frontend:
     build: ./frontend
+    environment:
+      VITE_API_PROXY_TARGET: http://backend:8000
     ports:
-      - "5173:5173"
+      - "5174:5173"
     volumes:
       - ./frontend:/app
       - /app/node_modules
-    command: npm run dev -- --host 0.0.0.0
+    command: sh -c "npm ci && npm run dev -- --host 0.0.0.0"
 
 volumes:
   postgres_data:

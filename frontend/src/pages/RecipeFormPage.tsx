@@ -227,7 +227,7 @@ export function RecipeFormPage({ id, navigate }: RecipeFormPageProps) {
   if (loading) {
     return (
       <div className="mx-auto max-w-4xl px-5 py-6 md:px-7 md:py-8">
-        <div className="rounded-xl border border-[#e3d8c9] bg-[#fffaf2] p-6 text-[#75685e] shadow-sm">
+        <div className="rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-6 text-[#75685e] shadow-sm">
           レシピを読み込んでいます...
         </div>
       </div>
@@ -238,13 +238,13 @@ export function RecipeFormPage({ id, navigate }: RecipeFormPageProps) {
     return (
       <div className="mx-auto max-w-4xl px-5 py-6 md:px-7 md:py-8">
         <button
-          className="mb-5 rounded-lg bg-[#ebe1d2] px-4 py-3 text-base font-semibold text-[#5d5148]"
+          className="mb-5 rounded-lg border border-[#dfd1bf] bg-[#fffdf9] px-4 py-3 text-base font-bold text-[#5d5148]"
           onClick={() => navigate('/recipes')}
           type="button"
         >
           ← レシピ一覧へ
         </button>
-        <div className="rounded-xl border border-[#e3d8c9] bg-[#fffaf2] p-6 text-[#a23d2d] shadow-sm">
+        <div className="rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-6 text-[#a23d2d] shadow-sm">
           {loadError}
         </div>
       </div>
@@ -252,18 +252,18 @@ export function RecipeFormPage({ id, navigate }: RecipeFormPageProps) {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-5 py-6 md:px-7 md:py-8">
+    <div className="mx-auto max-w-7xl px-5 py-6 md:px-8 md:py-8">
       <button
-        className="mb-5 rounded-lg bg-[#ebe1d2] px-4 py-3 text-base font-semibold text-[#5d5148] transition hover:bg-[#e0d4c4]"
+        className="mb-5 rounded-lg border border-[#dfd1bf] bg-[#fffdf9] px-4 py-3 text-base font-bold text-[#5d5148] transition hover:bg-[#fbf7f0]"
         onClick={() => goBack(isEdit, id, navigate)}
         type="button"
       >
         ← 戻る
       </button>
 
-      <div className="mb-6">
-        <p className="text-sm font-semibold tracking-[0.14em] text-[#9b6b43]">RECIPE FORM</p>
-        <h1 className="mt-2 text-3xl font-bold tracking-normal text-[#332820] md:text-4xl">
+      <div className="mb-6 border-b border-[#ded2c2] pb-5">
+        <p className="text-sm font-bold text-[#c76738]">Recipe Form</p>
+        <h1 className="mt-2 text-3xl font-bold tracking-normal text-[#2e2822] md:text-4xl">
           {isEdit ? 'レシピを編集' : 'レシピを追加'}
         </h1>
         <p className="mt-2 text-base leading-7 text-[#75685e]">
@@ -271,9 +271,10 @@ export function RecipeFormPage({ id, navigate }: RecipeFormPageProps) {
         </p>
       </div>
 
-      <form className="space-y-5" onSubmit={handleSubmit}>
-        <section className="rounded-xl border border-[#e3d8c9] bg-[#fffaf2] p-5 shadow-sm">
-          <h2 className="text-xl font-bold text-[#34291f]">基本情報</h2>
+      <form className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(380px,1fr)]" onSubmit={handleSubmit}>
+        <div className="space-y-5">
+        <section className="rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-5 shadow-sm md:p-6">
+          <h2 className="text-2xl font-bold text-[#2e2822]">基本情報</h2>
           {optionsError && (
             <p className="mt-3 text-sm font-semibold text-[#a23d2d]">{optionsError}</p>
           )}
@@ -321,16 +322,16 @@ export function RecipeFormPage({ id, navigate }: RecipeFormPageProps) {
           </div>
         </section>
 
-        <section className="rounded-xl border border-[#e3d8c9] bg-[#fffaf2] p-5 shadow-sm">
+        <section className="rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-5 shadow-sm md:p-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="text-xl font-bold text-[#34291f]">材料</h2>
+              <h2 className="text-2xl font-bold text-[#2e2822]">材料</h2>
               <p className="mt-1 text-sm leading-6 text-[#75685e]">
                 使用する材料、使用量、単位だけを入力します。原価情報は表示しません。
               </p>
             </div>
             <button
-              className="rounded-lg bg-[#7b4f2f] px-4 py-3 text-base font-semibold text-white transition hover:bg-[#694225]"
+              className="rounded-lg border border-dashed border-[#d8c3ad] bg-white px-4 py-3 text-base font-bold text-[#c76738] transition hover:bg-[#fbf7f0]"
               onClick={addIngredientRow}
               type="button"
             >
@@ -340,7 +341,7 @@ export function RecipeFormPage({ id, navigate }: RecipeFormPageProps) {
 
           <div className="mt-4 space-y-4">
             {form.ingredients.length === 0 && (
-              <p className="rounded-lg bg-[#f4ecdf] px-4 py-5 text-[#75685e]">
+              <p className="rounded-lg bg-[#f1e7dc] px-4 py-5 text-[#75685e]">
                 材料行はまだありません。あとから追加して保存できます。
               </p>
             )}
@@ -381,7 +382,7 @@ export function RecipeFormPage({ id, navigate }: RecipeFormPageProps) {
                 </div>
                 <div className="mt-3 flex justify-end">
                   <button
-                    className="rounded-lg bg-[#f1e7dc] px-4 py-2 text-sm font-semibold text-[#7a5a42] transition hover:bg-[#e5d7c8]"
+                    className="rounded-lg bg-[#fff0ed] px-4 py-2 text-sm font-bold text-[#a23d2d] transition hover:bg-[#f9dfd9]"
                     onClick={() => removeIngredientRow(index)}
                     type="button"
                   >
@@ -393,16 +394,19 @@ export function RecipeFormPage({ id, navigate }: RecipeFormPageProps) {
           </div>
         </section>
 
-        <section className="rounded-xl border border-[#e3d8c9] bg-[#fffaf2] p-5 shadow-sm">
+        </div>
+
+        <div className="space-y-5 lg:bg-[#eee5d8] lg:p-6">
+        <section className="rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-5 shadow-sm md:p-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="text-xl font-bold text-[#34291f]">作り方</h2>
+              <h2 className="text-2xl font-bold text-[#2e2822]">作り方</h2>
               <p className="mt-1 text-sm leading-6 text-[#75685e]">
                 保存時に表示順で工程番号を振り直します。
               </p>
             </div>
             <button
-              className="rounded-lg bg-[#7b4f2f] px-4 py-3 text-base font-semibold text-white transition hover:bg-[#694225]"
+              className="rounded-lg border border-dashed border-[#d8c3ad] bg-white px-4 py-3 text-base font-bold text-[#c76738] transition hover:bg-[#fbf7f0]"
               onClick={addStepRow}
               type="button"
             >
@@ -412,13 +416,13 @@ export function RecipeFormPage({ id, navigate }: RecipeFormPageProps) {
 
           <div className="mt-4 space-y-4">
             {form.steps.length === 0 && (
-              <p className="rounded-lg bg-[#f4ecdf] px-4 py-5 text-[#75685e]">
+              <p className="rounded-lg bg-[#f1e7dc] px-4 py-5 text-[#75685e]">
                 作り方はまだありません。あとから追加して保存できます。
               </p>
             )}
             {form.steps.map((row, index) => (
-              <div className="rounded-lg border border-[#eadfce] bg-white p-4" key={index}>
-                <p className="text-sm font-semibold text-[#9b6b43]">STEP {index + 1}</p>
+              <div className="rounded-lg border border-[#eadfce] bg-[#f1e7dc] p-4" key={index}>
+                <p className="text-lg font-bold text-[#75685e]">{index + 1}.</p>
                 <div className="mt-3 grid gap-4 md:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
                   <label className="block">
                     <span className="text-sm font-semibold text-[#4b4037]">作り方</span>
@@ -436,7 +440,7 @@ export function RecipeFormPage({ id, navigate }: RecipeFormPageProps) {
                 </div>
                 <div className="mt-3 flex justify-end">
                   <button
-                    className="rounded-lg bg-[#f1e7dc] px-4 py-2 text-sm font-semibold text-[#7a5a42] transition hover:bg-[#e5d7c8]"
+                    className="rounded-lg bg-[#fff0ed] px-4 py-2 text-sm font-bold text-[#a23d2d] transition hover:bg-[#f9dfd9]"
                     onClick={() => removeStepRow(index)}
                     type="button"
                   >
@@ -448,8 +452,8 @@ export function RecipeFormPage({ id, navigate }: RecipeFormPageProps) {
           </div>
         </section>
 
-        <section className="rounded-xl border border-[#e3d8c9] bg-[#fffaf2] p-5 shadow-sm">
-          <h2 className="text-xl font-bold text-[#34291f]">管理情報</h2>
+        <section className="rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-5 shadow-sm md:p-6">
+          <h2 className="text-2xl font-bold text-[#2e2822]">管理情報</h2>
           <div className="mt-4 grid gap-4 md:grid-cols-2">
             <TextField
               inputMode="decimal"
@@ -489,19 +493,20 @@ export function RecipeFormPage({ id, navigate }: RecipeFormPageProps) {
 
         <div className="flex flex-col gap-3 sm:flex-row">
           <button
-            className="rounded-lg bg-[#7b4f2f] px-5 py-3 text-base font-semibold text-white transition hover:bg-[#694225] disabled:cursor-not-allowed disabled:opacity-60"
+            className="rounded-lg bg-[#c76738] px-5 py-3 text-base font-bold text-white transition hover:bg-[#b65b31] disabled:cursor-not-allowed disabled:opacity-60"
             disabled={saving || optionsLoading}
             type="submit"
           >
             {saving ? '保存中...' : '保存'}
           </button>
           <button
-            className="rounded-lg bg-[#ebe1d2] px-5 py-3 text-base font-semibold text-[#5d5148] transition hover:bg-[#e0d4c4]"
+            className="rounded-lg border border-[#dfd1bf] bg-white px-5 py-3 text-base font-bold text-[#5d5148] transition hover:bg-[#fbf7f0]"
             onClick={() => goBack(isEdit, id, navigate)}
             type="button"
           >
             キャンセル
           </button>
+        </div>
         </div>
       </form>
     </div>

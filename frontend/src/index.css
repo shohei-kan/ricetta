@@ -7,8 +7,8 @@
     BlinkMacSystemFont,
     'Segoe UI',
     sans-serif;
-  color: #2b2621;
-  background: #f7f4ee;
+  color: #2a241f;
+  background: #eee5d8;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -20,22 +20,49 @@
 }
 
 html {
-  background: #f7f4ee;
+  background: #eee5d8;
 }
 
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  background:
+    linear-gradient(90deg, rgba(232, 221, 207, 0.9), rgba(247, 243, 236, 0.96) 14%, rgba(247, 243, 236, 0.96) 86%, rgba(232, 221, 207, 0.9)),
+    #f7f3ec;
+  color: #2a241f;
 }
 
 button,
-input {
+input,
+select,
+textarea {
   font: inherit;
 }
 
 button {
   cursor: pointer;
+}
+
+button,
+input,
+select,
+textarea {
+  letter-spacing: 0;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid rgba(198, 103, 56, 0.34);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: #f2d5bf;
+  color: #2a241f;
 }
 
 #root {

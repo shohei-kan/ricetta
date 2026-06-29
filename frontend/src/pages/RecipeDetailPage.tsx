@@ -43,9 +43,9 @@ export function RecipeDetailPage({ id, navigate }: RecipeDetailPageProps) {
   }, [id])
 
   return (
-    <div className="mx-auto max-w-7xl px-5 py-6 md:px-7 md:py-8">
+    <div className="mx-auto max-w-7xl px-5 py-6 md:px-8 md:py-8">
       <button
-        className="mb-5 rounded-lg bg-[#ebe1d2] px-4 py-3 text-base font-semibold text-[#5d5148] transition hover:bg-[#e0d4c4]"
+        className="mb-5 rounded-lg border border-[#dfd1bf] bg-[#fffdf9] px-4 py-3 text-base font-bold text-[#5d5148] transition hover:bg-[#fbf7f0]"
         onClick={() => goBack(navigate)}
         type="button"
       >
@@ -53,13 +53,13 @@ export function RecipeDetailPage({ id, navigate }: RecipeDetailPageProps) {
       </button>
 
       {loading && (
-        <div className="rounded-xl border border-[#e3d8c9] bg-[#fffaf2] p-6 text-[#75685e] shadow-sm">
+        <div className="rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-6 text-[#75685e] shadow-sm">
           レシピを読み込んでいます...
         </div>
       )}
 
       {error && (
-        <div className="rounded-xl border border-[#e3d8c9] bg-[#fffaf2] p-6 text-[#a23d2d] shadow-sm">
+        <div className="rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-6 text-[#a23d2d] shadow-sm">
           {error}
         </div>
       )}
@@ -80,14 +80,14 @@ function RecipeDetailContent({
 
   return (
     <>
-      <header className="mb-6 rounded-xl border border-[#e3d8c9] bg-[#fffaf2] p-5 shadow-sm">
-        <p className="text-sm font-semibold text-[#9b6b43]">
+      <header className="mb-6 rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-5 shadow-sm md:p-6">
+        <p className="text-sm font-bold text-[#78936f]">
           {recipe.category?.name ?? 'カテゴリなし'}
         </p>
-        <h1 className="mt-2 text-3xl font-bold tracking-normal text-[#332820] md:text-4xl">
+        <h1 className="mt-2 text-3xl font-bold tracking-normal text-[#2e2822] md:text-5xl">
           {recipe.name}
         </h1>
-        <p className="mt-4 text-xl font-bold text-[#6f4f36]">
+        <p className="mt-4 text-xl font-bold text-[#c76738]">
           基準: {formatQuantity(recipe.base_yield_quantity)} {recipe.base_yield_unit.name}
         </p>
         {recipe.description && (
@@ -97,14 +97,14 @@ function RecipeDetailContent({
         )}
         <div className="mt-5 flex flex-col gap-3 sm:flex-row">
           <button
-            className="rounded-lg bg-[#7b4f2f] px-5 py-3 text-base font-semibold text-white transition hover:bg-[#694225]"
+            className="rounded-lg bg-[#c76738] px-5 py-3 text-base font-bold text-white shadow-[0_8px_18px_rgba(198,103,56,0.22)] transition hover:bg-[#b65b31]"
             onClick={() => setShowPrepForm((current) => !current)}
             type="button"
           >
             今日の仕込みに追加
           </button>
           <button
-            className="rounded-lg bg-[#ebe1d2] px-5 py-3 text-base font-semibold text-[#5d5148] transition hover:bg-[#e0d4c4]"
+            className="rounded-lg border border-[#dfd1bf] bg-white px-5 py-3 text-base font-bold text-[#5d5148] transition hover:bg-[#fbf7f0]"
             onClick={() => navigate(`/recipes/${recipe.id}/edit`)}
             type="button"
           >
@@ -113,10 +113,10 @@ function RecipeDetailContent({
         </div>
       </header>
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.75fr)]">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.75fr)]">
         <main className="space-y-5">
-          <section className="rounded-xl border border-[#e3d8c9] bg-[#fffaf2] p-5 shadow-sm">
-            <h2 className="text-2xl font-bold text-[#34291f]">材料</h2>
+          <section className="rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-5 shadow-sm md:p-6">
+            <h2 className="text-2xl font-bold text-[#2e2822]">材料</h2>
             <div className="mt-4 space-y-3">
               {recipe.ingredients.length > 0 ? (
                 recipe.ingredients.map((item) => (
@@ -125,8 +125,8 @@ function RecipeDetailContent({
                     key={item.id}
                   >
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-baseline sm:justify-between">
-                      <p className="text-lg font-bold text-[#332820]">{item.ingredient.name}</p>
-                      <p className="text-lg font-semibold text-[#6f6258]">
+                      <p className="text-xl font-bold text-[#2e2822]">{item.ingredient.name}</p>
+                      <p className="text-xl font-bold text-[#6f6258]">
                         {formatQuantity(item.quantity)} {item.unit.name}
                       </p>
                     </div>
@@ -134,26 +134,26 @@ function RecipeDetailContent({
                   </div>
                 ))
               ) : (
-                <p className="rounded-lg bg-[#f4ecdf] px-4 py-5 text-[#75685e]">
+                <p className="rounded-lg bg-[#f1e7dc] px-4 py-5 text-[#75685e]">
                   材料はまだ登録されていません。
                 </p>
               )}
             </div>
           </section>
 
-          <section className="rounded-xl border border-[#e3d8c9] bg-[#fffaf2] p-5 shadow-sm">
-            <h2 className="text-2xl font-bold text-[#34291f]">作り方</h2>
+          <section className="rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-5 shadow-sm md:p-6">
+            <h2 className="text-2xl font-bold text-[#2e2822]">作り方</h2>
             <div className="mt-4 space-y-3">
               {recipe.steps.length > 0 ? (
                 recipe.steps.map((step) => (
-                  <div className="rounded-lg border border-[#eadfce] bg-white p-4" key={step.id}>
-                    <p className="text-sm font-semibold text-[#9b6b43]">STEP {step.step_number}</p>
-                    <p className="mt-2 text-lg leading-8 text-[#332820]">{step.instruction}</p>
+                  <div className="rounded-lg border border-[#eadfce] bg-[#f1e7dc] p-4" key={step.id}>
+                    <p className="text-sm font-bold text-[#75685e]">STEP {step.step_number}</p>
+                    <p className="mt-2 rounded-lg bg-white px-4 py-3 text-lg leading-8 text-[#2e2822]">{step.instruction}</p>
                     {step.memo && <p className="mt-2 text-sm text-[#8a7a6d]">{step.memo}</p>}
                   </div>
                 ))
               ) : (
-                <p className="rounded-lg bg-[#f4ecdf] px-4 py-5 text-[#75685e]">
+                <p className="rounded-lg bg-[#f1e7dc] px-4 py-5 text-[#75685e]">
                   作り方はまだ登録されていません。
                 </p>
               )}
@@ -172,16 +172,16 @@ function RecipeDetailContent({
 
           <CostSummaryCard recipe={recipe} />
 
-          <section className="rounded-xl border border-[#e3d8c9] bg-[#fffaf2] p-5 shadow-sm">
-            <h2 className="text-xl font-bold text-[#34291f]">注意点</h2>
-            <p className="mt-3 rounded-lg bg-[#f4ecdf] px-4 py-4 leading-7 text-[#75685e]">
+          <section className="rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-5 shadow-sm">
+            <h2 className="text-xl font-bold text-[#2e2822]">注意点</h2>
+            <p className="mt-3 rounded-lg bg-[#f1e7dc] px-4 py-4 leading-7 text-[#75685e]">
               {recipe.notes || '特になし'}
             </p>
           </section>
 
-          <section className="rounded-xl border border-[#e3d8c9] bg-[#fffaf2] p-5 shadow-sm">
-            <h2 className="text-xl font-bold text-[#34291f]">アレルゲン</h2>
-            <p className="mt-3 rounded-lg bg-[#f4ecdf] px-4 py-4 leading-7 text-[#75685e]">
+          <section className="rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-5 shadow-sm">
+            <h2 className="text-xl font-bold text-[#2e2822]">アレルゲン</h2>
+            <p className="mt-3 rounded-lg bg-[#f1e7dc] px-4 py-4 leading-7 text-[#75685e]">
               {recipe.allergen_notes || '未設定'}
             </p>
           </section>
@@ -348,14 +348,14 @@ function AddToPrepPanel({
 
         <div className="flex flex-col gap-3 sm:flex-row">
           <button
-            className="rounded-lg bg-[#7b4f2f] px-4 py-3 text-base font-semibold text-white transition hover:bg-[#694225] disabled:cursor-not-allowed disabled:opacity-60"
+            className="rounded-lg bg-[#c76738] px-4 py-3 text-base font-bold text-white transition hover:bg-[#b65b31] disabled:cursor-not-allowed disabled:opacity-60"
             disabled={saving || unitsLoading}
             type="submit"
           >
             {saving ? '追加中...' : '仕込みに追加'}
           </button>
           <button
-            className="rounded-lg bg-[#ebe1d2] px-4 py-3 text-base font-semibold text-[#5d5148] transition hover:bg-[#e0d4c4]"
+            className="rounded-lg border border-[#dfd1bf] bg-white px-4 py-3 text-base font-bold text-[#5d5148] transition hover:bg-[#fbf7f0]"
             onClick={onCancel}
             type="button"
           >
@@ -371,8 +371,8 @@ function CostSummaryCard({ recipe }: { recipe: RecipeDetail }) {
   const summary = recipe.cost_summary
 
   return (
-    <section className="rounded-xl border border-[#e3d8c9] bg-[#fffaf2] p-5 shadow-sm">
-      <h2 className="text-xl font-bold text-[#34291f]">原価情報</h2>
+    <section className="rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-5 shadow-sm">
+      <h2 className="text-xl font-bold text-[#2e2822]">原価情報</h2>
       <div className="mt-4 space-y-3">
         <SummaryRow label="材料原価" value={`${formatMoney(summary.material_cost)}円`} />
         <SummaryRow
@@ -391,7 +391,7 @@ function CostSummaryCard({ recipe }: { recipe: RecipeDetail }) {
 
 function SummaryRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between rounded-lg bg-[#f4ecdf] px-4 py-3">
+    <div className="flex items-center justify-between rounded-lg bg-[#f1e7dc] px-4 py-3">
       <span className="text-sm font-semibold text-[#75685e]">{label}</span>
       <span className="text-lg font-bold text-[#332820]">{value}</span>
     </div>

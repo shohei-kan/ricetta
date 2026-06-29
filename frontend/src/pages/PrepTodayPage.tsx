@@ -85,22 +85,22 @@ export function PrepTodayPage({ navigate }: PrepTodayPageProps) {
   const isEmpty = !loading && !error && (data?.tasks.length ?? 0) === 0
 
   return (
-    <div className="mx-auto max-w-7xl px-5 py-6 md:px-7 md:py-8">
-      <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+    <div className="mx-auto max-w-7xl px-5 py-6 md:px-8 md:py-8">
+      <div className="mb-6 flex flex-col gap-4 border-b border-[#ded2c2] pb-5 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="text-sm font-semibold tracking-[0.14em] text-[#9b6b43]">PREP TODAY</p>
-          <h1 className="mt-2 text-3xl font-bold tracking-normal text-[#332820] md:text-4xl">
+          <p className="text-sm font-bold text-[#c76738]">Prep Today</p>
+          <h1 className="mt-2 text-3xl font-bold tracking-normal text-[#2e2822] md:text-4xl">
             今日の仕込み
           </h1>
           <p className="mt-2 text-base text-[#75685e]">{formatDate(data?.date ?? today)}</p>
         </div>
 
         {data && (
-          <div className="grid grid-cols-3 gap-2 rounded-xl border border-[#e3d8c9] bg-[#fffaf2] p-3 shadow-sm">
+          <div className="grid grid-cols-3 gap-2 rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-3 shadow-sm">
             {statusOrder.map((status) => (
-              <div className="min-w-[88px] rounded-lg bg-[#f4ecdf] px-3 py-3 text-center" key={status}>
-                <p className="text-sm font-semibold text-[#75685e]">{statusLabels[status]}</p>
-                <p className="mt-1 text-2xl font-bold text-[#332820]">{data.summary[status]}</p>
+              <div className={`min-w-[88px] rounded-lg border px-3 py-3 text-center ${columnTone(status)}`} key={status}>
+                <p className="text-sm font-bold">{statusLabels[status]}</p>
+                <p className="mt-1 text-2xl font-bold">{data.summary[status]}</p>
               </div>
             ))}
           </div>
@@ -116,7 +116,7 @@ export function PrepTodayPage({ navigate }: PrepTodayPageProps) {
       {loading && <LoadingState />}
 
       {error && (
-        <div className="rounded-xl border border-[#e3d8c9] bg-[#fffaf2] p-6 text-[#75685e] shadow-sm">
+        <div className="rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-6 text-[#75685e] shadow-sm">
           {error}
         </div>
       )}
@@ -124,7 +124,7 @@ export function PrepTodayPage({ navigate }: PrepTodayPageProps) {
       {isEmpty && <EmptyState />}
 
       {data && data.tasks.length > 0 && (
-        <div className="grid gap-4 lg:grid-cols-3">
+        <div className="grid gap-6 lg:grid-cols-3">
           {statusOrder.map((status) => (
             <StatusColumn
               key={status}
@@ -158,12 +158,14 @@ function StatusColumn({
   updatingTaskId: number | null
 }) {
   return (
-    <section className="rounded-xl border border-[#e3d8c9] bg-[#fffaf2] p-4 shadow-sm">
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-xl font-bold text-[#34291f]">{label}</h2>
-        <span className="rounded-full bg-[#f0e5d5] px-3 py-1 text-sm font-semibold text-[#6d5038]">
+    <section className={`min-h-[520px] rounded-xl border p-5 ${columnSurface(status)}`}>
+      <div className="mb-5 border-b border-current/10 pb-4">
+        <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold">{label}</h2>
+        <span className="rounded-full bg-white/70 px-3 py-1 text-sm font-bold">
           {tasks.length}
         </span>
+        </div>
       </div>
 
       <div className="space-y-3">
@@ -179,7 +181,7 @@ function StatusColumn({
             />
           ))
         ) : (
-          <p className="rounded-lg bg-[#f4ecdf] px-4 py-5 text-sm text-[#75685e]">
+          <p className="rounded-lg border border-white/70 bg-white/55 px-4 py-5 text-sm font-semibold text-[#75685e]">
             この状態の仕込みはありません。
           </p>
         )}
@@ -204,15 +206,15 @@ function PrepTaskCard({
   const actions = getStatusActions(status)
 
   return (
-    <article className="rounded-xl border border-[#eadfce] bg-white p-4 shadow-[0_12px_30px_rgba(75,56,35,0.05)]">
+    <article className="rounded-xl border border-[#e2d6c7] bg-[#fffdf9] p-4 shadow-[0_10px_24px_rgba(84,58,35,0.06)]">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h3 className="text-xl font-bold leading-7 text-[#332820]">{task.recipe.name}</h3>
-          <p className="mt-2 text-lg font-semibold text-[#6f6258]">
+          <h3 className="text-xl font-bold leading-7 text-[#2e2822]">{task.recipe.name}</h3>
+          <p className="mt-2 text-lg font-bold text-[#6f6258]">
             {formatQuantity(task.planned_quantity)} {task.planned_unit.name}
           </p>
         </div>
-        <span className="shrink-0 rounded-full bg-[#f0e5d5] px-3 py-1 text-sm font-semibold text-[#6d5038]">
+        <span className="shrink-0 rounded-md bg-[#78936f] px-3 py-1 text-sm font-bold text-white">
           {statusLabels[task.status]}
         </span>
       </div>
@@ -230,7 +232,7 @@ function PrepTaskCard({
       )}
 
       <button
-        className="mt-4 w-full rounded-lg bg-[#ebe1d2] px-3 py-3 text-sm font-semibold text-[#5d5148] transition hover:bg-[#e0d4c4]"
+        className="mt-4 w-full rounded-lg border border-[#dfd1bf] bg-white px-3 py-3 text-sm font-bold text-[#5d5148] transition hover:bg-[#fbf7f0]"
         onClick={() => onViewRecipe(task.recipe.id)}
         type="button"
       >
@@ -240,7 +242,7 @@ function PrepTaskCard({
       <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
         {actions.map((action) => (
           <button
-            className="rounded-lg bg-[#7b4f2f] px-3 py-3 text-sm font-semibold text-white transition hover:bg-[#694225] disabled:cursor-not-allowed disabled:opacity-60"
+            className="rounded-lg bg-[#c76738] px-3 py-3 text-sm font-bold text-white transition hover:bg-[#b65b31] disabled:cursor-not-allowed disabled:opacity-60"
             disabled={updating}
             key={action.status}
             onClick={() => void onStatusChange(task.id, action.status)}
@@ -258,11 +260,11 @@ function LoadingState() {
   return (
     <div className="grid gap-4 lg:grid-cols-3">
       {statusOrder.map((status) => (
-        <section className="rounded-xl border border-[#e3d8c9] bg-[#fffaf2] p-4 shadow-sm" key={status}>
+        <section className={`rounded-xl border p-5 ${columnSurface(status)}`} key={status}>
           <div className="mb-4 h-6 w-24 rounded bg-[#eadfce]" />
           <div className="space-y-3">
-            <div className="h-36 rounded-xl bg-[#f4ecdf]" />
-            <div className="h-28 rounded-xl bg-[#f4ecdf]" />
+            <div className="h-36 rounded-xl bg-white/55" />
+            <div className="h-28 rounded-xl bg-white/55" />
           </div>
         </section>
       ))}
@@ -272,7 +274,7 @@ function LoadingState() {
 
 function EmptyState() {
   return (
-    <div className="rounded-xl border border-[#e3d8c9] bg-[#fffaf2] p-6 text-[#75685e] shadow-sm">
+    <div className="rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-6 text-[#75685e] shadow-sm">
       <p className="text-lg font-bold text-[#34291f]">今日の仕込みはまだありません。</p>
       <p className="mt-2">レシピから仕込みを追加しましょう。</p>
     </div>
@@ -306,6 +308,26 @@ function getStatusActions(status: PrepTaskStatus): Array<{ label: string; status
     { label: '未着手に戻す', status: 'todo' },
     { label: '作業中に戻す', status: 'doing' },
   ]
+}
+
+function columnSurface(status: PrepTaskStatus) {
+  if (status === 'doing') {
+    return 'border-[#f0dc9f] bg-[#fff1c8] text-[#9a6410]'
+  }
+  if (status === 'done') {
+    return 'border-[#cfe1cd] bg-[#e7f0e4] text-[#4d7a55]'
+  }
+  return 'border-[#e3d7c8] bg-[#f1e7dc] text-[#75685e]'
+}
+
+function columnTone(status: PrepTaskStatus) {
+  if (status === 'doing') {
+    return 'border-[#ead8a5] bg-[#fff1c8] text-[#9a6410]'
+  }
+  if (status === 'done') {
+    return 'border-[#cfe1cd] bg-[#e8f1e5] text-[#4d7a55]'
+  }
+  return 'border-[#e0d3c2] bg-[#f1e7dc] text-[#75685e]'
 }
 
 function getToday() {

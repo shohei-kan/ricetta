@@ -33,20 +33,18 @@ export function LoginPage({ navigate }: LoginPageProps) {
   }
 
   return (
-    <main className="min-h-screen bg-[#f7f4ee] px-5 py-8 text-[#2b2621]">
+    <main className="min-h-screen bg-[#f7f3ec] px-5 py-8 text-[#2a241f]">
       <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-md flex-col justify-center">
         <div className="mb-8">
-          <p className="mb-3 text-sm font-semibold tracking-[0.18em] text-[#9b6b43]">
-            RECIPE NOTEBOOK
-          </p>
-          <h1 className="text-4xl font-bold tracking-normal text-[#332820]">Ricetta</h1>
+          <p className="mb-3 text-sm font-bold text-[#c76738]">Recipe Notebook</p>
+          <h1 className="text-4xl font-bold tracking-normal text-[#2e2822]">Ricetta</h1>
           <p className="mt-3 text-lg leading-8 text-[#6f6258]">
             小さな飲食店のための、レシピ台帳。
           </p>
         </div>
 
         <form
-          className="rounded-xl border border-[#e3d8c9] bg-[#fffaf2] p-5 shadow-[0_20px_60px_rgba(75,56,35,0.08)]"
+          className="rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-5 shadow-[0_20px_60px_rgba(75,56,35,0.08)]"
           onSubmit={handleSubmit}
         >
           <label className="block text-left text-sm font-semibold text-[#4b4037]">
@@ -78,7 +76,7 @@ export function LoginPage({ navigate }: LoginPageProps) {
           )}
 
           <button
-            className="mt-5 w-full rounded-lg bg-[#7b4f2f] px-4 py-3 text-base font-semibold text-white transition hover:bg-[#694225] disabled:cursor-not-allowed disabled:opacity-60"
+            className="mt-5 w-full rounded-lg bg-[#c76738] px-4 py-3 text-base font-bold text-white transition hover:bg-[#b65b31] disabled:cursor-not-allowed disabled:opacity-60"
             disabled={submitting}
             type="submit"
           >

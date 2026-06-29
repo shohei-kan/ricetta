@@ -56,19 +56,19 @@ export function IngredientListPage({ navigate }: IngredientListPageProps) {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-5 py-6 md:px-7 md:py-8">
-      <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+    <div className="mx-auto max-w-7xl px-5 py-6 md:px-8 md:py-8">
+      <div className="mb-6 flex flex-col gap-4 border-b border-[#ded2c2] pb-5 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="text-sm font-semibold tracking-[0.14em] text-[#9b6b43]">INGREDIENTS</p>
-          <h1 className="mt-2 text-3xl font-bold tracking-normal text-[#332820] md:text-4xl">
-            材料
+          <p className="text-sm font-bold text-[#c76738]">Ingredients</p>
+          <h1 className="mt-2 text-3xl font-bold tracking-normal text-[#2e2822] md:text-4xl">
+            材料一覧
           </h1>
           <p className="mt-2 text-base leading-7 text-[#75685e]">
             仕入先、原価計算モード、単価を確認する材料マスターです。
           </p>
         </div>
         <button
-          className="rounded-lg bg-[#7b4f2f] px-5 py-3 text-base font-semibold text-white transition hover:bg-[#694225]"
+          className="rounded-lg bg-[#c76738] px-5 py-3 text-base font-bold text-white shadow-[0_8px_18px_rgba(198,103,56,0.22)] transition hover:bg-[#b65b31]"
           onClick={() => navigate('/ingredients/new')}
           type="button"
         >
@@ -77,18 +77,18 @@ export function IngredientListPage({ navigate }: IngredientListPageProps) {
       </div>
 
       <form
-        className="mb-5 flex flex-col gap-3 rounded-xl border border-[#e3d8c9] bg-[#fffaf2] p-4 shadow-sm sm:flex-row"
+        className="mb-6 flex flex-col gap-4 rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-4 shadow-sm sm:flex-row"
         onSubmit={handleSearch}
       >
         <input
-          className="min-h-12 flex-1 rounded-lg border border-[#d7cbbb] bg-white px-4 text-base text-[#2b2621] outline-none ring-[#b88458] transition focus:ring-2"
+          className="min-h-14 flex-1 rounded-lg border border-[#d7cbbb] bg-white px-4 text-lg text-[#2b2621] outline-none ring-[#c76738]/30 transition focus:ring-2"
           onChange={(event) => setSearchInput(event.target.value)}
           placeholder="ホールトマト、卵、塩..."
           type="search"
           value={searchInput}
         />
         <button
-          className="rounded-lg bg-[#7b4f2f] px-5 py-3 text-base font-semibold text-white transition hover:bg-[#694225]"
+          className="rounded-lg bg-[#c76738] px-6 py-3 text-base font-bold text-white transition hover:bg-[#b65b31]"
           type="submit"
         >
           検索
@@ -96,26 +96,32 @@ export function IngredientListPage({ navigate }: IngredientListPageProps) {
       </form>
 
       {loading && (
-        <div className="rounded-xl border border-[#e3d8c9] bg-[#fffaf2] p-6 text-[#75685e] shadow-sm">
+        <div className="rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-6 text-[#75685e] shadow-sm">
           材料を読み込んでいます...
         </div>
       )}
 
       {error && (
-        <div className="rounded-xl border border-[#e3d8c9] bg-[#fffaf2] p-6 text-[#a23d2d] shadow-sm">
+        <div className="rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-6 text-[#a23d2d] shadow-sm">
           {error}
         </div>
       )}
 
       {!loading && !error && ingredients.length === 0 && (
-        <div className="rounded-xl border border-[#e3d8c9] bg-[#fffaf2] p-6 text-[#75685e] shadow-sm">
+        <div className="rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-6 text-[#75685e] shadow-sm">
           <p className="text-lg font-bold text-[#34291f]">材料がまだありません。</p>
           <p className="mt-2">最初の材料を登録しましょう。</p>
         </div>
       )}
 
       {!loading && !error && ingredients.length > 0 && (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="overflow-hidden rounded-xl border border-[#ded2c2] bg-[#fffdf9] shadow-sm">
+          <div className="hidden grid-cols-[1.2fr_1.4fr_1fr_1fr] gap-4 border-b border-[#ded2c2] bg-[#f1e7dc] px-5 py-4 text-base font-bold text-[#2e2822] md:grid">
+            <span>材料名</span>
+            <span>計算方法</span>
+            <span>目安単価</span>
+            <span>仕入先</span>
+          </div>
           {ingredients.map((ingredient) => (
             <IngredientCard
               ingredient={ingredient}
@@ -137,19 +143,24 @@ function IngredientCard({
   navigate: (path: string) => void
 }) {
   return (
-    <article className="rounded-xl border border-[#e3d8c9] bg-[#fffaf2] p-5 shadow-sm">
-      <p className="text-sm font-semibold text-[#9b6b43]">
+    <article className="border-b border-[#ded2c2] bg-[#fffdf9] p-5 last:border-b-0 md:grid md:grid-cols-[1.2fr_1.4fr_1fr_1fr] md:items-center md:gap-4">
+      <div>
+        <h2 className="text-2xl font-bold leading-8 text-[#2e2822]">{ingredient.name}</h2>
+        <p className="mt-1 text-sm font-semibold text-[#75685e] md:hidden">
+          {ingredient.supplier || '仕入先未設定'}
+        </p>
+      </div>
+      <p className="mt-3 text-base font-bold text-[#6f6258] md:mt-0">
         {costModeLabels[ingredient.cost_mode]}
       </p>
-      <h2 className="mt-2 text-2xl font-bold leading-8 text-[#332820]">{ingredient.name}</h2>
-      {ingredient.supplier && (
-        <p className="mt-2 text-sm font-semibold text-[#75685e]">{ingredient.supplier}</p>
-      )}
-      <p className="mt-4 rounded-lg bg-[#f4ecdf] px-4 py-3 text-base font-bold text-[#6f4f36]">
+      <p className="mt-3 text-lg font-bold text-[#c76738] md:mt-0">
         {ingredient.unit_cost_label ?? '計算なし'}
       </p>
+      <p className="mt-2 hidden text-base font-semibold text-[#75685e] md:block">
+        {ingredient.supplier || '未設定'}
+      </p>
       <button
-        className="mt-4 w-full rounded-lg bg-[#7b4f2f] px-4 py-3 text-base font-semibold text-white transition hover:bg-[#694225]"
+        className="mt-4 rounded-lg border border-[#dfd1bf] bg-white px-4 py-3 text-base font-bold text-[#5d5148] transition hover:bg-[#fbf7f0] md:col-span-4 md:w-fit"
         onClick={() => navigate(`/ingredients/${ingredient.id}`)}
         type="button"
       >

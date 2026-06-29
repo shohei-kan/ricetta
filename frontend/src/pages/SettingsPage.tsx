@@ -231,7 +231,7 @@ export function SettingsPage() {
   if (loading) {
     return (
       <div className="mx-auto max-w-5xl px-5 py-6 md:px-7 md:py-8">
-        <div className="rounded-xl border border-[#e3d8c9] bg-[#fffaf2] p-6 text-[#75685e] shadow-sm">
+        <div className="rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-6 text-[#75685e] shadow-sm">
           設定を読み込んでいます...
         </div>
       </div>
@@ -241,7 +241,7 @@ export function SettingsPage() {
   if (loadError) {
     return (
       <div className="mx-auto max-w-5xl px-5 py-6 md:px-7 md:py-8">
-        <div className="rounded-xl border border-[#e3d8c9] bg-[#fffaf2] p-6 text-[#a23d2d] shadow-sm">
+        <div className="rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-6 text-[#a23d2d] shadow-sm">
           {loadError}
         </div>
       </div>
@@ -249,10 +249,10 @@ export function SettingsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-5 py-6 md:px-7 md:py-8">
-      <div className="mb-6">
-        <p className="text-sm font-semibold tracking-[0.14em] text-[#9b6b43]">SETTINGS</p>
-        <h1 className="mt-2 text-3xl font-bold tracking-normal text-[#332820] md:text-4xl">
+    <div className="mx-auto max-w-7xl px-5 py-6 md:px-8 md:py-8">
+      <div className="mb-6 border-b border-[#ded2c2] pb-5">
+        <p className="text-sm font-bold text-[#c76738]">Settings</p>
+        <h1 className="mt-2 text-3xl font-bold tracking-normal text-[#2e2822] md:text-4xl">
           設定
         </h1>
         <p className="mt-2 text-base leading-7 text-[#75685e]">
@@ -261,8 +261,8 @@ export function SettingsPage() {
       </div>
 
       <div className="grid gap-5 lg:grid-cols-2">
-        <section className="rounded-xl border border-[#e3d8c9] bg-[#fffaf2] p-5 shadow-sm">
-          <h2 className="text-2xl font-bold text-[#34291f]">レシピカテゴリ</h2>
+        <section className="rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-5 shadow-sm md:p-6">
+          <h2 className="text-2xl font-bold text-[#2e2822]">レシピカテゴリ</h2>
           <p className="mt-2 text-sm leading-6 text-[#75685e]">
             Recipe Formで選ぶ分類です。現在Shopのカテゴリだけを管理します。
           </p>
@@ -300,7 +300,7 @@ export function SettingsPage() {
 
           <div className="mt-5 space-y-3">
             {sortedCategories.length === 0 ? (
-              <p className="rounded-lg bg-[#f4ecdf] px-4 py-5 text-[#75685e]">
+              <p className="rounded-lg bg-[#f1e7dc] px-4 py-5 text-[#75685e]">
                 カテゴリがまだありません。よく使う分類を追加しましょう。
               </p>
             ) : (
@@ -313,7 +313,7 @@ export function SettingsPage() {
                     </div>
                     <div className="flex gap-2">
                       <button
-                        className="rounded-lg bg-[#ebe1d2] px-4 py-2 text-sm font-semibold text-[#5d5148] transition hover:bg-[#e0d4c4]"
+                        className="rounded-lg border border-[#dfd1bf] bg-white px-4 py-2 text-sm font-bold text-[#5d5148] transition hover:bg-[#fbf7f0]"
                         onClick={() => startCategoryEdit(category)}
                         type="button"
                       >
@@ -335,8 +335,8 @@ export function SettingsPage() {
           </div>
         </section>
 
-        <section className="rounded-xl border border-[#e3d8c9] bg-[#fffaf2] p-5 shadow-sm">
-          <h2 className="text-2xl font-bold text-[#34291f]">単位</h2>
+        <section className="rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-5 shadow-sm md:p-6">
+          <h2 className="text-2xl font-bold text-[#2e2822]">単位</h2>
           <p className="mt-2 text-sm leading-6 text-[#75685e]">
             標準Unitは表示のみです。店舗独自Unitだけ追加・編集・削除できます。
           </p>
@@ -391,23 +391,23 @@ export function SettingsPage() {
 
           <div className="mt-5 space-y-3">
             {sortedUnits.length === 0 ? (
-              <p className="rounded-lg bg-[#f4ecdf] px-4 py-5 text-[#75685e]">
+              <p className="rounded-lg bg-[#f1e7dc] px-4 py-5 text-[#75685e]">
                 単位がまだありません。
               </p>
             ) : (
               sortedUnits.map((unit) => (
-                <div className="rounded-lg border border-[#eadfce] bg-white p-4" key={unit.id}>
+                <div className={`rounded-lg border p-4 ${unit.is_standard ? 'border-[#eadfce] bg-[#fbf7f0]' : 'border-[#eadfce] bg-white'}`} key={unit.id}>
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="text-lg font-bold text-[#332820]">{unit.name}</p>
-                        <span className="rounded-full bg-[#f4ecdf] px-3 py-1 text-xs font-semibold text-[#75685e]">
+                        <span className="rounded-full bg-[#f1e7dc] px-3 py-1 text-xs font-bold text-[#75685e]">
                           {unitTypeLabels[unit.unit_type]}
                         </span>
                         <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
                           unit.is_standard
                             ? 'bg-[#efe8dc] text-[#75685e]'
-                            : 'bg-[#eadfce] text-[#5d3d25]'
+                            : 'bg-[#e7f0e4] text-[#4d7a55]'
                         }`}
                         >
                           {unit.is_standard ? '標準' : '店舗独自'}
@@ -423,7 +423,7 @@ export function SettingsPage() {
                     {!unit.is_standard && (
                       <div className="flex gap-2">
                         <button
-                          className="rounded-lg bg-[#ebe1d2] px-4 py-2 text-sm font-semibold text-[#5d5148] transition hover:bg-[#e0d4c4]"
+                          className="rounded-lg border border-[#dfd1bf] bg-white px-4 py-2 text-sm font-bold text-[#5d5148] transition hover:bg-[#fbf7f0]"
                           onClick={() => startUnitEdit(unit)}
                           type="button"
                         >
@@ -493,7 +493,7 @@ function FormActions({
   return (
     <div className="mt-4 flex flex-col gap-3 sm:flex-row">
       <button
-        className="rounded-lg bg-[#7b4f2f] px-4 py-3 text-base font-semibold text-white transition hover:bg-[#694225] disabled:cursor-not-allowed disabled:opacity-60"
+        className="rounded-lg bg-[#c76738] px-4 py-3 text-base font-bold text-white transition hover:bg-[#b65b31] disabled:cursor-not-allowed disabled:opacity-60"
         disabled={saving}
         type="submit"
       >
@@ -501,7 +501,7 @@ function FormActions({
       </button>
       {isEditing && (
         <button
-          className="rounded-lg bg-[#ebe1d2] px-4 py-3 text-base font-semibold text-[#5d5148] transition hover:bg-[#e0d4c4]"
+          className="rounded-lg border border-[#dfd1bf] bg-white px-4 py-3 text-base font-bold text-[#5d5148] transition hover:bg-[#fbf7f0]"
           onClick={onCancel}
           type="button"
         >

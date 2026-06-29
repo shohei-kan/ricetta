@@ -51,7 +51,7 @@ function AppRouter() {
 
   if (loading) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[#f7f4ee] text-[#6f6258]">
+      <main className="flex min-h-screen items-center justify-center bg-[#f7f3ec] text-[#6f6258]">
         読み込み中...
       </main>
     )

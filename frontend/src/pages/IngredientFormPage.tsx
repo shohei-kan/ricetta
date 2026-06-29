@@ -195,7 +195,7 @@ export function IngredientFormPage({ id, navigate }: IngredientFormPageProps) {
   if (loading) {
     return (
       <div className="mx-auto max-w-4xl px-5 py-6 md:px-7 md:py-8">
-        <div className="rounded-xl border border-[#e3d8c9] bg-[#fffaf2] p-6 text-[#75685e] shadow-sm">
+        <div className="rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-6 text-[#75685e] shadow-sm">
           材料情報を読み込んでいます...
         </div>
       </div>
@@ -206,13 +206,13 @@ export function IngredientFormPage({ id, navigate }: IngredientFormPageProps) {
     return (
       <div className="mx-auto max-w-4xl px-5 py-6 md:px-7 md:py-8">
         <button
-          className="mb-5 rounded-lg bg-[#ebe1d2] px-4 py-3 text-base font-semibold text-[#5d5148]"
+          className="mb-5 rounded-lg border border-[#dfd1bf] bg-[#fffdf9] px-4 py-3 text-base font-bold text-[#5d5148]"
           onClick={() => navigate('/ingredients')}
           type="button"
         >
           ← 材料一覧へ
         </button>
-        <div className="rounded-xl border border-[#e3d8c9] bg-[#fffaf2] p-6 text-[#a23d2d] shadow-sm">
+        <div className="rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-6 text-[#a23d2d] shadow-sm">
           {loadError}
         </div>
       </div>
@@ -220,20 +220,20 @@ export function IngredientFormPage({ id, navigate }: IngredientFormPageProps) {
   }
 
   return (
-    <div className="mx-auto max-w-5xl px-5 py-6 md:px-7 md:py-8">
+    <div className="mx-auto max-w-[1040px] px-5 py-6 md:px-8 md:py-8">
       <button
-        className="mb-5 rounded-lg bg-[#ebe1d2] px-4 py-3 text-base font-semibold text-[#5d5148] transition hover:bg-[#e0d4c4]"
+        className="mb-5 rounded-lg border border-[#dfd1bf] bg-[#fffdf9] px-4 py-3 text-base font-bold text-[#5d5148] transition hover:bg-[#fbf7f0]"
         onClick={() => goBack(isEdit, id, navigate)}
         type="button"
       >
         ← 戻る
       </button>
 
-      <div className="mb-6">
-        <p className="text-sm font-semibold tracking-[0.14em] text-[#9b6b43]">
-          INGREDIENT FORM
+      <div className="mb-6 border-b border-[#ded2c2] pb-5">
+        <p className="text-sm font-bold text-[#c76738]">
+          Ingredient Form
         </p>
-        <h1 className="mt-2 text-3xl font-bold tracking-normal text-[#332820] md:text-4xl">
+        <h1 className="mt-2 text-3xl font-bold tracking-normal text-[#2e2822] md:text-4xl">
           {isEdit ? '材料を編集' : '材料を追加'}
         </h1>
         <p className="mt-2 text-base leading-7 text-[#75685e]">
@@ -242,8 +242,8 @@ export function IngredientFormPage({ id, navigate }: IngredientFormPageProps) {
       </div>
 
       <form className="space-y-5" onSubmit={handleSubmit}>
-        <section className="rounded-xl border border-[#e3d8c9] bg-[#fffaf2] p-5 shadow-sm">
-          <h2 className="text-xl font-bold text-[#34291f]">基本情報</h2>
+        <section className="rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-5 shadow-sm md:p-6">
+          <h2 className="text-2xl font-bold text-[#2e2822]">基本情報</h2>
           <div className="mt-4 grid gap-4 md:grid-cols-2">
             <TextField
               label="材料名"
@@ -267,14 +267,14 @@ export function IngredientFormPage({ id, navigate }: IngredientFormPageProps) {
           </div>
         </section>
 
-        <section className="rounded-xl border border-[#e3d8c9] bg-[#fffaf2] p-5 shadow-sm">
-          <h2 className="text-xl font-bold text-[#34291f]">原価計算モード</h2>
+        <section className="rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-5 shadow-sm md:p-6">
+          <h2 className="text-2xl font-bold text-[#2e2822]">原価計算モード</h2>
           <div className="mt-4 grid gap-3 lg:grid-cols-3">
             {costModeOptions.map((option) => (
               <label
                 className={`block rounded-xl border p-4 ${
                   form.cost_mode === option.value
-                    ? 'border-[#9b6b43] bg-[#f0e5d5]'
+                    ? 'border-[#c76738] bg-[#f1e7dc]'
                     : 'border-[#eadfce] bg-white'
                 }`}
                 key={option.value}
@@ -296,8 +296,8 @@ export function IngredientFormPage({ id, navigate }: IngredientFormPageProps) {
         </section>
 
         {form.cost_mode !== 'none' && (
-          <section className="rounded-xl border border-[#e3d8c9] bg-[#fffaf2] p-5 shadow-sm">
-            <h2 className="text-xl font-bold text-[#34291f]">仕入・使用情報</h2>
+          <section className="rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-5 shadow-sm md:p-6">
+            <h2 className="text-2xl font-bold text-[#2e2822]">仕入・使用情報</h2>
             {unitError && <p className="mt-3 text-sm font-semibold text-[#a23d2d]">{unitError}</p>}
             <div className="mt-4 grid gap-4 md:grid-cols-2">
               <TextField
@@ -338,7 +338,7 @@ export function IngredientFormPage({ id, navigate }: IngredientFormPageProps) {
             </div>
 
             {form.cost_mode === 'same_unit' && selectedPurchaseUnit && (
-              <p className="mt-4 rounded-lg bg-[#f4ecdf] px-4 py-3 text-sm font-semibold text-[#75685e]">
+              <p className="mt-4 rounded-lg bg-[#f1e7dc] px-4 py-3 text-sm font-semibold text-[#75685e]">
                 使用単位: {selectedPurchaseUnit.name}
               </p>
             )}
@@ -346,8 +346,8 @@ export function IngredientFormPage({ id, navigate }: IngredientFormPageProps) {
         )}
 
         {form.cost_mode === 'conversion' && (
-          <section className="rounded-xl border border-[#e3d8c9] bg-[#fffaf2] p-5 shadow-sm">
-            <h2 className="text-xl font-bold text-[#34291f]">換算情報</h2>
+          <section className="rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-5 shadow-sm md:p-6">
+            <h2 className="text-2xl font-bold text-[#2e2822]">換算情報</h2>
             <p className="mt-2 text-sm leading-6 text-[#75685e]">
               換算元単位は仕入単位、換算先単位は使用単位に自動で合わせます。
             </p>
@@ -388,14 +388,14 @@ export function IngredientFormPage({ id, navigate }: IngredientFormPageProps) {
 
         <div className="flex flex-col gap-3 sm:flex-row">
           <button
-            className="rounded-lg bg-[#7b4f2f] px-5 py-3 text-base font-semibold text-white transition hover:bg-[#694225] disabled:cursor-not-allowed disabled:opacity-60"
+            className="rounded-lg bg-[#c76738] px-5 py-3 text-base font-bold text-white transition hover:bg-[#b65b31] disabled:cursor-not-allowed disabled:opacity-60"
             disabled={saving || unitsLoading}
             type="submit"
           >
             {saving ? '保存中...' : '保存'}
           </button>
           <button
-            className="rounded-lg bg-[#ebe1d2] px-5 py-3 text-base font-semibold text-[#5d5148] transition hover:bg-[#e0d4c4]"
+            className="rounded-lg border border-[#dfd1bf] bg-white px-5 py-3 text-base font-bold text-[#5d5148] transition hover:bg-[#fbf7f0]"
             onClick={() => goBack(isEdit, id, navigate)}
             type="button"
           >
@@ -481,7 +481,7 @@ function ReadOnlyField({ label, value }: { label: string; value: string }) {
   return (
     <div>
       <p className="text-sm font-semibold text-[#4b4037]">{label}</p>
-      <p className="mt-2 rounded-lg bg-[#f4ecdf] px-4 py-3 text-base font-bold text-[#332820]">
+      <p className="mt-2 rounded-lg bg-[#f1e7dc] px-4 py-3 text-base font-bold text-[#332820]">
         {value}
       </p>
     </div>
