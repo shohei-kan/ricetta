@@ -13,6 +13,7 @@ export type AuthShop = {
 
 export type AuthMembership = {
   role: 'owner' | 'staff'
+  display_name: string
 }
 
 export type AuthSession = {
@@ -26,12 +27,23 @@ export type LoginInput = {
   password: string
 }
 
+export type DisplayNameInput = {
+  display_name: string
+}
+
 export function fetchCsrf(): Promise<{ detail: string }> {
   return apiRequest('/auth/csrf/')
 }
 
 export function fetchMe(): Promise<AuthSession> {
   return apiRequest('/auth/me/')
+}
+
+export function updateDisplayName(input: DisplayNameInput): Promise<AuthSession> {
+  return apiRequest('/auth/me/', {
+    method: 'PATCH',
+    body: input,
+  })
 }
 
 export function login(input: LoginInput): Promise<AuthSession> {

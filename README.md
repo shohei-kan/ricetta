@@ -542,12 +542,16 @@ npm run dev
 ```env
 DJANGO_SECRET_KEY=
 DJANGO_DEBUG=
+DJANGO_ALLOWED_HOSTS=
+DJANGO_CSRF_TRUSTED_ORIGINS=http://localhost:5173,http://localhost:5174
 DATABASE_URL=
 POSTGRES_DB=
 POSTGRES_USER=
 POSTGRES_PASSWORD=
 FRONTEND_ORIGIN=
 ```
+
+`DJANGO_CSRF_TRUSTED_ORIGINS` はカンマ区切りで指定します。上記のlocalhost Originは開発用です。本番環境では本番frontendのOriginだけを設定してください。
 
 将来的なStripe関連：
 

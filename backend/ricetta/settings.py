@@ -39,6 +39,15 @@ DEBUG = env_bool('DJANGO_DEBUG', True)
 
 ALLOWED_HOSTS = [host.strip() for host in env('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',') if host.strip()]
 
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in env(
+        'DJANGO_CSRF_TRUSTED_ORIGINS',
+        'http://localhost:5173,http://localhost:5174',
+    ).split(',')
+    if origin.strip()
+]
+
 
 # Application definition
 

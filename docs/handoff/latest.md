@@ -10,62 +10,67 @@ Ricetta
 
 ## Status
 
-Frontend branding implemented and backend model diagnostics resolved
+Account Phase 1 + 2 implemented; local CSRF origins fixed
 
 ## Summary
 
-Ricettaロゴ、空状態イラスト、小さな葉の装飾を主要画面へ追加した。あわせて `backend/api/models.py` のDjango動的属性とnullable値に関するPylance診断を、実行時挙動を変えずに解消した。
+保護ルート `/account` とAccountページを追加した。店舗情報はownerのみ更新可能、Membershipの表示名はowner / staffとも本人が更新可能。ローカルViteの5173 / 5174 OriginからSession認証のPATCHが通るようCSRF trusted originsを設定した。
 
 ## Current Goal
 
-実ブラウザでスマホ幅とタブレット横幅を目視確認し、必要なら画像サイズと余白を微調整する。
+実ブラウザでowner / staff表示とPC・スマホレイアウトを目視確認し、必要なら余白を調整する。
 
 ## Current State
 
-- サイドバーとモバイルヘッダーにRicettaのシンプルロゴを表示する。
-- ログイン画面にコピー入りフルロゴをレスポンシブ表示する。
-- Dashboard、Prep Today、Recipe List、Ingredient Listの空状態に既存素材を表示する。
-- Recipe / Ingredient検索0件時は、未登録状態と異なる画像・文言を表示する。
-- DashboardとRecipe List、Settingsに控えめな葉・チェックリスト装飾を表示する。
-- Dashboardの仕込み導線とサイドバーのログアウトは折り返さず1行表示する。
-- Docker frontendは `http://localhost:5174`、ローカルViteは `http://localhost:5173`。
+- `GET /api/v1/auth/me/` はmembershipの `role` と `display_name` を返す。
+- `PATCH /api/v1/auth/me/` で現在Membershipの表示名を更新できる。
+- `GET /api/v1/shop/me/` はowner / staffとも利用できる。
+- `PATCH /api/v1/shop/me/` はownerのみ利用でき、staffは403となる。
+- `/account` では店舗情報、自分のメール・表示名・権限、ログアウトを扱う。
+- メール変更、パスワード変更、複数店舗切り替えは未実装。
+- 開発時の `CSRF_TRUSTED_ORIGINS` は `http://localhost:5173,http://localhost:5174`。
 
 ## What Was Done
 
-- 実ファイル名に合わせた画像exportを `frontend/src/assets/index.ts` に追加した。
-- レスポンシブな共通 `EmptyState` コンポーネントを追加した。
-- サイドバーとモバイルヘッダーのテキストロゴを画像へ置き換えた。
-- ログイン画面のブランドテキスト3行を `ricetta_logo_full.png` へ置き換えた。
-- Prep Today、Recipe List、Ingredient Listの空状態イラストを追加した。
-- Dashboardの仕込みカード、よく使うレシピ空状態、期限注意なし表示に装飾を追加した。
-- Recipe ListとSettingsの見出し横に小さな葉の装飾を追加した。
-- Dashboardボタンを「仕込みを見る」へ短縮し、ログアウトとともに折り返しを禁止した。
-- サイドバーロゴを116pxへ拡大し、Dashboard空状態画像を80〜96pxへ縮小した。
-- Settingsの葉装飾を28px・opacity 0.65へ調整した。
-- `Unit.__str__` と `Ingredient` の原価表示・計算で、nullableな関連とDecimal値を明示的に型絞り込みした。
-- `backend/api/tests.py` ではDjango ORMとDRFレスポンスの動的属性に対するPyright誤検知だけをファイル単位で無効化した。
-- 装飾画像は `alt=""`、ロゴは `alt="Ricetta"` とした。
+- Membership表示名更新用Serializerと `PATCH /auth/me/` を追加した。
+- owner Membership判定を `shop_scope.py` に追加した。
+- 店舗更新をowner限定にした。
+- owner / staffの表示名更新、店舗更新権限テストを追加した。
+- frontendにShop API clientとAccountページを追加した。
+- `/account` を保護ルートへ追加した。
+- サイドバーの店舗名・権限ブロックをAccount導線へ変更した。
+- スマホヘッダーへAccount導線を追加した。
+- ログアウトをAccountページ下部へ移動した。
+- API設計書と画面仕様を更新した。
+- `DJANGO_CSRF_TRUSTED_ORIGINS` を追加し、開発既定値へViteの5173 / 5174を設定した。
+- backendを再起動し、両OriginからAccount関連PATCHが200になることを確認した。
+- 完了履歴を `archive/frontend-implementation.md` と `archive/backend-foundation.md` に保存した。
 
 ## Key Decisions
 
-- 装飾は重要な数字・入力欄・操作ボタンへ重ねず、通常レイアウト内に置く。
-- 空状態はスマホで縦並び、`sm` 以上で横並びにする。
-- 元画像は加工せず、Tailwindの固定寸法とopacityで表示を調整する。
-- ファイル名末尾に ` 1` がある素材は変更せず、assets indexで吸収する。
+- 新規モデルは追加せず、標準User・Shop・Membershipを利用する。
+- 表示名は店舗内の情報として `Membership.display_name` に保存する。
+- staffは店舗情報を閲覧できるが更新できない。
+- 権限制御はフロント表示だけでなくAPIで強制する。
+- Account Phase 1 + 2ではメール・パスワードを変更しない。
+- localhostのtrusted originsは開発専用とし、本番では環境変数で本番Originだけに上書きする。
 
 ## Key Files
 
-- `frontend/src/assets/index.ts`
-- `frontend/src/components/EmptyState.tsx`
-- `frontend/src/components/AppLayout.tsx`
-- `frontend/src/pages/LoginPage.tsx`
-- `frontend/src/pages/DashboardPage.tsx`
-- `frontend/src/pages/PrepTodayPage.tsx`
-- `frontend/src/pages/RecipeListPage.tsx`
-- `frontend/src/pages/IngredientListPage.tsx`
-- `frontend/src/pages/SettingsPage.tsx`
-- `backend/api/models.py`
+- `backend/api/shop_scope.py`
+- `backend/api/serializers.py`
+- `backend/api/views.py`
 - `backend/api/tests.py`
+- `backend/ricetta/settings.py`
+- `.env.example`
+- `README.md`
+- `frontend/src/api/auth.ts`
+- `frontend/src/api/shop.ts`
+- `frontend/src/pages/AccountPage.tsx`
+- `frontend/src/App.tsx`
+- `frontend/src/components/AppLayout.tsx`
+- `docs/api/api-design.md`
+- `docs/product/screens.md`
 
 ## Verification
 
@@ -77,61 +82,60 @@ cd frontend && npm run build
 docker compose exec backend python manage.py check
 docker compose exec backend python manage.py makemigrations --check --dry-run
 docker compose exec backend python manage.py test
-/tmp/ricetta-pyright/node_modules/.bin/pyright backend/api/tests.py --pythonversion 3.9
 ```
 
 Result:
 
 - Frontend lint: pass
 - Frontend build: pass
-- Vite buildで使用する全PNG assetの解決を確認した。
 - Django system check: pass
 - Migration check: pass（変更なし）
 - Backend tests: pass
-- `backend/api/tests.py` Pyright: 0 errors
-- in-app browserが利用できず、ログイン画面を含むスマホ幅・タブレット横幅の自動目視確認は未実施。
+- Account関連12テスト: pass
+- `Origin: http://localhost:5173` から `PATCH /auth/me/`, `PATCH /shop/me/`: HTTP 200
+- `Origin: http://localhost:5174` から `PATCH /auth/me/`, `PATCH /shop/me/`: HTTP 200
+- in-app browserが利用できず、PC・スマホの自動目視確認は未実施。
 
 ## Current Product Scope
 
 - Login / logout
+- Account表示とMembership表示名更新
+- owner限定の店舗情報更新
 - Shop account scope
-- Dashboard summary
-- Recipe list/detail/create/edit
-- Ingredient create/edit and cost mode
-- Today's prep list and status update
+- Dashboard / Recipe / Ingredient / Prep / Settings
 - Smartphone and tablet landscape layouts
-- Settings for Category / Unit management
 
 ## Out of Scope for MVP
 
-- Stripe / POS / multi-shop UI
-- Automatic inventory deduction and advanced ordering
-- Nutrition / HACCP reports
+- Accountでのメールアドレス変更
+- Accountでのパスワード変更
+- 複数店舗切り替え
+- Stripe / POS / inventory automation
 - Advanced role management
-- Full prep inventory and expiry alerts
-- Drag-and-drop prep operation
-- Image upload implementation
 
 ## Next Recommended Tasks
 
-1. `http://localhost:5174` でHome、Prep Today、Recipe List、Ingredient List、Settingsを確認する。
-2. 390px前後のスマホ幅と1024px前後のタブレット横幅で画像と文章の収まりを確認する。
-3. 実データあり・検索0件・完全な空状態をそれぞれ確認する。
+1. ownerで `/account` の店舗情報・表示名更新とログアウトを確認する。
+2. staffで店舗情報が閲覧のみ、表示名は更新可能であることを確認する。
+3. 390px前後のスマホ幅と1024px前後のタブレット横幅を確認する。
+4. 次Phaseでメール変更・パスワード変更の仕様を決める。
 
 ## Open Questions
 
-- 画像素材の末尾 ` 1` を将来リネームして統一するか。
-- Dashboardの装飾密度を実店舗利用時にさらに下げる必要があるか。
+- 複数の有効Membershipがある場合の現在Shop選択方法。
+- 将来のメール変更で再認証・メール確認をどこまで必須にするか。
 
 ## Notes for Next Agent
 
 - 開発用ログインは `owner@example.com` / `password`。
-- 画像importは `frontend/src/assets/index.ts` を経由する。
-- 装飾画像は操作要素に重ねず、`pointer-events-none` と `select-none` を維持する。
-- API proxyはDocker内 `http://backend:8000`、ローカルViteの既定は `http://localhost:8010`。
+- 現在Membershipは有効MembershipのID順先頭を採用する。
+- 店舗更新権限は `get_current_owner_membership()` で強制する。
+- 表示名更新後はfrontendの `refreshMe()` でsession表示を同期する。
+- Docker frontendは `http://localhost:5174`。
+- 本番の `DJANGO_CSRF_TRUSTED_ORIGINS` にlocalhostを含めない。
 
 ## Suggested Commit Message
 
 ```text
-feat(frontend): add Ricetta branding and empty-state artwork
+fix(csrf): trust local Vite development origins
 ```

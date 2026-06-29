@@ -21,3 +21,10 @@ def get_current_membership(user):
 
 def get_current_shop(user):
     return get_current_membership(user).shop
+
+
+def get_current_owner_membership(user):
+    membership = get_current_membership(user)
+    if membership.role != Membership.Role.OWNER:
+        raise PermissionDenied("店舗情報を編集できるのはオーナーのみです。")
+    return membership

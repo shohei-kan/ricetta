@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { AuthProvider } from './auth/AuthContext'
 import { useAuth } from './auth/useAuth'
 import { AppLayout, type RoutePath } from './components/AppLayout'
+import { AccountPage } from './pages/AccountPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { IngredientDetailPage } from './pages/IngredientDetailPage'
 import { IngredientFormPage } from './pages/IngredientFormPage'
@@ -19,6 +20,7 @@ const protectedPaths: RoutePath[] = [
   '/recipes',
   '/ingredients',
   '/settings',
+  '/account',
 ]
 
 function App() {
@@ -81,6 +83,10 @@ function AppRouter() {
 }
 
 function renderRoute(path: string, routePath: RoutePath, navigate: (path: string) => void) {
+  if (routePath === '/account') {
+    return <AccountPage />
+  }
+
   if (routePath === '/dashboard') {
     return <DashboardPage navigate={navigate} />
   }

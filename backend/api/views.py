@@ -16,6 +16,7 @@ from .serializers import (
     CategorySerializer,
     IngredientSerializer,
     LoginSerializer,
+    MembershipProfileSerializer,
     PrepTaskSerializer,
     PrepTaskStatusSerializer,
     RecipeListSerializer,
@@ -23,7 +24,11 @@ from .serializers import (
     ShopSerializer,
     UnitSerializer,
 )
-from .shop_scope import get_current_membership, get_current_shop
+from .shop_scope import (
+    get_current_membership,
+    get_current_owner_membership,
+    get_current_shop,
+)
 
 
 @api_view(['GET'])
@@ -69,6 +74,17 @@ class MeView(APIView):
         membership = get_current_membership(request.user)
         return Response(AuthMeSerializer(membership).data)
 
+    def patch(self, request):
+        membership = get_current_membership(request.user)
+        serializer = MembershipProfileSerializer(
+            membership,
+            data=request.data,
+            partial=True,
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(AuthMeSerializer(membership).data)
+
 
 class ShopMeView(APIView):
     permission_classes = [IsAuthenticated]
@@ -78,7 +94,8 @@ class ShopMeView(APIView):
         return Response(ShopSerializer(shop).data)
 
     def patch(self, request):
-        shop = get_current_shop(request.user)
+        membership = get_current_owner_membership(request.user)
+        shop = membership.shop
         serializer = ShopSerializer(shop, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()

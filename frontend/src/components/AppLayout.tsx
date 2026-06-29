@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { ricettaLogoSimple } from '../assets'
 import { useAuth } from '../auth/useAuth'
 
-export type RoutePath = '/dashboard' | '/prep' | '/recipes' | '/ingredients' | '/settings'
+export type RoutePath = '/dashboard' | '/prep' | '/recipes' | '/ingredients' | '/settings' | '/account'
 
 const navItems: Array<{ path: RoutePath; label: string }> = [
   { path: '/dashboard', label: 'ホーム' },
@@ -19,7 +19,7 @@ type AppLayoutProps = {
 }
 
 export function AppLayout({ children, currentPath, navigate }: AppLayoutProps) {
-  const { logout, session } = useAuth()
+  const { session } = useAuth()
 
   return (
     <div className="min-h-screen bg-[#f7f3ec] text-[#2a241f] md:flex">
@@ -49,18 +49,17 @@ export function AppLayout({ children, currentPath, navigate }: AppLayoutProps) {
             </button>
           ))}
         </nav>
-        <div className="border-t border-[#ded2c2] px-4 py-5 text-left">
-          <p className="truncate text-base font-bold text-[#2e2822]">{session?.shop.name}</p>
-          <p className="mt-3 inline-flex rounded-md bg-[#78936f] px-3 py-1 text-sm font-bold text-white">
-            {session?.membership.role}
-          </p>
-        </div>
         <button
-          className="mx-3 mb-4 whitespace-nowrap rounded-lg px-1.5 py-2 text-center text-[13px] font-semibold break-keep text-[#776b60] hover:bg-[#f1e9dd]"
-          onClick={() => void logout()}
+          className={`w-full border-t border-[#ded2c2] px-4 py-5 text-left transition hover:bg-[#f7f1e8] ${
+            currentPath === '/account' ? 'bg-[#f1e7dc]' : ''
+          }`}
+          onClick={() => navigate('/account')}
           type="button"
         >
-          ログアウト
+          <p className="truncate text-base font-bold text-[#2e2822]">{session?.shop.name}</p>
+          <p className="mt-3 inline-flex rounded-md bg-[#78936f] px-3 py-1 text-sm font-bold text-white">
+            {session ? roleLabel(session.membership.role) : ''}
+          </p>
         </button>
       </aside>
 
@@ -74,13 +73,22 @@ export function AppLayout({ children, currentPath, navigate }: AppLayoutProps) {
             >
               <img alt="Ricetta" className="h-auto w-28" src={ricettaLogoSimple} />
             </button>
-            <button
-              className="rounded-lg border border-[#dfd1bf] bg-[#fbf7f0] px-4 py-2 text-sm font-bold text-[#5d5148]"
-              onClick={() => navigate('/settings')}
-              type="button"
-            >
-              設定
-            </button>
+            <div className="flex gap-1">
+              <button
+                className="rounded-lg border border-[#dfd1bf] bg-[#fbf7f0] px-2 py-2 text-xs font-bold text-[#5d5148]"
+                onClick={() => navigate('/account')}
+                type="button"
+              >
+                アカウント
+              </button>
+              <button
+                className="rounded-lg border border-[#dfd1bf] bg-[#fbf7f0] px-2 py-2 text-xs font-bold text-[#5d5148]"
+                onClick={() => navigate('/settings')}
+                type="button"
+              >
+                設定
+              </button>
+            </div>
           </div>
         </header>
         {children}
@@ -104,4 +112,8 @@ export function AppLayout({ children, currentPath, navigate }: AppLayoutProps) {
       </nav>
     </div>
   )
+}
+
+function roleLabel(role: 'owner' | 'staff') {
+  return role === 'owner' ? 'オーナー' : 'スタッフ'
 }

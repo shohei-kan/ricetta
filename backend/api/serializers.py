@@ -65,7 +65,16 @@ class ShopSummarySerializer(serializers.ModelSerializer):
 class MembershipSummarySerializer(serializers.ModelSerializer):
     class Meta:
         model = Membership
-        fields = ["role"]
+        fields = ["role", "display_name"]
+
+
+class MembershipProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Membership
+        fields = ["display_name"]
+
+    def validate_display_name(self, value):
+        return value.strip()
 
 
 class AuthMeSerializer(serializers.Serializer):

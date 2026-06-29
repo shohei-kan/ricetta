@@ -310,3 +310,49 @@ Prep Today画面を実装した。
 
 - Frontend build: pass
 - Frontend lint: pass
+
+## 2026-06-29 Branding, empty states, and Account UI
+
+Ricettaのブランド素材を主要画面へ反映し、Account Phase 1 + 2のフロントエンドを実装した。
+
+### Summary
+
+- サイドバーとモバイルヘッダーへRicettaシンプルロゴを追加
+- Loginへコピー入りフルロゴを追加
+- Dashboard、Prep Today、Recipe List、Ingredient Listへ空状態イラストを追加
+- Recipe / Ingredientの未登録状態と検索0件を出し分け
+- `/account` を保護ルートとして追加
+- 店舗情報、自分のメール・表示名・権限、ログアウトをAccountページへ集約
+- サイドバー下部の店舗名・権限ブロックをAccount導線へ変更
+- スマホヘッダーへAccount導線を追加
+- ログアウトをサイドバーからAccountページ下部へ移動
+- 店舗情報保存・表示名保存後に `refreshMe()` で認証表示を同期
+
+### Decisions
+
+- 装飾画像は操作要素や重要情報へ重ねない。
+- 空状態はスマホで縦並び、`sm` 以上で横並びにする。
+- 画像importは `frontend/src/assets/index.ts` に集約する。
+- Account Phase 1 + 2ではメール・パスワード変更を実装しない。
+- ownerだけ店舗情報編集UIを表示し、staffは閲覧のみとする。
+
+### Key Files
+
+- `frontend/src/assets/index.ts`
+- `frontend/src/components/EmptyState.tsx`
+- `frontend/src/components/AppLayout.tsx`
+- `frontend/src/pages/LoginPage.tsx`
+- `frontend/src/pages/DashboardPage.tsx`
+- `frontend/src/pages/PrepTodayPage.tsx`
+- `frontend/src/pages/RecipeListPage.tsx`
+- `frontend/src/pages/IngredientListPage.tsx`
+- `frontend/src/pages/AccountPage.tsx`
+- `frontend/src/api/auth.ts`
+- `frontend/src/api/shop.ts`
+- `frontend/src/App.tsx`
+
+### Verification
+
+- Frontend lint: pass
+- Frontend build: pass
+- in-app browserが利用できず、PC・スマホの自動目視確認は未実施

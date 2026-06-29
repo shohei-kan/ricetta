@@ -111,7 +111,8 @@ Django Session AuthでPOST / PATCH / DELETEを行う前に、CSRF cookieを取�
     "name": "〇〇食堂"
   },
   "membership": {
-    "role": "owner"
+    "role": "owner",
+    "display_name": "山田 太郎"
   }
 }
 ```
@@ -158,12 +159,31 @@ Django Session AuthでPOST / PATCH / DELETEを行う前に、CSRF cookieを取�
     "name": "〇〇食堂"
   },
   "membership": {
-    "role": "owner"
+    "role": "owner",
+    "display_name": "山田 太郎"
   }
 }
 ```
 
 未ログインの場合は `401 Unauthorized` を返す。
+
+---
+
+## PATCH /api/v1/auth/me/
+
+現在ログイン中ユーザーの、現在Shopにおける表示名を更新する。owner / staffともに自分の表示名だけ更新できる。
+
+### Request
+
+```json
+{
+  "display_name": "山田 店長"
+}
+```
+
+### Response
+
+`GET /api/v1/auth/me/` と同じ形式で、更新後の認証情報を返す。`role`、User、ShopはこのAPIから変更できない。
 
 ---
 
@@ -188,7 +208,7 @@ Django Session AuthでPOST / PATCH / DELETEを行う前に、CSRF cookieを取�
 
 ## PATCH /api/v1/shop/me/
 
-店舗情報を更新する。
+現在Shopの店舗情報を更新する。`Membership.role=owner` のユーザーのみ実行できる。
 
 ### Request
 
@@ -208,6 +228,14 @@ Django Session AuthでPOST / PATCH / DELETEを行う前に、CSRF cookieを取�
   "name": "〇〇食堂",
   "business_type": "カフェ",
   "memo": "小規模カフェ"
+}
+```
+
+staffが更新しようとした場合は `403 Forbidden` を返す。
+
+```json
+{
+  "detail": "店舗情報を編集できるのはオーナーのみです。"
 }
 ```
 

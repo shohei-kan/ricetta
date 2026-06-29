@@ -270,3 +270,48 @@ Result:
 - `backend/api/tests.py`
 - `docs/api/api-design.md`
 - `docs/data/data-model.md`
+
+## 2026-06-29 Account API, owner permission, and local CSRF
+
+Account Phase 1 + 2のバックエンドと、ローカルViteからSession認証のunsafe methodを実行するためのCSRF設定を実装した。
+
+### Summary
+
+- `GET /api/v1/auth/me/` のMembership情報へ `display_name` を追加
+- `PATCH /api/v1/auth/me/` で現在Membershipの表示名を更新可能にした
+- owner / staffともに自分の表示名を更新可能
+- `get_current_owner_membership()` を追加
+- `PATCH /api/v1/shop/me/` をowner限定に変更
+- staffの店舗更新は403とし、店舗データを変更しないテストを追加
+- `DJANGO_CSRF_TRUSTED_ORIGINS` を追加
+- 開発既定値へ `http://localhost:5173` と `http://localhost:5174` を追加
+- 本番では環境変数で本番Originだけに上書きする方針を記録
+
+### Decisions
+
+- 新規モデルは追加せず、標準User・Shop・Membershipを利用する。
+- 店舗内の表示名は `Membership.display_name` に保存する。
+- 店舗編集権限はフロント表示だけでなくAPI側で強制する。
+- CORS設定は追加せず、Vite proxyとDjango Session / CSRFを利用する。
+- メール変更、パスワード変更、複数店舗切り替えは後続Phaseへ残す。
+
+### Key Files
+
+- `backend/api/shop_scope.py`
+- `backend/api/serializers.py`
+- `backend/api/views.py`
+- `backend/api/tests.py`
+- `backend/ricetta/settings.py`
+- `.env.example`
+- `README.md`
+- `docs/api/api-design.md`
+- `docs/product/screens.md`
+
+### Verification
+
+- Django system check: pass
+- Migration check: pass（変更なし）
+- Backend tests: pass
+- Account関連12テスト: pass
+- localhost:5173から `PATCH /auth/me/`, `PATCH /shop/me/`: HTTP 200
+- localhost:5174から `PATCH /auth/me/`, `PATCH /shop/me/`: HTTP 200
