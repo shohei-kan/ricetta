@@ -1583,7 +1583,9 @@ class PortfolioSeedCommandTests(TestCase):
             .order_by("id")
             .first()
         )
-        self.assertIsNotNone(current_membership)
+        if current_membership is None:
+            self.fail("seed_portfolio_data should keep an active owner membership.")
+
         self.assertEqual(current_membership.shop.name, "〇〇食堂")
         self.assertEqual(current_membership.role, Membership.Role.OWNER)
         self.assertEqual(

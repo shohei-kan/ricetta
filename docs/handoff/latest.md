@@ -2,7 +2,7 @@
 
 ## Date
 
-2026-06-30
+2026-07-05
 
 ## Project
 
@@ -10,85 +10,74 @@ Ricetta
 
 ## Status
 
-Portfolio demo data and README screenshots added
+Mobile Recipe Detail swipe navigation implemented
 
 ## Summary
 
-ポートフォリオ掲載用スクリーンショットとAWS公開デモ環境で同じサンプルデータを再現できるよう、`seed_portfolio_data` 管理コマンドを追加した。既存の `seed_initial_data` は変更していない。
+`lg`未満のRecipe Detailで、概要・材料・作り方をタップに加えて横スワイプでも切り替えられるようにした。PC / タブレット横の一覧表示には影響しない。
 
 ## Current Goal
 
-AWS公開デモ前に実ブラウザでPC・スマホ幅を目視確認し、公開URLが決まったらREADMEに追記する。
+実ブラウザで390px前後とPC / タブレット幅を目視確認する。
 
 ## Current State
 
-- `GET /api/v1/auth/me/` はmembershipの `role` と `display_name` を返す。
-- `PATCH /api/v1/auth/me/` で現在Membershipの表示名を更新できる。
-- `GET /api/v1/shop/me/` はowner / staffとも利用できる。
-- `PATCH /api/v1/shop/me/` はownerのみ利用でき、staffは403となる。
-- `/account` では店舗情報、自分のメール・表示名・権限、ログアウトを扱う。
-- メール変更、パスワード変更、複数店舗切り替えは未実装。
-- 開発時の `CSRF_TRUSTED_ORIGINS` は `http://localhost:5173,http://localhost:5174`。
-- `docker compose exec backend python manage.py seed_portfolio_data` で撮影・公開デモ用データを作成できる。
-- デモログインは `owner@example.com` / `password` と `staff@example.com` / `password`。
-- デモ店舗は既定で `〇〇食堂`。カポナータをRecipe DetailとCost Summary確認用の主役レシピとして作り込んでいる。
-- `seed_portfolio_data` は既存ownerの現在Shopを優先してデモ店舗化するため、古いMembershipが残っていてもownerログインでデモデータが見える。
-- READMEにDashboard、Today's Prep、Recipe Detail、Cost Summary、Accountのスクリーンショットを掲載している。
+- Recipe Detail上部にはカテゴリ、レシピ名、基準量 / 単位を常時表示する。
+- `lg`未満は概要・材料・作り方の3タブをcomponent stateで切り替える。
+- 左スワイプで次、右スワイプで前のタブへ移動する。
+- 横50px以上かつ横移動優位の場合だけ反応し、縦スクロールを優先する。
+- 原価情報はモバイルの概要表示に含める。
+- `lg`以上はタブを隠し、上部統合カード、中段の材料・作り方2カラム、下段の補助情報3カラムで表示する。
+- タブは左右余白付き、最大幅 `max-w-lg` のセグメント表示にする。
+- Recipe Detailタブとスマホヘッダーはstickyにしない。
+- 材料メモは初期非表示で、メモがある場合だけ表示切り替えを出す。
+- 今日の仕込み追加フォームと編集導線は概要タブにある。
+- 戻るを左、今日の仕込み追加と編集を右に置き、同じ高さの上部操作バーにする。
+- 原価カードはbackendの `cost_summary` をそのまま表示し、frontendでは原価計算しない。
+- 材料別原価は現在のRecipe Detail APIに含まれないため表示していない。
+- スマホのボトムナビはDashboard、Prep Today、Recipe List、Ingredient List、Settingsだけに表示する。
+- スマホヘッダーはロゴとアカウントアイコンだけを表示する。
+- スマホのボトムナビは5項目すべてをLucideアイコン + 小さいラベルで表示する。
+- PC / タブレット横のサイドナビも同じLucideアイコン + テキストで表示する。
 
 ## What Was Done
 
-- Membership表示名更新用Serializerと `PATCH /auth/me/` を追加した。
-- owner Membership判定を `shop_scope.py` に追加した。
-- 店舗更新をowner限定にした。
-- owner / staffの表示名更新、店舗更新権限テストを追加した。
-- frontendにShop API clientとAccountページを追加した。
-- `/account` を保護ルートへ追加した。
-- サイドバーの店舗名・権限ブロックをAccount導線へ変更した。
-- スマホヘッダーへAccount導線を追加した。
-- ログアウトをAccountページ下部へ移動した。
-- API設計書と画面仕様を更新した。
-- `DJANGO_CSRF_TRUSTED_ORIGINS` を追加し、開発既定値へViteの5173 / 5174を設定した。
-- backendを再起動し、両OriginからAccount関連PATCHが200になることを確認した。
-- 完了履歴を `archive/frontend-implementation.md` と `archive/backend-foundation.md` に保存した。
-- READMEをAccount機能、owner / staff権限、CSRF開発Origin、現在ステータスに合わせて更新した。
-- READMEを転職用ポートフォリオ向けに再構成し、背景、技術選定、Architecture、backend設計、データモデル、学びを追加した。
-- `seed_portfolio_data` 管理コマンドを追加した。
-- owner / staffユーザー、Membership、カテゴリ、単位、材料、4レシピ、今日の仕込み4件を冪等に作成するようにした。
-- カポナータに12材料、6工程、メモ、販売価格、原価計算用の材料単価を設定した。
-- `seed_portfolio_data` の冪等性テストを追加した。
-- READMEにポートフォリオデモデータ作成コマンドを追記した。
-- 既存ownerが別Shopに所属している場合、デモデータが見えない問題を修正し、owner / staffの現在Shopにデモデータが入るようにした。
-- READMEのスクリーンショットTODOを実画像に置き換えた。
+- Recipe Detailのモバイル表示を概要・材料・作り方の3タブへ変更した。
+- `lg`以上をタブなしの一覧表示へ変更した。
+- 独立していたレシピ概要カードを上部のレシピ名カードへ統合した。
+- `lg`以上で材料と作り方を1:1の2カラムへ変更した。
+- 原価・注意点・アレルゲンを材料・作り方の下段へ移動した。
+- タブの横幅、余白、active配色を落ち着いたセグメント表現へ調整した。
+- 材料を区切り線中心のコンパクトなリストへ変更した。
+- 下ごしらえメモの表示 / 非表示切り替えを追加した。
+- 作り方を丸い手順番号付きの工程リストへ変更した。
+- 原価サマリーをレスポンシブな2列表示へ対応した。
+- `AppLayout` が実pathnameを受け取り、スマホのボトムナビ表示を制御するよう変更した。
+- `lucide-react` を追加し、手描きSVGをHome / ClipboardList / BookOpen / Package / Settingsへ置き換えた。
+- スマホヘッダーの設定ボタンを削除し、アカウントをCircleUserRoundアイコンへ変更した。
+- Recipe Detailタブとスマホヘッダーのsticky指定を解除した。
+- サイドナビへHome / ClipboardList / BookOpen / Package / Settingsアイコンを追加した。
+- Recipe Detailの画面仕様を更新した。
 
 ## Key Decisions
 
-- 新規モデルは追加せず、標準User・Shop・Membershipを利用する。
-- 表示名は店舗内の情報として `Membership.display_name` に保存する。
-- staffは店舗情報を閲覧できるが更新できない。
-- 権限制御はフロント表示だけでなくAPIで強制する。
-- Account Phase 1 + 2ではメール・パスワードを変更しない。
-- localhostのtrusted originsは開発専用とし、本番では環境変数で本番Originだけに上書きする。
-- `seed_portfolio_data` の既定店舗名は、既存の開発ログインと現在Shop選択がずれにくいよう `〇〇食堂` にする。
-- 既存ownerに有効Membershipがある場合は、その現在Shopをデモ店舗として更新する。
-- デモseed対象レシピの材料・手順は、何度実行しても同じ見た目になるよう対象レシピ配下を入れ替える。
+- レシピの識別に必要な基本情報はタブ切り替え後も常時見えるようにする。
+- 原価はbackend算出値のみ表示し、材料別内訳をfrontendで推測しない。
+- 詳細・作成・編集・Accountではスマホのボトムナビを非表示にする。
+- 材料名と分量の一覧性を優先し、材料メモは利用者が必要なときだけ開く。
+- 読む画面の縦領域を優先し、上部UIはスクロールに追従させない。
+- 画面幅を活かせる`lg`以上では情報をタブで隠さない。
+- 現場で同時参照しやすい材料と作り方を同じ行に置き、管理・補助情報は下段へ下げる。
+- レスポンシブ間でセクションを複製せず、同じコンポーネントをCSSで切り替える。
+- スワイプ判定はReact touch eventとrefだけで実装し、新規依存を追加しない。
 
 ## Key Files
 
-- `backend/api/shop_scope.py`
-- `backend/api/serializers.py`
-- `backend/api/views.py`
-- `backend/api/tests.py`
-- `backend/api/management/commands/seed_portfolio_data.py`
-- `frontend/src/assets/images/screenshots/`
-- `backend/ricetta/settings.py`
-- `.env.example`
-- `README.md`
-- `frontend/src/api/auth.ts`
-- `frontend/src/api/shop.ts`
-- `frontend/src/pages/AccountPage.tsx`
-- `frontend/src/App.tsx`
+- `frontend/src/pages/RecipeDetailPage.tsx`
 - `frontend/src/components/AppLayout.tsx`
-- `docs/api/api-design.md`
+- `frontend/src/App.tsx`
+- `frontend/package.json`
+- `frontend/package-lock.json`
 - `docs/product/screens.md`
 
 ## Verification
@@ -98,70 +87,52 @@ AWS公開デモ前に実ブラウザでPC・スマホ幅を目視確認し、公
 ```bash
 cd frontend && npm run lint
 cd frontend && npm run build
-docker compose exec backend python manage.py check
-docker compose exec backend python manage.py makemigrations --check --dry-run
-docker compose exec backend python manage.py test
-docker compose exec backend python manage.py seed_portfolio_data
 ```
 
 Result:
 
 - Frontend lint: pass
 - Frontend build: pass
-- Django system check: pass
-- Migration check: pass（変更なし）
-- Backend tests: pass
-- Account関連12テスト: pass
-- `Origin: http://localhost:5173` から `PATCH /auth/me/`, `PATCH /shop/me/`: HTTP 200
-- `Origin: http://localhost:5174` から `PATCH /auth/me/`, `PATCH /shop/me/`: HTTP 200
-- `seed_portfolio_data` は2回連続実行して成功。
-- 修正版seed投入後、owner / staffの現在Shopにレシピ4件・材料20件・仕込み4件が存在することを確認。
-- in-app browserが利用できず、PC・スマホの自動目視確認は未実施。
+- 390px幅の静的レイアウト確認: タブ約318px、5項目ナビは各約72pxで収まる
+- Responsive条件確認: `lg:hidden`の3タブ、中段`lg:grid-cols-2`、下段3カラムを使用
+- Component確認: 材料一覧は全レスポンシブで同じstateful componentを使用
+- Swipe条件確認: 50px閾値、横移動優位、先頭・末尾停止、`lg`以上無効
+- DOM/CSS確認: Recipe Detailタブとスマホヘッダーにsticky / fixed指定なし
+- Route確認: 一覧系5ルートだけボトムナビ表示、Recipe DetailとAccountは非表示
+- in-app browser: 実行環境の接続情報不足により起動できず、実ブラウザ目視確認は未実施
 
 ## Current Product Scope
 
 - Login / logout
-- Account表示とMembership表示名更新
-- owner限定の店舗情報更新
-- Shop account scope
-- Dashboard / Recipe / Ingredient / Prep / Settings
+- Shop-scoped Dashboard / Recipe / Ingredient / Prep / Settings / Account
+- Recipe Detail responsive tab UI
 - Smartphone and tablet landscape layouts
 
 ## Out of Scope for MVP
 
-- Accountでのメールアドレス変更
-- Accountでのパスワード変更
-- 複数店舗切り替え
+- 材料別原価内訳API
 - Stripe / POS / inventory automation
-- Advanced role management
+- Multi-shop UI
 
 ## Next Recommended Tasks
 
-1. ownerで `/account` の店舗情報・表示名更新とログアウトを確認する。
-2. staffで店舗情報が閲覧のみ、表示名は更新可能であることを確認する。
-3. 390px前後のスマホ幅と1024px前後のタブレット横幅を確認する。
-4. AWS公開デモURLが決まったらREADMEに追記する。
-5. 必要ならスマホ幅スクリーンショットもREADMEに追加する。
+1. 390px前後で3タブ、概要内の原価、材料メモ切り替えを目視確認する。
+2. 1024px前後とPC幅で上部統合カード、中段2カラム、下段補助情報を確認する。
+3. Recipe Listなど一覧系ではボトムナビが表示され、詳細・作成・編集・Accountでは非表示になることを確認する。
 
 ## Open Questions
 
-- 複数の有効Membershipがある場合の現在Shop選択方法。
-- 将来のメール変更で再認証・メール確認をどこまで必須にするか。
+- 材料別原価内訳を将来表示する場合、Recipe Detail APIのレスポンスへ内訳を追加するか。
 
 ## Notes for Next Agent
 
+- backend変更は不要という要件に従い、APIやcost calculationは変更していない。
+- `backend/api/tests.py` に今回の作業以前からある未コミット変更には触れていない。
 - 開発用ログインは `owner@example.com` / `password`。
-- staff確認用ログインは `staff@example.com` / `password`。
-- ポートフォリオ撮影・公開デモ用データは `seed_portfolio_data` で再作成できる。
-- 既存DBでは古いMembershipが残ることがあるため、画面が空なら `seed_portfolio_data` を再実行して現在Shopへデモデータを寄せる。
-- 現在Membershipは有効MembershipのID順先頭を採用する。
-- 店舗更新権限は `get_current_owner_membership()` で強制する。
-- 表示名更新後はfrontendの `refreshMe()` でsession表示を同期する。
 - Docker frontendは `http://localhost:5174`。
-- 本番の `DJANGO_CSRF_TRUSTED_ORIGINS` にlocalhostを含めない。
 
 ## Suggested Commit Message
 
 ```text
-feat(demo): add portfolio seed data command
+feat(frontend): refine desktop recipe workspace
 ```

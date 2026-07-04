@@ -76,7 +76,7 @@ function AppRouter() {
   }
 
   return (
-    <AppLayout currentPath={routePath} navigate={navigateToRoute(navigate)}>
+    <AppLayout currentPath={routePath} navigate={navigateToRoute(navigate)} pathname={path}>
       {renderRoute(path, routePath, navigate)}
     </AppLayout>
   )
