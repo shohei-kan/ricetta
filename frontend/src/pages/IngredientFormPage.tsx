@@ -9,6 +9,7 @@ import {
   type IngredientFormPayload,
 } from '../api/ingredients'
 import { fetchUnits, type Unit } from '../api/units'
+import { AutoResizeTextarea } from '../components/ui/AutoResizeTextarea'
 
 type IngredientFormPageProps = {
   id?: number
@@ -258,8 +259,8 @@ export function IngredientFormPage({ id, navigate }: IngredientFormPageProps) {
             />
             <label className="block md:col-span-2">
               <span className="text-sm font-semibold text-[#4b4037]">メモ</span>
-              <textarea
-                className="mt-2 min-h-28 w-full rounded-lg border border-[#d7cbbb] bg-white px-4 py-3 text-base text-[#2b2621] outline-none ring-[#b88458] transition focus:ring-2"
+              <AutoResizeTextarea
+                className="mt-2 w-full rounded-lg border border-[#d7cbbb] bg-white px-4 py-3 text-base leading-7 text-[#2b2621] outline-none ring-[#b88458] transition focus:ring-2"
                 onChange={(event) => updateForm({ memo: event.target.value })}
                 value={form.memo}
               />

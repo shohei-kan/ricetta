@@ -670,7 +670,7 @@ MVPでは `is_active=false` による論理削除とする。
 
 ## GET /api/v1/prep-tasks/
 
-今日の仕込みタスク一覧を取得する。
+現在取り組む仕込みタスク一覧を取得する。
 
 ログイン必須。現在ShopのPrepTaskのみ返す。
 
@@ -680,7 +680,14 @@ MVPでは `is_active=false` による論理削除とする。
 date=2026-05-05
 ```
 
-`date` 未指定時はサーバー側のtodayを使う。
+`date` 未指定時はサーバー側のtodayを使う。`date` は完了タスクの完了日判定に使用する。
+
+表示対象は次の通り。
+
+- `status=todo` または `status=doing`：予定日に関係なく返す
+- `status=done`：`completed_at` のローカル日付が指定日と一致する場合だけ返す
+
+指定日より前に完了したタスクは返さない。querysetは常に現在Shopへスコープする。
 
 ### Response
 
@@ -713,7 +720,7 @@ date=2026-05-05
 }
 ```
 
-MVPでは `tasks` を `sort_order, id` 順に返す。
+`summary` は上記表示対象の `todo` / `doing` / `done` 件数。MVPでは `tasks` を `sort_order, id` 順に返す。`carried_over` は返さない。
 
 ---
 
@@ -967,7 +974,7 @@ Dashboard表示に必要な情報を取得する。
 date=2026-05-05
 ```
 
-`date` 未指定時はサーバー側のtodayを使う。
+`date` 未指定時はサーバー側のtodayを使う。`date` は完了済みタスクを当日分として扱う基準日で、未完了タスクは予定日に関係なく含める。
 
 ### Response
 
@@ -1017,12 +1024,12 @@ date=2026-05-05
 
 ### MVPでの注意
 
-- `prep_summary`: 対象日のPrepTaskを `todo` / `doing` / `done` ごとに集計する。
-- `next_tasks`: 対象日の `status != done` のPrepTaskを `sort_order, id` 順で最大5件返す。
+- `prep_summary`: Prep Todayと同じ表示対象（未完了の `todo` / `doing` 全件 + `completed_at` が対象日の `done`）を status別に集計する。
+- `next_tasks`: Prep Todayと同じ表示対象のうち `status != done` のPrepTaskを、作業中（`doing`）→ 未着手（`todo`）の順に並べ、同じstatus内は `sort_order, id` 順で最大5件返す。
 - `frequent_recipes`: 現在ShopのPrepTask利用回数が多いRecipeを最大5件返す。
 - `stats.recipe_count`: 現在Shopの `is_active=true` のRecipe数。
 - `stats.ingredient_count`: 現在Shopの `is_active=true` のIngredient数。
-- `stats.prep_task_count`: 対象日のPrepTask数。
+- `stats.prep_task_count`: Prep Todayと同じ表示対象のPrepTask数。
 - `alerts`: MVPでは期限注意・残量注意を未実装のため空配列を返す。
 
 `期限注意` は将来機能です。

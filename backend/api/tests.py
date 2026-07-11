@@ -1190,15 +1190,23 @@ class PrepTaskApiTests(ApiTestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertTrue(PrepTask.objects.filter(id=task.id).exists())
 
-    def test_list_filters_by_date_and_returns_summary(self):
+    def test_list_returns_unfinished_and_today_completed_with_summary(self):
         self.login_owner()
         unit = self.create_standard_unit("バッチ", Unit.UnitType.CUSTOM)
         today = timezone.localdate()
-        tomorrow = today + timedelta(days=1)
-        self.create_prep_task(unit=unit, date=today, status=PrepTask.Status.TODO, sort_order=2)
-        self.create_prep_task(unit=unit, date=today, status=PrepTask.Status.DOING, sort_order=1)
-        self.create_prep_task(unit=unit, date=today, status=PrepTask.Status.DONE, sort_order=3)
-        self.create_prep_task(unit=unit, date=tomorrow, status=PrepTask.Status.TODO, sort_order=4)
+        past = today - timedelta(days=3)
+        self.create_prep_task(unit=unit, date=past, status=PrepTask.Status.TODO, sort_order=2)
+        self.create_prep_task(unit=unit, date=past, status=PrepTask.Status.DOING, sort_order=1)
+        self.create_prep_task(unit=unit, date=past, status=PrepTask.Status.DONE, sort_order=3)
+        old_done = self.create_prep_task(
+            unit=unit,
+            date=past,
+            status=PrepTask.Status.DONE,
+            sort_order=4,
+        )
+        PrepTask.objects.filter(id=old_done.id).update(
+            completed_at=timezone.now() - timedelta(days=2)
+        )
 
         response = self.client.get(reverse("prep-task-list"), {"date": today.isoformat()})
 
@@ -1207,6 +1215,54 @@ class PrepTaskApiTests(ApiTestCase):
         self.assertEqual(response.data["summary"], {"todo": 1, "doing": 1, "done": 1})
         self.assertEqual(len(response.data["tasks"]), 3)
         self.assertEqual([item["sort_order"] for item in response.data["tasks"]], [1, 2, 3])
+
+    def test_list_includes_past_todo_task(self):
+        self.login_owner()
+        task = self.create_prep_task(
+            date=timezone.localdate() - timedelta(days=7),
+            status=PrepTask.Status.TODO,
+        )
+
+        response = self.client.get(reverse("prep-task-list"))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn(task.id, [item["id"] for item in response.data["tasks"]])
+
+    def test_list_includes_past_doing_task(self):
+        self.login_owner()
+        task = self.create_prep_task(
+            date=timezone.localdate() - timedelta(days=7),
+            status=PrepTask.Status.DOING,
+        )
+
+        response = self.client.get(reverse("prep-task-list"))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn(task.id, [item["id"] for item in response.data["tasks"]])
+
+    def test_list_includes_done_task_completed_today(self):
+        self.login_owner()
+        task = self.create_prep_task(
+            date=timezone.localdate() - timedelta(days=7),
+            status=PrepTask.Status.DONE,
+        )
+
+        response = self.client.get(reverse("prep-task-list"))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn(task.id, [item["id"] for item in response.data["tasks"]])
+
+    def test_list_excludes_done_task_completed_before_today(self):
+        self.login_owner()
+        task = self.create_prep_task(status=PrepTask.Status.DONE)
+        PrepTask.objects.filter(id=task.id).update(
+            completed_at=timezone.now() - timedelta(days=2)
+        )
+
+        response = self.client.get(reverse("prep-task-list"))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertNotIn(task.id, [item["id"] for item in response.data["tasks"]])
 
     def test_list_uses_today_when_date_is_omitted(self):
         self.login_owner()
@@ -1218,7 +1274,7 @@ class PrepTaskApiTests(ApiTestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["date"], today.isoformat())
-        self.assertEqual(len(response.data["tasks"]), 1)
+        self.assertEqual(len(response.data["tasks"]), 2)
 
     def test_invalid_list_date_returns_error(self):
         self.login_owner()
@@ -1360,15 +1416,20 @@ class DashboardApiTests(ApiTestCase):
         self.assertEqual(response.data["stats"]["prep_task_count"], 1)
         self.assertEqual(len(response.data["next_tasks"]), 1)
 
-    def test_prep_summary_counts_statuses_and_date_query_switches_date(self):
+    def test_prep_summary_matches_prep_today_active_task_scope(self):
         self.login_owner()
         unit = self.create_standard_unit("バッチ", Unit.UnitType.CUSTOM)
         today = timezone.localdate()
         tomorrow = today + timedelta(days=1)
-        self.create_prep_task(unit=unit, date=today, status=PrepTask.Status.TODO)
-        self.create_prep_task(unit=unit, date=today, status=PrepTask.Status.DOING)
+        past = today - timedelta(days=3)
+        self.create_prep_task(unit=unit, date=past, status=PrepTask.Status.TODO)
+        self.create_prep_task(unit=unit, date=past, status=PrepTask.Status.DOING)
         self.create_prep_task(unit=unit, date=today, status=PrepTask.Status.DONE)
+        old_done = self.create_prep_task(unit=unit, date=past, status=PrepTask.Status.DONE)
         self.create_prep_task(unit=unit, date=tomorrow, status=PrepTask.Status.TODO)
+        PrepTask.objects.filter(id=old_done.id).update(
+            completed_at=timezone.now() - timedelta(days=2)
+        )
 
         today_response = self.client.get(reverse("dashboard"), {"date": today.isoformat()})
         tomorrow_response = self.client.get(
@@ -1379,12 +1440,13 @@ class DashboardApiTests(ApiTestCase):
         self.assertEqual(today_response.status_code, status.HTTP_200_OK)
         self.assertEqual(
             today_response.data["prep_summary"],
-            {"todo": 1, "doing": 1, "done": 1},
+            {"todo": 2, "doing": 1, "done": 1},
         )
         self.assertEqual(
             tomorrow_response.data["prep_summary"],
-            {"todo": 1, "doing": 0, "done": 0},
+            {"todo": 2, "doing": 1, "done": 0},
         )
+        self.assertEqual(today_response.data["stats"]["prep_task_count"], 4)
 
     def test_dashboard_uses_today_when_date_is_omitted(self):
         self.login_owner()
@@ -1396,7 +1458,7 @@ class DashboardApiTests(ApiTestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["date"], today.isoformat())
-        self.assertEqual(response.data["stats"]["prep_task_count"], 1)
+        self.assertEqual(response.data["stats"]["prep_task_count"], 2)
 
     def test_invalid_dashboard_date_returns_error(self):
         self.login_owner()
@@ -1405,7 +1467,7 @@ class DashboardApiTests(ApiTestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def test_next_tasks_excludes_done_limits_to_five_and_orders_by_sort_order(self):
+    def test_next_tasks_prioritizes_doing_then_todo_and_orders_by_sort_order(self):
         self.login_owner()
         unit = self.create_standard_unit("バッチ", Unit.UnitType.CUSTOM)
         today = timezone.localdate()
@@ -1417,6 +1479,13 @@ class DashboardApiTests(ApiTestCase):
                 status=PrepTask.Status.TODO,
                 sort_order=10 - index,
             )
+        self.create_prep_task(
+            recipe=self.create_recipe(name="作業中の仕込み", unit=unit),
+            unit=unit,
+            date=today,
+            status=PrepTask.Status.DOING,
+            sort_order=99,
+        )
         self.create_prep_task(
             recipe=self.create_recipe(name="完了済み", unit=unit),
             unit=unit,
@@ -1435,8 +1504,12 @@ class DashboardApiTests(ApiTestCase):
             [task["recipe"]["name"] for task in response.data["next_tasks"]],
         )
         self.assertEqual(
-            [task["sort_order"] for task in response.data["next_tasks"]],
-            [5, 6, 7, 8, 9],
+            [task["status"] for task in response.data["next_tasks"]],
+            ["doing", "todo", "todo", "todo", "todo"],
+        )
+        self.assertEqual(
+            [task["recipe"]["name"] for task in response.data["next_tasks"]],
+            ["作業中の仕込み", "仕込み5", "仕込み4", "仕込み3", "仕込み2"],
         )
 
     def test_frequent_recipes_are_ordered_by_prep_task_usage_and_limited_to_five(self):
@@ -1503,7 +1576,7 @@ class DashboardApiTests(ApiTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["stats"]["recipe_count"], 1)
         self.assertEqual(response.data["stats"]["ingredient_count"], 1)
-        self.assertEqual(response.data["stats"]["prep_task_count"], 1)
+        self.assertEqual(response.data["stats"]["prep_task_count"], 2)
         self.assertEqual(response.data["alerts"], [])
 
 

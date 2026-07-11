@@ -10,6 +10,7 @@ import {
   type RecipeFormPayload,
 } from '../api/recipes'
 import { fetchUnits, type Unit } from '../api/units'
+import { AutoResizeTextarea } from '../components/ui/AutoResizeTextarea'
 
 type RecipeFormPageProps = {
   id?: number
@@ -181,6 +182,9 @@ export function RecipeFormPage({ id, navigate }: RecipeFormPageProps) {
   }
 
   function removeIngredientRow(index: number) {
+    if (!window.confirm('この材料行を削除しますか？')) {
+      return
+    }
     updateForm({ ingredients: form.ingredients.filter((_, rowIndex) => rowIndex !== index) })
   }
 
@@ -197,6 +201,9 @@ export function RecipeFormPage({ id, navigate }: RecipeFormPageProps) {
   }
 
   function removeStepRow(index: number) {
+    if (!window.confirm('この工程を削除しますか？')) {
+      return
+    }
     updateForm({ steps: form.steps.filter((_, rowIndex) => rowIndex !== index) })
   }
 
@@ -271,7 +278,7 @@ export function RecipeFormPage({ id, navigate }: RecipeFormPageProps) {
         </p>
       </div>
 
-      <form className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(380px,1fr)]" onSubmit={handleSubmit}>
+      <form className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(380px,1fr)]" onSubmit={handleSubmit}>
         <div className="space-y-5">
         <section className="rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-5 shadow-sm md:p-6">
           <h2 className="text-2xl font-bold text-[#2e2822]">基本情報</h2>
@@ -313,8 +320,8 @@ export function RecipeFormPage({ id, navigate }: RecipeFormPageProps) {
             />
             <label className="block md:col-span-2">
               <span className="text-sm font-semibold text-[#4b4037]">説明</span>
-              <textarea
-                className="mt-2 min-h-24 w-full rounded-lg border border-[#d7cbbb] bg-white px-4 py-3 text-base text-[#2b2621] outline-none ring-[#b88458] transition focus:ring-2"
+              <AutoResizeTextarea
+                className="mt-2 w-full rounded-lg border border-[#d7cbbb] bg-white px-4 py-3 text-base leading-7 text-[#2b2621] outline-none ring-[#b88458] transition focus:ring-2"
                 onChange={(event) => updateForm({ description: event.target.value })}
                 value={form.description}
               />
@@ -331,11 +338,11 @@ export function RecipeFormPage({ id, navigate }: RecipeFormPageProps) {
               </p>
             </div>
             <button
-              className="rounded-lg border border-dashed border-[#d8c3ad] bg-white px-4 py-3 text-base font-bold text-[#c76738] transition hover:bg-[#fbf7f0]"
+              className="rounded-lg px-3 py-2 text-base font-bold text-[#c76738] transition hover:bg-[#f7eee5]"
               onClick={addIngredientRow}
               type="button"
             >
-              材料行を追加
+              ＋ 追加
             </button>
           </div>
 
@@ -346,11 +353,19 @@ export function RecipeFormPage({ id, navigate }: RecipeFormPageProps) {
               </p>
             )}
             {form.ingredients.map((row, index) => (
-              <div className="rounded-lg border border-[#eadfce] bg-white p-4" key={index}>
-                <div className="grid gap-4 lg:grid-cols-[minmax(0,1.3fr)_160px_160px_minmax(0,1fr)]">
+              <div className="relative rounded-lg border border-[#eadfce] bg-white p-4 pt-5" key={index}>
+                <button
+                  aria-label="この材料行を削除"
+                  className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full text-xl leading-none text-[#9a8b7f] transition hover:bg-[#fff0ed] hover:text-[#a23d2d]"
+                  onClick={() => removeIngredientRow(index)}
+                  type="button"
+                >
+                  ×
+                </button>
+                <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_7rem_6.5rem]">
                   <SelectField
                     disabled={optionsLoading}
-                    label="材料"
+                    label="材料名"
                     onChange={(value) => updateIngredientRow(index, { ingredient_id: value })}
                     options={activeIngredients.map((ingredient) => ({
                       label: ingredient.name,
@@ -374,20 +389,16 @@ export function RecipeFormPage({ id, navigate }: RecipeFormPageProps) {
                     required
                     value={row.unit_id}
                   />
-                  <TextField
-                    label="メモ"
-                    onChange={(value) => updateIngredientRow(index, { memo: value })}
-                    value={row.memo}
-                  />
                 </div>
-                <div className="mt-3 flex justify-end">
-                  <button
-                    className="rounded-lg bg-[#fff0ed] px-4 py-2 text-sm font-bold text-[#a23d2d] transition hover:bg-[#f9dfd9]"
-                    onClick={() => removeIngredientRow(index)}
-                    type="button"
-                  >
-                    この材料行を削除
-                  </button>
+                <div className="mt-4">
+                  <label className="block">
+                    <span className="text-sm font-semibold text-[#4b4037]">メモ</span>
+                    <AutoResizeTextarea
+                      className="mt-2 w-full rounded-lg border border-[#d7cbbb] bg-white px-4 py-3 text-base leading-7 text-[#2b2621] outline-none ring-[#b88458] transition focus:ring-2"
+                      onChange={(event) => updateIngredientRow(index, { memo: event.target.value })}
+                      value={row.memo}
+                    />
+                  </label>
                 </div>
               </div>
             ))}
@@ -396,7 +407,7 @@ export function RecipeFormPage({ id, navigate }: RecipeFormPageProps) {
 
         </div>
 
-        <div className="space-y-5 lg:bg-[#eee5d8] lg:p-6">
+        <div className="space-y-5 xl:bg-[#eee5d8] xl:p-6">
         <section className="rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-5 shadow-sm md:p-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -406,11 +417,11 @@ export function RecipeFormPage({ id, navigate }: RecipeFormPageProps) {
               </p>
             </div>
             <button
-              className="rounded-lg border border-dashed border-[#d8c3ad] bg-white px-4 py-3 text-base font-bold text-[#c76738] transition hover:bg-[#fbf7f0]"
+              className="rounded-lg px-3 py-2 text-base font-bold text-[#c76738] transition hover:bg-[#f7eee5]"
               onClick={addStepRow}
               type="button"
             >
-              工程を追加
+              ＋ 追加
             </button>
           </div>
 
@@ -421,31 +432,43 @@ export function RecipeFormPage({ id, navigate }: RecipeFormPageProps) {
               </p>
             )}
             {form.steps.map((row, index) => (
-              <div className="rounded-lg border border-[#eadfce] bg-[#f1e7dc] p-4" key={index}>
-                <p className="text-lg font-bold text-[#75685e]">{index + 1}.</p>
-                <div className="mt-3 grid gap-4 md:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
+              <div
+                className="relative rounded-lg border border-[#eadfce] bg-white p-4 pt-5 shadow-[0_8px_20px_rgba(84,58,35,0.05)]"
+                key={index}
+              >
+                <button
+                  aria-label="この工程を削除"
+                  className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full text-xl leading-none text-[#9a8b7f] transition hover:bg-[#fff0ed] hover:text-[#a23d2d]"
+                  onClick={() => removeStepRow(index)}
+                  type="button"
+                >
+                  ×
+                </button>
+                <div className="flex items-center gap-3 pr-10">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#78936f] text-base font-bold text-white">
+                    {index + 1}
+                  </span>
+                  <p className="text-lg font-bold text-[#5d5148]">工程 {index + 1}</p>
+                </div>
+                <div className="mt-4">
                   <label className="block">
                     <span className="text-sm font-semibold text-[#4b4037]">作り方</span>
-                    <textarea
-                      className="mt-2 min-h-28 w-full rounded-lg border border-[#d7cbbb] bg-white px-4 py-3 text-base text-[#2b2621] outline-none ring-[#b88458] transition focus:ring-2"
+                    <AutoResizeTextarea
+                      className="mt-2 w-full rounded-lg border border-[#d7cbbb] bg-white px-4 py-3 text-base leading-7 text-[#2b2621] outline-none ring-[#b88458] transition focus:ring-2"
                       onChange={(event) => updateStepRow(index, { instruction: event.target.value })}
                       value={row.instruction}
                     />
                   </label>
-                  <TextField
-                    label="メモ"
-                    onChange={(value) => updateStepRow(index, { memo: value })}
-                    value={row.memo}
-                  />
                 </div>
-                <div className="mt-3 flex justify-end">
-                  <button
-                    className="rounded-lg bg-[#fff0ed] px-4 py-2 text-sm font-bold text-[#a23d2d] transition hover:bg-[#f9dfd9]"
-                    onClick={() => removeStepRow(index)}
-                    type="button"
-                  >
-                    この工程を削除
-                  </button>
+                <div className="mt-4">
+                  <label className="block">
+                    <span className="text-sm font-semibold text-[#4b4037]">メモ</span>
+                    <AutoResizeTextarea
+                      className="mt-2 w-full rounded-lg border border-[#d7cbbb] bg-white px-4 py-3 text-base leading-7 text-[#2b2621] outline-none ring-[#b88458] transition focus:ring-2"
+                      onChange={(event) => updateStepRow(index, { memo: event.target.value })}
+                      value={row.memo}
+                    />
+                  </label>
                 </div>
               </div>
             ))}
@@ -461,15 +484,18 @@ export function RecipeFormPage({ id, navigate }: RecipeFormPageProps) {
               onChange={(value) => updateForm({ selling_price: value })}
               value={form.selling_price}
             />
-            <TextField
-              label="アレルゲンメモ"
-              onChange={(value) => updateForm({ allergen_notes: value })}
-              value={form.allergen_notes}
-            />
+            <label className="block">
+              <span className="text-sm font-semibold text-[#4b4037]">アレルゲンメモ</span>
+              <AutoResizeTextarea
+                className="mt-2 w-full rounded-lg border border-[#d7cbbb] bg-white px-4 py-3 text-base leading-7 text-[#2b2621] outline-none ring-[#b88458] transition focus:ring-2"
+                onChange={(event) => updateForm({ allergen_notes: event.target.value })}
+                value={form.allergen_notes}
+              />
+            </label>
             <label className="block md:col-span-2">
               <span className="text-sm font-semibold text-[#4b4037]">注意点</span>
-              <textarea
-                className="mt-2 min-h-24 w-full rounded-lg border border-[#d7cbbb] bg-white px-4 py-3 text-base text-[#2b2621] outline-none ring-[#b88458] transition focus:ring-2"
+              <AutoResizeTextarea
+                className="mt-2 w-full rounded-lg border border-[#d7cbbb] bg-white px-4 py-3 text-base leading-7 text-[#2b2621] outline-none ring-[#b88458] transition focus:ring-2"
                 onChange={(event) => updateForm({ notes: event.target.value })}
                 value={form.notes}
               />
@@ -594,7 +620,7 @@ function toFormState(recipe: RecipeDetail): FormState {
     allergen_notes: recipe.allergen_notes,
     ingredients: recipe.ingredients.map((item) => ({
       ingredient_id: String(item.ingredient.id),
-      quantity: item.quantity,
+      quantity: trimTrailingDecimalZeros(item.quantity),
       unit_id: String(item.unit.id),
       memo: item.memo,
     })),
@@ -603,6 +629,10 @@ function toFormState(recipe: RecipeDetail): FormState {
       memo: step.memo,
     })),
   }
+}
+
+function trimTrailingDecimalZeros(value: string) {
+  return value.includes('.') ? value.replace(/\.?0+$/, '') : value
 }
 
 function toPayload(form: FormState): RecipeFormPayload {

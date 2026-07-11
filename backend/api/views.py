@@ -1,5 +1,5 @@
 from django.contrib.auth import login, logout
-from django.db.models import Count, Q
+from django.db.models import Case, Count, IntegerField, Q, Value, When
 from django.utils.decorators import method_decorator
 from django.utils import timezone
 from django.utils.dateparse import parse_date
@@ -117,12 +117,13 @@ class DashboardView(APIView):
         prep_tasks = PrepTask.objects.select_related(
             "recipe",
             "planned_unit",
-        ).filter(shop=shop, date=target_date)
+        ).filter(shop=shop).filter(active_prep_task_filter(target_date))
         prep_summary = {status_value: 0 for status_value, _label in PrepTask.Status.choices}
         for task in prep_tasks:
             prep_summary[task.status] += 1
 
         next_tasks = prep_tasks.exclude(status=PrepTask.Status.DONE).order_by(
+            prep_status_sort_order(),
             "sort_order",
             "id",
         )[:5]
@@ -339,7 +340,7 @@ class PrepTaskViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        queryset = self.get_queryset().filter(date=target_date)
+        queryset = self.get_queryset().filter(active_prep_task_filter(target_date))
         serializer = self.get_serializer(queryset, many=True)
         summary = {status_value: 0 for status_value, _label in PrepTask.Status.choices}
         for task in queryset:
@@ -370,3 +371,19 @@ class PrepTaskViewSet(viewsets.ModelViewSet):
         if not date_value:
             return timezone.localdate()
         return parse_date(date_value)
+
+
+def active_prep_task_filter(target_date):
+    return Q(status__in=[PrepTask.Status.TODO, PrepTask.Status.DOING]) | Q(
+        status=PrepTask.Status.DONE,
+        completed_at__date=target_date,
+    )
+
+
+def prep_status_sort_order():
+    return Case(
+        When(status=PrepTask.Status.DOING, then=Value(0)),
+        When(status=PrepTask.Status.TODO, then=Value(1)),
+        default=Value(2),
+        output_field=IntegerField(),
+    )

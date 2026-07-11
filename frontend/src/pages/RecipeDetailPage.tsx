@@ -1,8 +1,5 @@
-import { useEffect, useRef, useState, type FormEvent, type TouchEvent } from 'react'
-import { ApiError } from '../api/api'
-import { createPrepTask } from '../api/prepTasks'
+import { useEffect, useRef, useState, type TouchEvent } from 'react'
 import { fetchRecipeDetail, type RecipeDetail } from '../api/recipes'
-import { fetchUnits, type Unit } from '../api/units'
 
 type RecipeDetailPageProps = {
   id: number
@@ -70,7 +67,6 @@ function RecipeDetailContent({
   navigate: (path: string) => void
   recipe: RecipeDetail
 }) {
-  const [showPrepForm, setShowPrepForm] = useState(false)
   const [activeTab, setActiveTab] = useState<RecipeDetailTab>('overview')
   const touchStart = useRef<{ x: number; y: number } | null>(null)
 
@@ -122,16 +118,8 @@ function RecipeDetailContent({
       >
         <BackButton navigate={navigate} withBottomMargin={false} />
         <div
-          className={`${activeTab === 'overview' ? 'grid' : 'hidden lg:grid'} grid-cols-2 gap-3`}
+          className={activeTab === 'overview' ? 'block' : 'hidden lg:block'}
         >
-          <button
-            aria-expanded={showPrepForm}
-            className="min-h-12 rounded-lg bg-[#c76738] px-5 py-3 text-base font-bold text-white shadow-[0_8px_18px_rgba(198,103,56,0.22)] transition hover:bg-[#b65b31]"
-            onClick={() => setShowPrepForm((current) => !current)}
-            type="button"
-          >
-            仕込みに追加
-          </button>
           <button
             className="min-h-12 rounded-lg border border-[#dfd1bf] bg-white px-5 py-3 text-base font-bold text-[#5d5148] transition hover:bg-[#fbf7f0]"
             onClick={() => navigate(`/recipes/${recipe.id}/edit`)}
@@ -141,16 +129,6 @@ function RecipeDetailContent({
           </button>
         </div>
       </div>
-
-      {showPrepForm && (
-        <div className={`${activeTab === 'overview' ? 'block' : 'hidden lg:block'} mb-3`}>
-          <AddToPrepPanel
-            navigate={navigate}
-            onCancel={() => setShowPrepForm(false)}
-            recipe={recipe}
-          />
-        </div>
-      )}
 
       <header className="rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-5 pb-4 shadow-sm md:p-6 md:pb-5">
         <div className="min-w-0">
@@ -341,182 +319,6 @@ function StepsPanel({ recipe }: { recipe: RecipeDetail }) {
   )
 }
 
-function AddToPrepPanel({
-  navigate,
-  onCancel,
-  recipe,
-}: {
-  navigate: (path: string) => void
-  onCancel: () => void
-  recipe: RecipeDetail
-}) {
-  const [units, setUnits] = useState<Unit[]>([])
-  const [unitsLoading, setUnitsLoading] = useState(true)
-  const [unitError, setUnitError] = useState<string | null>(null)
-  const [date, setDate] = useState(getTodayDate)
-  const [plannedQuantity, setPlannedQuantity] = useState(recipe.base_yield_quantity)
-  const [plannedUnitId, setPlannedUnitId] = useState(String(recipe.base_yield_unit.id))
-  const [memo, setMemo] = useState('')
-  const [saving, setSaving] = useState(false)
-  const [saveError, setSaveError] = useState<string | null>(null)
-  const [validationErrors, setValidationErrors] = useState<string[]>([])
-
-  useEffect(() => {
-    let active = true
-
-    async function loadUnits() {
-      setUnitsLoading(true)
-      setUnitError(null)
-      try {
-        const response = await fetchUnits()
-        if (active) {
-          setUnits(ensureBaseUnit(response, recipe.base_yield_unit))
-        }
-      } catch {
-        if (active) {
-          setUnitError('単位一覧を読み込めませんでした。')
-          setUnits([{
-            id: recipe.base_yield_unit.id,
-            name: recipe.base_yield_unit.name,
-            is_active: true,
-            unit_type: 'custom',
-            is_default: false,
-            is_standard: false,
-            sort_order: 0,
-          }])
-        }
-      } finally {
-        if (active) {
-          setUnitsLoading(false)
-        }
-      }
-    }
-
-    void loadUnits()
-    return () => {
-      active = false
-    }
-  }, [recipe.base_yield_unit])
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    const errors = validatePrepForm({ date, plannedQuantity, plannedUnitId, recipeId: recipe.id })
-    setValidationErrors(errors)
-    setSaveError(null)
-
-    if (errors.length > 0) {
-      return
-    }
-
-    setSaving(true)
-    try {
-      await createPrepTask({
-        date,
-        recipe_id: recipe.id,
-        planned_quantity: plannedQuantity,
-        planned_unit_id: Number(plannedUnitId),
-        memo: memo.trim(),
-      })
-      navigate('/prep')
-    } catch (caught) {
-      setSaveError(formatSaveError(caught))
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  return (
-    <section className="rounded-xl border border-[#d8c3ad] bg-[#fff7eb] p-5 shadow-sm">
-      <h2 className="text-xl font-bold text-[#34291f]">今日の仕込みに追加</h2>
-      <p className="mt-2 text-sm leading-6 text-[#75685e]">
-        基準量を初期値にして、今日の仕込みボードへ追加します。
-      </p>
-
-      {unitError && <p className="mt-3 text-sm font-semibold text-[#a23d2d]">{unitError}</p>}
-
-      <form className="mt-4 space-y-4" onSubmit={handleSubmit}>
-        <label className="block">
-          <span className="text-sm font-semibold text-[#4b4037]">仕込み日 *</span>
-          <input
-            className="mt-2 min-h-12 w-full rounded-lg border border-[#d7cbbb] bg-white px-4 text-base text-[#2b2621] outline-none ring-[#b88458] transition focus:ring-2"
-            onChange={(event) => setDate(event.target.value)}
-            type="date"
-            value={date}
-          />
-        </label>
-
-        <label className="block">
-          <span className="text-sm font-semibold text-[#4b4037]">予定数量 *</span>
-          <input
-            className="mt-2 min-h-12 w-full rounded-lg border border-[#d7cbbb] bg-white px-4 text-base text-[#2b2621] outline-none ring-[#b88458] transition focus:ring-2"
-            inputMode="decimal"
-            onChange={(event) => setPlannedQuantity(event.target.value)}
-            value={plannedQuantity}
-          />
-        </label>
-
-        <label className="block">
-          <span className="text-sm font-semibold text-[#4b4037]">予定単位 *</span>
-          <select
-            className="mt-2 min-h-12 w-full rounded-lg border border-[#d7cbbb] bg-white px-4 text-base text-[#2b2621] outline-none ring-[#b88458] transition focus:ring-2 disabled:bg-[#eee7db] disabled:text-[#8a7a6d]"
-            disabled={unitsLoading}
-            onChange={(event) => setPlannedUnitId(event.target.value)}
-            value={plannedUnitId}
-          >
-            <option value="">選択してください</option>
-            {units.map((unit) => (
-              <option key={unit.id} value={unit.id}>
-                {unit.name}
-              </option>
-            ))}
-          </select>
-          {unitsLoading && <span className="mt-2 block text-xs text-[#75685e]">単位を読み込んでいます...</span>}
-        </label>
-
-        <label className="block">
-          <span className="text-sm font-semibold text-[#4b4037]">メモ</span>
-          <textarea
-            className="mt-2 min-h-20 w-full rounded-lg border border-[#d7cbbb] bg-white px-4 py-3 text-base text-[#2b2621] outline-none ring-[#b88458] transition focus:ring-2"
-            onChange={(event) => setMemo(event.target.value)}
-            value={memo}
-          />
-        </label>
-
-        {(validationErrors.length > 0 || saveError) && (
-          <div className="rounded-lg border border-[#f1c8c0] bg-[#fff0ed] p-4 text-[#a23d2d]">
-            <p className="font-bold">仕込みへの追加に失敗しました。入力内容を確認してください。</p>
-            {saveError && <p className="mt-2 text-sm leading-6">{saveError}</p>}
-            {validationErrors.length > 0 && (
-              <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">
-                {validationErrors.map((error) => (
-                  <li key={error}>{error}</li>
-                ))}
-              </ul>
-            )}
-          </div>
-        )}
-
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <button
-            className="rounded-lg bg-[#c76738] px-4 py-3 text-base font-bold text-white transition hover:bg-[#b65b31] disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={saving || unitsLoading}
-            type="submit"
-          >
-            {saving ? '追加中...' : '仕込みに追加'}
-          </button>
-          <button
-            className="rounded-lg border border-[#dfd1bf] bg-white px-4 py-3 text-base font-bold text-[#5d5148] transition hover:bg-[#fbf7f0]"
-            onClick={onCancel}
-            type="button"
-          >
-            キャンセル
-          </button>
-        </div>
-      </form>
-    </section>
-  )
-}
-
 function CostSummaryCard({ recipe }: { recipe: RecipeDetail }) {
   const summary = recipe.cost_summary
 
@@ -547,72 +349,6 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
       <span className="text-lg font-bold text-[#332820]">{value}</span>
     </div>
   )
-}
-
-function ensureBaseUnit(units: Unit[], baseUnit: RecipeDetail['base_yield_unit']) {
-  if (units.some((unit) => unit.id === baseUnit.id)) {
-    return units
-  }
-  return [
-    {
-      id: baseUnit.id,
-      name: baseUnit.name,
-      is_active: true,
-      unit_type: 'custom' as const,
-      is_default: false,
-      is_standard: false,
-      sort_order: 0,
-    },
-    ...units,
-  ]
-}
-
-function validatePrepForm({
-  date,
-  plannedQuantity,
-  plannedUnitId,
-  recipeId,
-}: {
-  date: string
-  plannedQuantity: string
-  plannedUnitId: string
-  recipeId: number
-}) {
-  const errors: string[] = []
-  if (!date) {
-    errors.push('仕込み日を入力してください。')
-  }
-  if (!recipeId) {
-    errors.push('レシピを選択してください。')
-  }
-  const quantity = Number(plannedQuantity)
-  if (!plannedQuantity || Number.isNaN(quantity)) {
-    errors.push('予定数量を入力してください。')
-  } else if (quantity <= 0) {
-    errors.push('予定数量は0より大きい値を入力してください。')
-  }
-  if (!plannedUnitId) {
-    errors.push('予定単位を選択してください。')
-  }
-  return errors
-}
-
-function getTodayDate() {
-  const today = new Date()
-  const year = today.getFullYear()
-  const month = String(today.getMonth() + 1).padStart(2, '0')
-  const day = String(today.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
-
-function formatSaveError(caught: unknown) {
-  if (caught instanceof ApiError) {
-    if (typeof caught.data === 'string') {
-      return caught.data
-    }
-    return JSON.stringify(caught.data)
-  }
-  return '仕込みへの追加に失敗しました。入力内容を確認してください。'
 }
 
 function goBack(navigate: (path: string) => void) {

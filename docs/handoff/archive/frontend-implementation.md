@@ -356,3 +356,23 @@ Ricettaのブランド素材を主要画面へ反映し、Account Phase 1 + 2の
 - Frontend lint: pass
 - Frontend build: pass
 - in-app browserが利用できず、PC・スマホの自動目視確認は未実施
+
+## 2026-07-05 Responsive Recipe Detail and navigation
+
+Recipe Detailと共通ナビゲーションをスマホ・タブレット・PC向けに最適化した。
+
+### Summary
+
+- `lg`未満は概要・材料・作り方の3タブ、`lg`以上はタブなし一覧に変更
+- モバイルタブへ横スワイプ切り替えを追加
+- 材料メモを表示 / 非表示できるように変更
+- `lg`以上では材料と作り方を横並び、原価・注意点・アレルゲンを下段表示
+- モバイルボトムナビとサイドナビをLucideアイコンへ統一
+- 詳細・作成・編集・Accountではモバイルボトムナビを非表示
+- スマホヘッダーを非固定にし、ロゴとアカウントアイコンだけに整理
+
+### Verification
+
+- Frontend lint: pass
+- Frontend build: pass
+- in-app browserの接続情報不足により自動目視確認は未実施

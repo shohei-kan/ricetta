@@ -439,7 +439,7 @@ PrepTaskで指定できるUnitは以下に限定します。
 
 `status=done` にした場合は `completed_at` を設定します。`done` 以外へ戻した場合は `completed_at=null` にします。
 
-PrepTask一覧APIは日付で絞り込み、summaryとして `todo` / `doing` / `done` の件数を返します。MVPでは `sort_order, id` 順に返します。
+PrepTask一覧APIは、予定日に関係なく未完了（`todo` / `doing`）を返し、完了（`done`）は `completed_at` が指定日のものだけ返します。summaryはこの表示対象の `todo` / `doing` / `done` 件数です。MVPでは持ち越しラベルや優先度を追加せず、`sort_order, id` 順に返します。
 
 ### 例
 
@@ -458,13 +458,13 @@ Dashboardは永続モデルではなく、ログイン後の「今日の現場�
 | フィールド | 説明 |
 |---|---|
 | date | 対象日 |
-| prep_summary | 対象日のPrepTask status別件数 |
-| next_tasks | 対象日の未完了PrepTask最大5件 |
+| prep_summary | Prep Todayと同じ表示対象のPrepTask status別件数 |
+| next_tasks | Prep Todayと同じ表示対象の未完了PrepTask最大5件 |
 | frequent_recipes | PrepTask利用回数が多いRecipe最大5件 |
 | stats | recipe_count / ingredient_count / prep_task_count |
 | alerts | MVPでは空配列 |
 
-Dashboardに含めるRecipe / Ingredient / PrepTaskはすべて現在Shopにスコープします。フロントから `shop_id` は受け取りません。
+Dashboardに含めるRecipe / Ingredient / PrepTaskはすべて現在Shopにスコープします。フロントから `shop_id` は受け取りません。Dashboardの仕込みサマリーと件数は、Prep Todayと同じく未完了（`todo` / `doing`）全件と `completed_at` が対象日の完了（`done`）を基準にします。
 
 `frequent_recipes` はMVPではPrepTask利用回数ベースで集計します。期限注意・残量注意はMVPでは未実装のため、`alerts` は空配列を返します。
 

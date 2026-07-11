@@ -8,6 +8,7 @@ import {
   type ShopUpdateInput,
 } from '../api/shop'
 import { useAuth } from '../auth/useAuth'
+import { AutoResizeTextarea } from '../components/ui/AutoResizeTextarea'
 
 const emptyShopForm: ShopUpdateInput = {
   name: '',
@@ -148,8 +149,8 @@ export function AccountPage() {
               />
               <label className="block">
                 <span className="text-sm font-semibold text-[#4b4037]">メモ</span>
-                <textarea
-                  className="mt-2 min-h-28 w-full resize-y rounded-lg border border-[#d7cbbb] bg-white px-4 py-3 text-base text-[#2b2621] outline-none ring-[#b88458] transition focus:ring-2"
+                <AutoResizeTextarea
+                  className="mt-2 w-full rounded-lg border border-[#d7cbbb] bg-white px-4 py-3 text-base leading-7 text-[#2b2621] outline-none ring-[#b88458] transition focus:ring-2"
                   onChange={(event) => setShopForm((current) => ({ ...current, memo: event.target.value }))}
                   value={shopForm.memo}
                 />

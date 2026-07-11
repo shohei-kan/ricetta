@@ -1,12 +1,12 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { checklistBoardLeaf, emptyRecipeAdd, leafSprigSimple } from '../assets'
+import { checklistBoardLeaf, leafSprigSimple } from '../assets'
 import {
   fetchDashboard,
   type DashboardData,
   type DashboardTask,
   type StatusKey,
 } from '../api/dashboard'
-import { EmptyState } from '../components/EmptyState'
+import { useAuth } from '../auth/useAuth'
 
 type DashboardPageProps = {
   navigate: (path: string) => void
@@ -19,6 +19,7 @@ const statusLabels: Record<StatusKey, string> = {
 }
 
 export function DashboardPage({ navigate }: DashboardPageProps) {
+  const { session } = useAuth()
   const [dashboard, setDashboard] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -51,17 +52,20 @@ export function DashboardPage({ navigate }: DashboardPageProps) {
     }
   }, [])
 
+  const shopName = session?.shop.name ?? '店舗'
+  const role = session ? roleLabel(session.membership.role) : undefined
+
   if (loading) {
-    return <PageShell title="今日の現場">読み込み中...</PageShell>
+    return <PageShell badge={role} title={shopName}>読み込み中...</PageShell>
   }
 
   if (error || !dashboard) {
-    return <PageShell title="今日の現場">{error ?? 'データがありません。'}</PageShell>
+    return <PageShell badge={role} title={shopName}>{error ?? 'データがありません。'}</PageShell>
   }
 
   return (
-    <PageShell title="今日の現場" subtitle={formatDate(dashboard.date)}>
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.25fr)_minmax(320px,0.9fr)]">
+    <PageShell badge={role} title={shopName} subtitle={formatDate(dashboard.date)}>
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.45fr)_minmax(300px,0.75fr)]">
         <section className="space-y-5">
           <div className="rounded-xl border-2 border-[#c76738] bg-[#fffdf9] p-5 shadow-[0_14px_28px_rgba(113,73,44,0.12)] md:p-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -114,32 +118,6 @@ export function DashboardPage({ navigate }: DashboardPageProps) {
 
         <aside className="space-y-5">
           <div className="rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-5 shadow-sm">
-            <h2 className="text-xl font-bold text-[#2e2822]">よく使うレシピ</h2>
-            <div className="mt-4 space-y-2">
-              {dashboard.frequent_recipes.length > 0 ? (
-                dashboard.frequent_recipes.map((recipe) => (
-                  <div
-                    className="rounded-lg border border-[#eadfce] bg-white px-4 py-3"
-                    key={recipe.id}
-                  >
-                    <p className="font-semibold text-[#3c3027]">{recipe.name}</p>
-                    <p className="mt-1 text-sm text-[#7b6f64]">
-                      {recipe.category?.name ?? 'カテゴリなし'}
-                    </p>
-                  </div>
-                ))
-              ) : (
-                <EmptyState
-                  compact
-                  description="レシピを登録すると、ここからすぐに開けます。"
-                  imageSrc={emptyRecipeAdd}
-                  title="まだ表示できるレシピがありません。"
-                />
-              )}
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-5 shadow-sm">
             <h2 className="text-xl font-bold text-[#2e2822]">サマリー</h2>
             <div className="mt-4 grid grid-cols-3 gap-2">
               <Stat label="レシピ" value={dashboard.stats.recipe_count} />
@@ -173,10 +151,12 @@ export function DashboardPage({ navigate }: DashboardPageProps) {
 }
 
 function PageShell({
+  badge,
   children,
   subtitle,
   title,
 }: {
+  badge?: string
   children: ReactNode
   subtitle?: string
   title: string
@@ -184,11 +164,15 @@ function PageShell({
   return (
     <div className="mx-auto max-w-280 px-5 py-6 md:px-8 md:py-8">
       <div className="mb-7 border-b border-[#ded2c2] pb-5 md:flex md:items-end md:justify-between">
-        <div>
-        <p className="text-sm font-bold text-[#c76738]">Ricetta</p>
-        <h1 className="mt-2 text-3xl font-bold tracking-normal text-[#2e2822] md:text-4xl">
-          {title}
-        </h1>
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-3xl font-bold tracking-normal text-[#2e2822] md:text-4xl">
+            {title}
+          </h1>
+          {badge && (
+            <span className="rounded-md bg-[#78936f] px-3 py-1 text-sm font-bold text-white">
+              {badge}
+            </span>
+          )}
         </div>
         {subtitle && <p className="mt-3 text-base font-semibold text-[#75685e] md:mt-0">{subtitle}</p>}
       </div>
@@ -197,9 +181,15 @@ function PageShell({
   )
 }
 
+function roleLabel(role: 'owner' | 'staff') {
+  return role === 'owner' ? 'オーナー' : 'スタッフ'
+}
+
 function TaskCard({ task }: { task: DashboardTask }) {
+  const tone = taskCardTone(task.status)
+
   return (
-    <div className="rounded-lg border border-[#eadfce] bg-white px-4 py-4">
+    <div className={`rounded-lg border px-4 py-4 ${tone.card}`}>
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-lg font-bold text-[#332820]">{task.recipe.name}</p>
@@ -209,7 +199,7 @@ function TaskCard({ task }: { task: DashboardTask }) {
           </p>
           {task.memo && <p className="mt-2 text-sm text-[#8a7a6d]">{task.memo}</p>}
         </div>
-        <span className="rounded-md bg-[#78936f] px-3 py-1 text-sm font-bold text-white">
+        <span className={`rounded-md px-3 py-1 text-sm font-bold ${tone.badge}`}>
           {statusLabels[task.status]}
         </span>
       </div>
@@ -234,6 +224,27 @@ function summaryTone(status: StatusKey) {
     return 'border-[#cfe1cd] bg-[#e8f1e5] text-[#4d7a55]'
   }
   return 'border-[#e0d3c2] bg-[#f1e7dc] text-[#75685e]'
+}
+
+function taskCardTone(status: StatusKey) {
+  if (status === 'doing') {
+    return {
+      badge: 'bg-[#d8951d] text-white',
+      card: 'border-[#ead8a5] bg-[#fff8df]',
+    }
+  }
+
+  if (status === 'todo') {
+    return {
+      badge: 'bg-[#c76738] text-white',
+      card: 'border-[#efcfb8] bg-[#fff3ea]',
+    }
+  }
+
+  return {
+    badge: 'bg-[#78936f] text-white',
+    card: 'border-[#cfe1cd] bg-[#f1f7ef]',
+  }
 }
 
 function formatQuantity(value: string) {

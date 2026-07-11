@@ -9,7 +9,6 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { ricettaLogoSimple } from '../assets'
-import { useAuth } from '../auth/useAuth'
 
 export type RoutePath = '/dashboard' | '/prep' | '/recipes' | '/ingredients' | '/settings' | '/account'
 
@@ -31,7 +30,6 @@ type AppLayoutProps = {
 const mobileBottomNavPaths = new Set(['/dashboard', '/prep', '/recipes', '/ingredients', '/settings'])
 
 export function AppLayout({ children, currentPath, pathname, navigate }: AppLayoutProps) {
-  const { session } = useAuth()
   const showMobileBottomNav = mobileBottomNavPaths.has(pathname)
 
   return (
@@ -64,16 +62,14 @@ export function AppLayout({ children, currentPath, pathname, navigate }: AppLayo
           ))}
         </nav>
         <button
-          className={`w-full border-t border-[#ded2c2] px-4 py-5 text-left transition hover:bg-[#f7f1e8] ${
+          className={`flex min-h-20 w-full flex-col items-center justify-center gap-2 border-t border-[#ded2c2] px-3 py-4 text-center text-[#5d5148] transition hover:bg-[#f7f1e8] hover:text-[#c76738] ${
             currentPath === '/account' ? 'bg-[#f1e7dc]' : ''
           }`}
           onClick={() => navigate('/account')}
           type="button"
         >
-          <p className="truncate text-base font-bold text-[#2e2822]">{session?.shop.name}</p>
-          <p className="mt-3 inline-flex rounded-md bg-[#78936f] px-3 py-1 text-sm font-bold text-white">
-            {session ? roleLabel(session.membership.role) : ''}
-          </p>
+          <CircleUserRound aria-hidden="true" size={22} strokeWidth={1.7} />
+          <span className="text-sm font-bold">アカウント</span>
         </button>
       </aside>
 
@@ -122,8 +118,4 @@ export function AppLayout({ children, currentPath, pathname, navigate }: AppLayo
       )}
     </div>
   )
-}
-
-function roleLabel(role: 'owner' | 'staff') {
-  return role === 'owner' ? 'オーナー' : 'スタッフ'
 }

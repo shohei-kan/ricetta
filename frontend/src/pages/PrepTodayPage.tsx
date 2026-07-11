@@ -1,13 +1,15 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { emptyPrepBoard } from '../assets'
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
 import {
+  createPrepTask,
   fetchPrepTasks,
   updatePrepTaskStatus,
   type PrepTask,
   type PrepTaskListResponse,
   type PrepTaskStatus,
 } from '../api/prepTasks'
-import { EmptyState as EmptyStateContent } from '../components/EmptyState'
+import { fetchRecipes, type RecipeListItem } from '../api/recipes'
+import { fetchUnits } from '../api/units'
+import { AutoResizeTextarea } from '../components/ui/AutoResizeTextarea'
 
 const statusLabels: Record<PrepTaskStatus, string> = {
   todo: '未着手',
@@ -27,6 +29,7 @@ export function PrepTodayPage({ navigate }: PrepTodayPageProps) {
   const [error, setError] = useState<string | null>(null)
   const [statusError, setStatusError] = useState<string | null>(null)
   const [updatingTaskId, setUpdatingTaskId] = useState<number | null>(null)
+  const [showAddForm, setShowAddForm] = useState(false)
   const today = useMemo(() => getToday(), [])
 
   const loadPrepTasks = useCallback(async () => {
@@ -83,9 +86,12 @@ export function PrepTodayPage({ navigate }: PrepTodayPageProps) {
     }
   }
 
-  const tasksByStatus = groupTasksByStatus(data?.tasks ?? [])
-  const isEmpty = !loading && !error && (data?.tasks.length ?? 0) === 0
+  async function handleTaskCreated() {
+    await loadPrepTasks()
+    setShowAddForm(false)
+  }
 
+  const tasksByStatus = groupTasksByStatus(data?.tasks ?? [])
   return (
     <div className="mx-auto max-w-7xl px-5 py-6 md:px-8 md:py-8">
       <div className="mb-6 flex flex-col gap-4 border-b border-[#ded2c2] pb-5 lg:flex-row lg:items-end lg:justify-between">
@@ -95,6 +101,9 @@ export function PrepTodayPage({ navigate }: PrepTodayPageProps) {
             今日の仕込み
           </h1>
           <p className="mt-2 text-base text-[#75685e]">{formatDate(data?.date ?? today)}</p>
+          <p className="mt-2 text-sm leading-6 text-[#8a7a6d]">
+            未完了の仕込みと、今日完了した仕込みを表示します。
+          </p>
         </div>
 
         {data && (
@@ -108,6 +117,14 @@ export function PrepTodayPage({ navigate }: PrepTodayPageProps) {
           </div>
         )}
       </div>
+
+      {showAddForm && (
+        <AddPrepTaskModal
+          date={today}
+          onCancel={() => setShowAddForm(false)}
+          onCreated={handleTaskCreated}
+        />
+      )}
 
       {statusError && (
         <p className="mb-4 rounded-lg bg-[#fff0ed] px-4 py-3 text-sm font-semibold text-[#a23d2d]">
@@ -123,14 +140,13 @@ export function PrepTodayPage({ navigate }: PrepTodayPageProps) {
         </div>
       )}
 
-      {isEmpty && <EmptyState />}
-
-      {data && data.tasks.length > 0 && (
+      {data && (
         <div className="grid gap-6 lg:grid-cols-3">
           {statusOrder.map((status) => (
             <StatusColumn
               key={status}
               label={statusLabels[status]}
+              onAdd={status === 'todo' ? () => setShowAddForm(true) : undefined}
               onStatusChange={handleStatusChange}
               onViewRecipe={(recipeId) => navigate(`/recipes/${recipeId}`)}
               status={status}
@@ -146,6 +162,7 @@ export function PrepTodayPage({ navigate }: PrepTodayPageProps) {
 
 function StatusColumn({
   label,
+  onAdd,
   onStatusChange,
   onViewRecipe,
   status,
@@ -153,6 +170,7 @@ function StatusColumn({
   updatingTaskId,
 }: {
   label: string
+  onAdd?: () => void
   onStatusChange: (taskId: number, status: PrepTaskStatus) => Promise<void>
   onViewRecipe: (recipeId: number) => void
   status: PrepTaskStatus
@@ -163,11 +181,32 @@ function StatusColumn({
     <section className={`min-h-130 rounded-xl border p-5 ${columnSurface(status)}`}>
       <div className="mb-5 border-b border-current/10 pb-4">
         <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">{label}</h2>
-        <span className="rounded-full bg-white/70 px-3 py-1 text-sm font-bold">
-          {tasks.length}
-        </span>
+          <div className="flex items-center gap-3">
+            <h2 className="text-2xl font-bold">{label}</h2>
+            <span className="rounded-full bg-white/70 px-3 py-1 text-sm font-bold">
+              {tasks.length}
+            </span>
+          </div>
+          {onAdd && (
+            <button
+              aria-label="仕込みを追加"
+              className="hidden h-10 w-10 items-center justify-center rounded-lg bg-[#c76738] text-xl font-bold leading-none text-white transition hover:bg-[#b65b31] lg:flex"
+              onClick={onAdd}
+              type="button"
+            >
+              ＋
+            </button>
+          )}
         </div>
+        {onAdd && (
+          <button
+            className="mt-3 flex min-h-12 w-full items-center justify-center rounded-lg bg-[#c76738] px-4 py-3 text-base font-bold text-white transition hover:bg-[#b65b31] lg:hidden"
+            onClick={onAdd}
+            type="button"
+          >
+            ＋ 仕込みを追加
+          </button>
+        )}
       </div>
 
       <div className="space-y-3">
@@ -274,16 +313,273 @@ function LoadingState() {
   )
 }
 
-function EmptyState() {
+function AddPrepTaskModal({
+  date,
+  onCancel,
+  onCreated,
+}: {
+  date: string
+  onCancel: () => void
+  onCreated: () => Promise<void>
+}) {
+  const [recipes, setRecipes] = useState<RecipeListItem[]>([])
+  const [unitOptions, setUnitOptions] = useState<Array<{ id: number; name: string }>>([])
+  const [referencesLoading, setReferencesLoading] = useState(true)
+  const [referenceError, setReferenceError] = useState<string | null>(null)
+  const [recipeId, setRecipeId] = useState('')
+  const [plannedQuantity, setPlannedQuantity] = useState('')
+  const [plannedUnitId, setPlannedUnitId] = useState('')
+  const [memo, setMemo] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const [validationErrors, setValidationErrors] = useState<string[]>([])
+
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        onCancel()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [onCancel])
+
+  useEffect(() => {
+    let active = true
+
+    async function loadReferences() {
+      setReferencesLoading(true)
+      setReferenceError(null)
+      try {
+        const [recipeResponse, unitResponse] = await Promise.all([fetchRecipes(), fetchUnits()])
+        if (active) {
+          setRecipes(recipeResponse)
+          setUnitOptions(unitResponse.map((unit) => ({ id: unit.id, name: unit.name })))
+        }
+      } catch {
+        if (active) {
+          setReferenceError('レシピまたは単位を読み込めませんでした。もう一度お試しください。')
+        }
+      } finally {
+        if (active) {
+          setReferencesLoading(false)
+        }
+      }
+    }
+
+    void loadReferences()
+    return () => {
+      active = false
+    }
+  }, [])
+
+  function handleRecipeChange(value: string) {
+    setRecipeId(value)
+    const recipe = recipes.find((item) => item.id === Number(value))
+    if (!recipe) {
+      setPlannedQuantity('')
+      setPlannedUnitId('')
+      return
+    }
+
+    setPlannedQuantity(recipe.base_yield_quantity)
+    setPlannedUnitId(String(recipe.base_yield_unit.id))
+    setUnitOptions((current) =>
+      current.some((unit) => unit.id === recipe.base_yield_unit.id)
+        ? current
+        : [...current, recipe.base_yield_unit],
+    )
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const errors = validateAddPrepTask({ plannedQuantity, plannedUnitId, recipeId })
+    setValidationErrors(errors)
+    setSaveError(null)
+    if (errors.length > 0) {
+      return
+    }
+
+    setSaving(true)
+    try {
+      await createPrepTask({
+        date,
+        recipe_id: Number(recipeId),
+        planned_quantity: plannedQuantity,
+        planned_unit_id: Number(plannedUnitId),
+        memo: memo.trim(),
+      })
+      await onCreated()
+    } catch {
+      setSaveError('保存に失敗しました。入力内容を確認して、もう一度お試しください。')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   return (
-    <div className="rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-6 text-[#75685e] shadow-sm">
-      <EmptyStateContent
-        description="レシピから仕込みを追加しましょう。"
-        imageSrc={emptyPrepBoard}
-        title="今日の仕込みはまだありません。"
-      />
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[#2a241f]/35 p-4 md:p-8"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) {
+          onCancel()
+        }
+      }}
+    >
+      <section
+        aria-labelledby="add-prep-task-title"
+        aria-modal="true"
+        className="max-h-[calc(100dvh-2rem)] w-full max-w-2xl overflow-y-auto rounded-2xl border border-[#ded2c2] bg-[#fffdf9] p-5 shadow-[0_24px_70px_rgba(42,36,31,0.24)] md:p-6"
+        role="dialog"
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 className="text-2xl font-bold text-[#34291f]" id="add-prep-task-title">
+              仕込みを追加
+            </h2>
+          <p className="mt-2 text-sm leading-6 text-[#75685e]">
+            レシピを選ぶと、基準量と基準単位を自動入力します。
+          </p>
+          </div>
+          <button
+            aria-label="閉じる"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-2xl text-[#75685e] transition hover:bg-[#f1e7dc] hover:text-[#2e2822]"
+            onClick={onCancel}
+            type="button"
+          >
+            ×
+          </button>
+        </div>
+
+        {referenceError && (
+          <p className="mt-4 rounded-lg bg-[#fff0ed] px-4 py-3 text-sm font-semibold text-[#a23d2d]">
+            {referenceError}
+          </p>
+        )}
+
+        <form className="mt-5 grid gap-4 md:grid-cols-2" onSubmit={handleSubmit}>
+        <label className="block md:col-span-2">
+          <span className="text-sm font-semibold text-[#4b4037]">レシピ *</span>
+          <select
+            className="mt-2 min-h-12 w-full rounded-lg border border-[#d7cbbb] bg-white px-4 text-base text-[#2b2621] outline-none ring-[#b88458] transition focus:ring-2 disabled:bg-[#eee7db]"
+            disabled={referencesLoading || Boolean(referenceError)}
+            onChange={(event) => handleRecipeChange(event.target.value)}
+            value={recipeId}
+          >
+            <option value="">選択してください</option>
+            {recipes.map((recipe) => (
+              <option key={recipe.id} value={recipe.id}>
+                {recipe.name}
+              </option>
+            ))}
+          </select>
+          {referencesLoading && (
+            <span className="mt-2 block text-xs text-[#75685e]">レシピを読み込んでいます...</span>
+          )}
+        </label>
+
+        <label className="block">
+          <span className="text-sm font-semibold text-[#4b4037]">予定数量 *</span>
+          <input
+            className="mt-2 min-h-12 w-full rounded-lg border border-[#d7cbbb] bg-white px-4 text-base text-[#2b2621] outline-none ring-[#b88458] transition focus:ring-2"
+            inputMode="decimal"
+            onChange={(event) => setPlannedQuantity(event.target.value)}
+            value={plannedQuantity}
+          />
+        </label>
+
+        <label className="block">
+          <span className="text-sm font-semibold text-[#4b4037]">予定単位 *</span>
+          <select
+            className="mt-2 min-h-12 w-full rounded-lg border border-[#d7cbbb] bg-white px-4 text-base text-[#2b2621] outline-none ring-[#b88458] transition focus:ring-2 disabled:bg-[#eee7db]"
+            disabled={referencesLoading}
+            onChange={(event) => setPlannedUnitId(event.target.value)}
+            value={plannedUnitId}
+          >
+            <option value="">選択してください</option>
+            {unitOptions.map((unit) => (
+              <option key={unit.id} value={unit.id}>
+                {unit.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="block md:col-span-2">
+          <span className="text-sm font-semibold text-[#4b4037]">メモ</span>
+          <AutoResizeTextarea
+            className="mt-2 w-full rounded-lg border border-[#d7cbbb] bg-white px-4 py-3 text-base leading-7 text-[#2b2621] outline-none ring-[#b88458] transition focus:ring-2"
+            onChange={(event) => setMemo(event.target.value)}
+            value={memo}
+          />
+        </label>
+
+        {(validationErrors.length > 0 || saveError) && (
+          <div className="rounded-lg border border-[#f1c8c0] bg-[#fff0ed] p-4 text-[#a23d2d] md:col-span-2">
+            <p className="font-bold">仕込みを追加できませんでした。</p>
+            {saveError && <p className="mt-2 text-sm leading-6">{saveError}</p>}
+            {validationErrors.length > 0 && (
+              <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">
+                {validationErrors.map((error) => (
+                  <li key={error}>{error}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+
+        <div className="flex flex-col gap-3 sm:flex-row md:col-span-2">
+          <button
+            className="min-h-12 rounded-lg bg-[#c76738] px-5 py-3 text-base font-bold text-white transition hover:bg-[#b65b31] disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={saving || referencesLoading || Boolean(referenceError)}
+            type="submit"
+          >
+            {saving ? '追加中...' : '仕込みに追加'}
+          </button>
+          <button
+            className="min-h-12 rounded-lg border border-[#dfd1bf] bg-white px-5 py-3 text-base font-bold text-[#5d5148] transition hover:bg-[#fbf7f0]"
+            onClick={onCancel}
+            type="button"
+          >
+            キャンセル
+          </button>
+        </div>
+        </form>
+      </section>
     </div>
   )
+}
+
+function validateAddPrepTask({
+  plannedQuantity,
+  plannedUnitId,
+  recipeId,
+}: {
+  plannedQuantity: string
+  plannedUnitId: string
+  recipeId: string
+}) {
+  const errors: string[] = []
+  if (!recipeId) {
+    errors.push('レシピを選択してください。')
+  }
+  const quantity = Number(plannedQuantity)
+  if (!plannedQuantity || Number.isNaN(quantity)) {
+    errors.push('予定数量を入力してください。')
+  } else if (quantity <= 0) {
+    errors.push('予定数量は0より大きい値を入力してください。')
+  }
+  if (!plannedUnitId) {
+    errors.push('予定単位を選択してください。')
+  }
+  return errors
 }
 
 function groupTasksByStatus(tasks: PrepTask[]): Record<PrepTaskStatus, PrepTask[]> {
