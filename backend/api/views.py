@@ -10,9 +10,10 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Category, Ingredient, PrepTask, Recipe, Unit
+from .models import BoardMemo, Category, Ingredient, PrepTask, Recipe, Unit
 from .serializers import (
     AuthMeSerializer,
+    BoardMemoSerializer,
     CategorySerializer,
     IngredientSerializer,
     LoginSerializer,
@@ -371,6 +372,31 @@ class PrepTaskViewSet(viewsets.ModelViewSet):
         if not date_value:
             return timezone.localdate()
         return parse_date(date_value)
+
+
+class BoardMemoViewSet(viewsets.ModelViewSet):
+    serializer_class = BoardMemoSerializer
+    permission_classes = [IsAuthenticated]
+    http_method_names = ["get", "post", "patch", "delete", "head", "options"]
+
+    def get_queryset(self):
+        shop = get_current_shop(self.request.user)
+        queryset = BoardMemo.objects.filter(shop=shop).order_by("created_at", "id")
+        if self.request.query_params.get("include_archived") in {"1", "true"}:
+            return queryset
+        return queryset.filter(archived_at__isnull=True)
+
+    def perform_create(self, serializer):
+        shop = get_current_shop(self.request.user)
+        serializer.save(shop=shop)
+
+    @action(detail=True, methods=["patch"])
+    def archive(self, request, pk=None):
+        memo = self.get_object()
+        if memo.archived_at is None:
+            memo.archived_at = timezone.now()
+            memo.save(update_fields=["archived_at", "updated_at"])
+        return Response(self.get_serializer(memo).data)
 
 
 def active_prep_task_filter(target_date):

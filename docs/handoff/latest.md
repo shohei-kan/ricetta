@@ -10,11 +10,11 @@ Ricetta
 
 ## Status
 
-Dashboard next tasks prioritized
+Prep Today board memo and compact cards added
 
 ## Summary
 
-Dashboardの「次にやること」を作業中 → 未着手の順にし、作業中は黄色系、未着手はオレンジ系のカードとバッジで状態が分かるようにした。
+Prep Todayの仕込みカードをコンパクト化し、各カードの操作を3カラム横並びにした。3カラムの下にはShopスコープの軽量BoardMemoを追加し、未アーカイブメモの追加・チェックでアーカイブ・履歴候補表示に対応した。
 
 ## Current Goal
 
@@ -30,6 +30,9 @@ Dashboardの「次にやること」を作業中 → 未着手の順にし、作
 - 追加フォームは未着手カラムのボタンからモーダルで開く。
 - モーダルを閉じるとcomponentをアンマウントし、入力stateをリセットする。
 - Recipe選択時に基準量と基準単位を初期入力し、今日・todoで作成する。
+- Prep Todayの仕込みカードは、詳細 + 2つのstatus操作を3カラム横並びで表示する。
+- BoardMemoはPrep Todayの3カラム下に表示し、チェックで `archived_at` を設定して一覧から消す。
+- BoardMemoは現在Shopにスコープし、カテゴリ、期限、担当者、優先度はMVPでは持たない。
 - Recipe Detailはレシピ確認・編集、Prep Todayは仕込み追加・進捗管理を担当する。
 - Dashboard主見出しは認証sessionのShop名と権限バッジを表示する。
 - Dashboardは今日の仕込み、次にやること、サマリー、期限注意に絞る。
@@ -77,11 +80,18 @@ Dashboardの「次にやること」を作業中 → 未着手の順にし、作
 - Dashboard APIの`next_tasks`を作業中 → 未着手の順に変更した。
 - Dashboardの次にやることカードとstatusバッジを作業中=黄色系、未着手=オレンジ系へ変更した。
 - Dashboard APIテストを作業中優先の順序へ更新した。
+- `BoardMemo` model / serializer / API / migrationを追加した。
+- BoardMemo APIは未アーカイブのみをデフォルト表示し、`include_archived=1`で履歴候補用に過去メモも返す。
+- Prep Todayの3カラム下へ横長のメモカードを追加し、`＋ 追加` とチェックでアーカイブできるようにした。
+- Prep Todayの仕込みカード余白を詰め、メモは空なら非表示、ある場合は1行表示へ調整した。
+- Prep Todayカードの操作を、未着手=詳細/開始/完了、作業中=詳細/未着手/完了、完了=詳細/未着手/作業中にした。
+- BoardMemo APIテストを追加した。
 
 ## Key Decisions
 
 - 予定日より作業状態と完了日時をPrep Todayの表示基準にする。
 - Dashboardの仕込み表示もPrep Todayを正として同じ表示基準にする。
+- PrepTaskとBoardMemoは意味が違うため、BoardMemoは3カラム内に混ぜず下部補助カードに置く。
 - MVPでは持ち越しラベル、優先度、トリアージ色を追加しない。
 - 完了レコードは削除せず履歴として保持する。
 - 追加操作は作成後に入る未着手カラムへ置き、一覧の視認性を優先する。
@@ -92,7 +102,12 @@ Dashboardの「次にやること」を作業中 → 未着手の順にし、作
 
 - `backend/api/views.py`
 - `backend/api/tests.py`
+- `backend/api/models.py`
+- `backend/api/serializers.py`
+- `backend/api/urls.py`
+- `backend/api/migrations/0005_boardmemo.py`
 - `frontend/src/pages/PrepTodayPage.tsx`
+- `frontend/src/api/boardMemos.ts`
 - `frontend/src/pages/RecipeDetailPage.tsx`
 - `frontend/src/pages/DashboardPage.tsx`
 - `frontend/src/components/AppLayout.tsx`
@@ -111,14 +126,16 @@ Dashboardの「次にやること」を作業中 → 未着手の順にし、作
 実行済み:
 
 ```bash
-docker compose exec backend python manage.py test api.tests.PrepTaskApiTests api.tests.DashboardApiTests
+docker compose exec backend python manage.py test api.tests.BoardMemoApiTests api.tests.PrepTaskApiTests api.tests.DashboardApiTests
+docker compose exec backend python manage.py makemigrations --check --dry-run
 cd frontend && npm run lint
 cd frontend && npm run build
 ```
 
 Result:
 
-- PrepTask + Dashboard API tests: 32 pass
+- BoardMemo + PrepTask + Dashboard API tests: 38 pass
+- Migration check: pass（変更なし）
 - Frontend lint: pass
 - Frontend build: pass
 - Creation modal lint/build: pass
@@ -140,6 +157,7 @@ Result:
 - 持ち越しラベル
 - 仕込み優先度 / トリアージ色
 - PrepTask履歴専用画面
+- BoardMemoのカテゴリ / 期限 / 担当者 / 優先度
 - Stripe / POS / inventory automation
 
 ## Next Recommended Tasks
@@ -162,5 +180,5 @@ Result:
 ## Suggested Commit Message
 
 ```text
-fix(dashboard): prioritize active prep tasks
+feat(prep): add board memos and compact task cards
 ```

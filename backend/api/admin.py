@@ -1,6 +1,7 @@
 from django.contrib import admin
 
 from .models import (
+    BoardMemo,
     Category,
     Ingredient,
     Membership,
@@ -80,3 +81,10 @@ class PrepTaskAdmin(admin.ModelAdmin):
     ]
     list_filter = ["status", "date"]
     search_fields = ["recipe__name", "shop__name", "memo"]
+
+
+@admin.register(BoardMemo)
+class BoardMemoAdmin(admin.ModelAdmin):
+    list_display = ["id", "shop", "text", "archived_at", "created_at", "updated_at"]
+    list_filter = ["archived_at"]
+    search_fields = ["shop__name", "text"]

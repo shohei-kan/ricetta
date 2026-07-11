@@ -5,6 +5,7 @@ from rest_framework import serializers
 
 from .costing import calculate_recipe_cost_summary
 from .models import (
+    BoardMemo,
     Category,
     Ingredient,
     Membership,
@@ -671,3 +672,16 @@ class PrepTaskStatusSerializer(serializers.ModelSerializer):
         instance.completed_at = timezone.now() if status == PrepTask.Status.DONE else None
         instance.save(update_fields=["status", "completed_at", "updated_at"])
         return instance
+
+
+class BoardMemoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BoardMemo
+        fields = ["id", "text", "archived_at", "created_at", "updated_at"]
+        read_only_fields = ["id", "archived_at", "created_at", "updated_at"]
+
+    def validate_text(self, value):
+        text = value.strip()
+        if not text:
+            raise serializers.ValidationError("メモを入力してください。")
+        return text

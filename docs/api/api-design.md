@@ -840,7 +840,63 @@ MVPでは物理削除。他ShopのPrepTaskは `404 Not Found`。
 
 ---
 
-# 6. Category API
+# 6. BoardMemo API
+
+Prep Today下部のホワイトボード的な軽量メモを扱う。
+
+カテゴリ、期限、担当者、優先度はMVPでは扱わない。
+
+## GET /api/v1/board-memos/
+
+未アーカイブのメモ一覧を取得する。
+
+ログイン必須。現在ShopのBoardMemoのみ返す。
+
+### Query Params
+
+```text
+include_archived=1
+```
+
+`include_archived=1` を指定した場合は、履歴候補用にアーカイブ済みも含めて返す。未指定時は `archived_at=null` のメモだけ返す。
+
+### Response
+
+```json
+[
+  {
+    "id": 1,
+    "text": "玉ねぎ",
+    "archived_at": null,
+    "created_at": "2026-05-05T10:00:00+09:00",
+    "updated_at": "2026-05-05T10:00:00+09:00"
+  }
+]
+```
+
+## POST /api/v1/board-memos/
+
+メモを追加する。
+
+`shop_id` は受け取らない。サーバー側でログイン中ユーザーのMembershipから現在Shopを特定して設定する。
+
+### Request
+
+```json
+{
+  "text": "ラップ"
+}
+```
+
+## PATCH /api/v1/board-memos/{id}/archive/
+
+メモをアーカイブする。
+
+Prep Todayではチェック操作でこのAPIを呼び、アーカイブ後は未アーカイブ一覧から消える。
+
+---
+
+# 7. Category API
 
 ## GET /api/v1/categories/
 
@@ -898,7 +954,7 @@ MVPでは `is_active=false` による論理削除とする。
 
 ---
 
-# 7. Unit API
+# 8. Unit API
 
 ## GET /api/v1/units/
 
@@ -960,7 +1016,7 @@ MVPでは `is_active=false` による論理削除とする。
 
 ---
 
-# 8. Dashboard API
+# 9. Dashboard API
 
 ## GET /api/v1/dashboard/
 
@@ -1036,7 +1092,7 @@ date=2026-05-05
 
 ---
 
-# 9. Cost Calculation
+# 10. Cost Calculation
 
 原価計算はバックエンドで行う。
 
@@ -1093,7 +1149,7 @@ gross_profit = null
 
 ---
 
-# 10. Error Response Format
+# 11. Error Response Format
 
 エラーレスポンスは基本的にDRF標準形式を使う。
 
@@ -1132,7 +1188,7 @@ gross_profit = null
 
 ---
 
-# 11. MVP API一覧
+# 12. MVP API一覧
 
 ## Auth
 
@@ -1206,7 +1262,7 @@ DELETE /api/v1/units/{id}/
 
 ---
 
-# 12. MVPで後回しにするAPI
+# 13. MVPで後回しにするAPI
 
 以下はMVPでは作らない。
 

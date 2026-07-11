@@ -449,6 +449,27 @@ PrepTask一覧APIは、予定日に関係なく未完了（`todo` / `doing`）�
 - planned_unit: バッチ
 - status: todo
 
+## BoardMemo
+
+Prep Today下部に置く、ホワイトボード的な軽量メモです。
+
+### 主なフィールド
+
+| フィールド | 型 | 説明 |
+|---|---|---|
+| id | UUID / BigAutoField | メモID |
+| shop_id | FK | 店舗 |
+| text | text | メモ本文 |
+| archived_at | datetime / nullable | アーカイブ日時 |
+| created_at | datetime | 作成日時 |
+| updated_at | datetime | 更新日時 |
+
+BoardMemoは必ずShopに紐づきます。作成時はフロントから `shop_id` を受け取らず、サーバー側で現在ログイン中ユーザーのShopを設定します。
+
+Prep Todayでは `archived_at=null` のメモだけを表示します。チェック操作で `archived_at=now` にし、一覧から消します。
+
+履歴候補用にアーカイブ済みを含めて取得できますが、カテゴリ、期限、担当者、優先度はMVPでは扱いません。
+
 ## Dashboard
 
 Dashboardは永続モデルではなく、ログイン後の「今日の現場」を表示するための集約APIです。

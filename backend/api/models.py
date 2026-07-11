@@ -400,3 +400,19 @@ class PrepTask(TimeStampedModel):
 
     def __str__(self):
         return f"{self.date} / {self.recipe} ({self.status})"
+
+
+class BoardMemo(TimeStampedModel):
+    shop = models.ForeignKey(
+        Shop,
+        on_delete=models.CASCADE,
+        related_name="board_memos",
+    )
+    text = models.TextField()
+    archived_at = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        ordering = ["created_at", "id"]
+
+    def __str__(self):
+        return self.text[:40]

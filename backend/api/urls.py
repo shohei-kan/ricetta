@@ -4,6 +4,7 @@ from rest_framework.routers import DefaultRouter
 from . import views
 
 router = DefaultRouter()
+router.register("board-memos", views.BoardMemoViewSet, basename="board-memo")
 router.register("categories", views.CategoryViewSet, basename="category")
 router.register("ingredients", views.IngredientViewSet, basename="ingredient")
 router.register("prep-tasks", views.PrepTaskViewSet, basename="prep-task")
