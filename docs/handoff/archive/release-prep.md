@@ -207,3 +207,42 @@ AWS公開デモ前に、Settings内のCategory / Unit管理をowner限定へ揃�
 
 - 実ブラウザでowner / staff両方のSettings表示を確認する。
 - DEMO_MODE固有の追加禁止操作は `deny_in_demo()` で別途実装する。
+
+## 2026-07-24 Demo login account information
+
+AWS公開デモ向けに、ログイン画面へdemo用ログイン情報とowner / staffの操作範囲を表示するようにした。
+
+### Summary
+
+- `VITE_DEMO_MODE=true` のときだけLoginPageに公開デモ用アカウント情報を表示する。
+- `VITE_DEMO_MODE=true` のときだけLoginPageのフォーム初期値に `owner@example.com / password` を入れる。
+- owner / staffカードクリックでフォームのemail/passwordを切り替える入力補助を追加した。
+- 選択中カードにオレンジ系の枠線、淡い背景、`選択中` ラベルを表示した。
+- カード選択は入力補助のみで、自動ログインや自動submitは行わない。
+- 通常モードではデモ用ログイン情報を表示せず、フォーム初期値も空にする。
+- PC / タブレット幅ではowner / staffカードを横並びにした。
+- ownerアカウントとして `owner@example.com / password` を表示する。
+- staffアカウントとして `staff@example.com / password` を表示する。
+- ownerはレシピ・材料・カテゴリ・単位・店舗情報の編集、仕込み・メモ操作ができることを明記した。
+- staffはレシピ・材料・カテゴリ・単位の閲覧、仕込み・メモ操作ができることを明記した。
+- staffはレシピ・材料・カテゴリ・単位・店舗情報の編集はできないことを明記した。
+- `docs/deploy/demo.md` に公開デモ用ログイン情報、初期入力、カード選択、自動ログインしない方針、権限概要を追記した。
+
+### Key Files
+
+- `frontend/src/pages/LoginPage.tsx`
+- `frontend/src/config/demo.ts`
+- `docs/deploy/demo.md`
+- `docs/handoff/latest.md`
+
+### Verification
+
+- frontend lint: pass
+- frontend build: pass
+- frontend build with `VITE_DEMO_MODE=true`: pass
+- whitespace check: pass
+
+### Next
+
+- 実ブラウザで `VITE_DEMO_MODE=true` のログイン画面表示、ownerアカウント初期入力、owner / staffカード切り替えを確認する。
+- 通常起動でログイン画面にデモ用ログイン情報が出ず、初期値も空であることを確認する。
