@@ -45,3 +45,45 @@ AWS公開デモ環境へ向けて、同一コードベースを環境変数で�
 - AWS公開デモ用の環境変数とデプロイ手順を整理する。
 - `seed_portfolio_data --reset` の安全な公開デモ運用を検討する。
 - デモ環境で禁止する操作範囲を決める。
+
+## 2026-07-24 Safe portfolio seed reset
+
+AWS公開デモ環境の定期初期化に向けて、`seed_portfolio_data` 管理コマンドへ `--reset` を追加した。
+
+### Summary
+
+- `python manage.py seed_portfolio_data --reset` を追加した。
+- `--reset` なしの通常seedは従来通り作成・更新のみ行う。
+- reset時は固定Shop名 `〇〇食堂` で特定したデモShopだけを削除し、seedを再投入する。
+- demo owner / staffユーザーは削除せず、既存ユーザーを再利用・更新する。
+- reset対象は `PrepTask`、`BoardMemo`、`RecipeStep`、`RecipeIngredient`、`Recipe`、`Ingredient`、`Category`、shop-specific `Unit`、`Membership`、`Shop`。
+- 標準Unit（`shop=None`）は削除しない。
+- BoardMemoの初期メモとして `玉ねぎ`、`ラップ`、`フライヤー油交換` を作成する。
+- 削除処理の近くに、全Shop削除禁止・デモShop限定・AWS公開デモ定期リセット用途の安全コメントを残した。
+
+### Decisions
+
+- デモ対象Shopの特定は、既存seedの固定値であるShop名 `〇〇食堂` を使う。
+- `--reset` 時はownerの既存active Membershipを再利用しない。デモShopを作り直し、Membershipを再作成する。
+- User削除は行わない。ログイン情報を維持し、実データ巻き込みリスクを下げる。
+
+### Key Files
+
+- `backend/api/management/commands/seed_portfolio_data.py`
+- `backend/api/tests.py`
+
+### Verification
+
+- Backend seed command tests: 3 pass
+- Backend check: pass
+- Backend migration dry-run: no changes detected
+- Backend tests: 99 pass
+- `seed_portfolio_data`: pass
+- `seed_portfolio_data --reset`: pass
+- `seed_portfolio_data --reset` second run: pass
+
+### Next
+
+- AWS公開デモ用の環境変数とデプロイ手順を整理する。
+- デモ環境で禁止する操作範囲を決め、必要なViewに `deny_in_demo()` を適用する。
+- 定期実行方法（cron / systemd timer等）は別タスクで検討する。

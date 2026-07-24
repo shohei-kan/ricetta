@@ -5,6 +5,7 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 
 from api.models import (
+    BoardMemo,
     Category,
     Ingredient,
     Membership,
@@ -25,8 +26,16 @@ class Command(BaseCommand):
         parser.add_argument("--staff-email", default="staff@example.com")
         parser.add_argument("--password", default="password")
         parser.add_argument("--shop-name", default="〇〇食堂")
+        parser.add_argument(
+            "--reset",
+            action="store_true",
+            help="Reset only the fixed demo Shop data before seeding.",
+        )
 
     def handle(self, *args, **options):
+        if options["reset"]:
+            self._reset_demo_shop(options["shop_name"])
+
         units = self._seed_units()
         owner = self._seed_user(
             email=options["owner_email"],
@@ -40,7 +49,11 @@ class Command(BaseCommand):
             first_name="佐藤",
             last_name="花子",
         )
-        shop = self._seed_shop(options["shop_name"], owner)
+        shop = self._seed_shop(
+            options["shop_name"],
+            owner,
+            reuse_current_membership=not options["reset"],
+        )
 
         self._seed_membership(owner, shop, Membership.Role.OWNER, "山田 太郎")
         self._seed_membership(staff, shop, Membership.Role.STAFF, "佐藤 花子")
@@ -49,6 +62,7 @@ class Command(BaseCommand):
         ingredients = self._seed_ingredients(shop, units)
         recipes = self._seed_recipes(shop, owner, categories, units, ingredients)
         self._seed_prep_tasks(shop, recipes, units)
+        self._seed_board_memos(shop)
 
         self.stdout.write(
             self.style.SUCCESS(
@@ -57,6 +71,27 @@ class Command(BaseCommand):
                 f"{options['staff_email']} / {options['password']}"
             )
         )
+
+    def _reset_demo_shop(self, shop_name):
+        demo_shop = Shop.objects.filter(name=shop_name).order_by("id").first()
+        if demo_shop is None:
+            return
+
+        # AWS公開デモの定期リセット用途。
+        # reset対象は固定名で特定したデモShopに限定し、全Shop削除は絶対にしない。
+        # 実データやデモ対象外Shopを巻き込まないため、Userは削除せず再利用する。
+        # 削除対象: PrepTask, BoardMemo, RecipeStep, RecipeIngredient, Recipe,
+        # Ingredient, Category, shop-specific Unit, Membership, Shop.
+        PrepTask.objects.filter(shop=demo_shop).delete()
+        BoardMemo.objects.filter(shop=demo_shop).delete()
+        RecipeStep.objects.filter(recipe__shop=demo_shop).delete()
+        RecipeIngredient.objects.filter(recipe__shop=demo_shop).delete()
+        Recipe.objects.filter(shop=demo_shop).delete()
+        Ingredient.objects.filter(shop=demo_shop).delete()
+        Category.objects.filter(shop=demo_shop).delete()
+        Unit.objects.filter(shop=demo_shop).delete()
+        Membership.objects.filter(shop=demo_shop).delete()
+        demo_shop.delete()
 
     def _seed_units(self):
         unit_specs = [
@@ -95,13 +130,15 @@ class Command(BaseCommand):
         unit.save()
         return unit
 
-    def _seed_shop(self, shop_name, owner):
-        current_membership = (
-            Membership.objects.select_related("shop")
-            .filter(user=owner, is_active=True)
-            .order_by("id")
-            .first()
-        )
+    def _seed_shop(self, shop_name, owner, reuse_current_membership=True):
+        current_membership = None
+        if reuse_current_membership:
+            current_membership = (
+                Membership.objects.select_related("shop")
+                .filter(user=owner, is_active=True)
+                .order_by("id")
+                .first()
+            )
         if current_membership is not None:
             shop = current_membership.shop
         else:
@@ -582,3 +619,25 @@ class Command(BaseCommand):
                     "completed_at": completed_at,
                 },
             )
+
+    def _seed_board_memos(self, shop):
+        memo_texts = ["玉ねぎ", "ラップ", "フライヤー油交換"]
+        for text in memo_texts:
+            memo = (
+                BoardMemo.objects.filter(shop=shop, text=text)
+                .order_by("id")
+                .first()
+            )
+            if memo is None:
+                BoardMemo.objects.create(shop=shop, text=text)
+            else:
+                field_names = {field.name for field in BoardMemo._meta.fields}
+                update_fields = ["archived_at", "updated_at"]
+                if "is_archived" in field_names:
+                    setattr(memo, "is_archived", False)
+                    update_fields.append("is_archived")
+                if "archived_by" in field_names:
+                    setattr(memo, "archived_by", None)
+                    update_fields.append("archived_by")
+                memo.archived_at = None
+                memo.save(update_fields=update_fields)
