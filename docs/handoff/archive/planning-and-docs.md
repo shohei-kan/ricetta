@@ -24,7 +24,7 @@
 
 - TanStack Query、React Hook Form、Zod、shadcn/uiは未導入であることを明記する。
 - 将来のSaaS化と現在のMVPを混同しない。
-- READMEでは代表APIに絞り、詳細は `docs/api/api-design.md` へ誘導する。
+- READMEでは代表APIに絞り、詳細は `docs/technical/api-design.md` へ誘導する。
 - スクリーンショット未配置をTODOとして明示する。
 
 ### Key Files
@@ -40,3 +40,43 @@
 - `git diff --check`: pass
 - Markdown code fences: even count
 - README relative documentation links: existing filesを参照
+
+## 2026-07-24 Docs directory structure cleanup
+
+docs配下を読む目的ごとに整理し、参照パスを新しい配置へ揃えた。
+
+### Summary
+
+- `docs/README.md` を追加し、docs全体の入口を用意した。
+- 企画・要件・ロードマップを `docs/product/` へ集約した。
+- API設計とデータモデルを `docs/technical/` へ集約した。
+- `docs/api/`、`docs/data/`、`docs/planning/` は空になったため削除した。
+- README、AGENTS、decisions、handoff archive内の参照パスを新配置へ更新した。
+- handoff archiveの運用ルールは `docs/handoff/archive/index.md` に明記済み。
+
+### New Structure
+
+```text
+docs/
+  README.md
+  product/
+  technical/
+  decisions/
+  handoff/
+  figma/
+```
+
+### Key Files
+
+- `docs/README.md`
+- `docs/product/`
+- `docs/technical/`
+- `docs/decisions/0005-documentation-structure.md`
+- `docs/handoff/archive/index.md`
+- `AGENTS.md`
+- `README.md`
+
+### Verification
+
+- 古い `docs/api` / `docs/data` / `docs/planning` 参照が残っていないことを確認
+- `git diff --check`: pass

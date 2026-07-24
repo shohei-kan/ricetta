@@ -113,8 +113,8 @@ MVP後に検討する拡張：
 
 ## Related Docs
 
-- `docs/planning/concept.md`
-- `docs/planning/mvp-requirements.md`
-- `docs/planning/mvp-roadmap.md`
+- `docs/product/concept.md`
+- `docs/product/mvp-requirements.md`
+- `docs/product/mvp-roadmap.md`
 - `docs/product/screens.md`
-- `docs/api/api-design.md`
+- `docs/technical/api-design.md`

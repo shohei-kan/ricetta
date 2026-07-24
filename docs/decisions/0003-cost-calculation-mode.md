@@ -167,7 +167,7 @@ MVPでは1段階換算までに留めます。
 
 ## Related Docs
 
-- `docs/planning/mvp-requirements.md`
-- `docs/data/data-model.md`
-- `docs/api/api-design.md`
+- `docs/product/mvp-requirements.md`
+- `docs/technical/data-model.md`
+- `docs/technical/api-design.md`
 - `docs/product/ui-guidelines.md`

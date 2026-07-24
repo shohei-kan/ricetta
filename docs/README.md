@@ -1,0 +1,41 @@
+# Ricetta Docs
+
+Ricettaのドキュメント入口です。目的に応じて以下を参照してください。
+
+## Product
+
+何を作るか、どんな体験にするかをまとめます。
+
+- [Concept](./product/concept.md)
+- [MVP requirements](./product/mvp-requirements.md)
+- [MVP roadmap](./product/mvp-roadmap.md)
+- [Screen specifications](./product/screens.md)
+- [UI guidelines](./product/ui-guidelines.md)
+
+## Technical
+
+API、データモデルなど、実装に近い設計をまとめます。
+
+- [API design](./technical/api-design.md)
+- [Data model](./technical/data-model.md)
+
+## Decisions
+
+長期的に残すべき判断を記録します。
+
+- [Architecture decisions](./decisions/)
+
+## Figma
+
+画面検討やデザイン参照用の素材をまとめます。
+
+- [Figma exports and notes](./figma/)
+
+## Handoff
+
+現在地と次の作業を引き継ぐための短期コンテキストです。
+
+- [Latest handoff](./handoff/latest.md)
+- [Handoff archive](./handoff/archive/index.md)
+
+`latest.md` は毎回更新し、古くなった内容は大分類ごとのarchiveへ日付・タイトル付きで追記します。

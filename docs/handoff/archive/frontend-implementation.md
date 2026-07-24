@@ -376,3 +376,38 @@ Recipe Detailと共通ナビゲーションをスマホ・タブレット・PC�
 - Frontend lint: pass
 - Frontend build: pass
 - in-app browserの接続情報不足により自動目視確認は未実施
+
+## 2026-07-24 Prep Today board memo and compact cards
+
+Prep Todayを現場のホワイトボードとして使いやすくするため、仕込みカードをコンパクトにし、BoardMemoを3カラム下の補助カードとして追加した。
+
+### Summary
+
+- Prep Todayの仕込みカード余白を詰めた。
+- メモが空のPrepTaskではメモ欄を表示しないようにした。
+- PrepTaskカードの操作を3カラム横並びにした。
+- スマホ時のステータスカラムは中身の高さに合わせ、`lg`以上のみカンバン風のmin-heightを維持した。
+- BoardMemoを未着手 / 作業中 / 完了の3カラム下へ横長カードとして表示した。
+- BoardMemoは未チェックを上、今日チェック済みを下に表示した。
+- 未チェックBoardMemoは日付をまたいでも残し、今日チェック済みは薄く表示する。
+- チェック済みBoardMemoは再クリックで未チェックへ戻せる。
+- 履歴サジェストは過去のチェック済みメモも候補対象にする。
+
+### Key Files
+
+- `backend/api/models.py`
+- `backend/api/serializers.py`
+- `backend/api/views.py`
+- `backend/api/urls.py`
+- `backend/api/migrations/0005_boardmemo.py`
+- `backend/api/tests.py`
+- `frontend/src/api/boardMemos.ts`
+- `frontend/src/pages/PrepTodayPage.tsx`
+
+### Verification
+
+- Backend makemigrations: no changes detected after migration creation
+- Backend migrate: no migrations to apply
+- Backend tests: 98 pass
+- Frontend lint: pass
+- Frontend build: pass

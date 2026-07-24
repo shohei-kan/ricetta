@@ -569,10 +569,10 @@ MVPでは、便利そうな機能を入れすぎない。
 
 - README.md
 - AGENTS.md
-- docs/planning/mvp-requirements.md
+- docs/product/mvp-requirements.md
 - docs/product/screens.md
-- docs/data/data-model.md
-- docs/api/api-design.md
+- docs/technical/data-model.md
+- docs/technical/api-design.md
 - docs/handoff/latest.md
 
 ## 初回MVPのゴール

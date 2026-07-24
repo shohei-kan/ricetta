@@ -276,7 +276,7 @@ Membership ---- N:1 ----> Shop
 
 `Unit.shop` はnullableです。`shop=null` は全店舗で利用できる標準Unit、Shopが設定されたUnitは店舗独自Unitとして扱います。
 
-詳細は [docs/data/data-model.md](docs/data/data-model.md) を参照してください。
+詳細は [docs/technical/data-model.md](docs/technical/data-model.md) を参照してください。
 
 ## API Overview
 
@@ -312,7 +312,7 @@ Representative endpoints:
 | GET / POST | `/api/v1/prep-tasks/` | 仕込み一覧・作成 |
 | PATCH | `/api/v1/prep-tasks/{id}/status/` | 仕込みstatus更新 |
 
-リクエスト・レスポンスとvalidation errorの詳細は [docs/api/api-design.md](docs/api/api-design.md) を参照してください。
+リクエスト・レスポンスとvalidation errorの詳細は [docs/technical/api-design.md](docs/technical/api-design.md) を参照してください。
 
 ## Setup
 
@@ -472,12 +472,13 @@ Vite proxyを使うローカル環境でもOrigin checkingを通せるよう、�
 
 ## Documentation
 
-- [MVP requirements](docs/planning/mvp-requirements.md)
-- [MVP roadmap](docs/planning/mvp-roadmap.md)
+- [Docs index](docs/README.md)
+- [MVP requirements](docs/product/mvp-requirements.md)
+- [MVP roadmap](docs/product/mvp-roadmap.md)
 - [Screen specifications](docs/product/screens.md)
 - [UI guidelines](docs/product/ui-guidelines.md)
-- [Data model](docs/data/data-model.md)
-- [API design](docs/api/api-design.md)
+- [Data model](docs/technical/data-model.md)
+- [API design](docs/technical/api-design.md)
 - [Architecture decisions](docs/decisions/)
 - [Latest handoff](docs/handoff/latest.md)
 - [Handoff archive](docs/handoff/archive/index.md)

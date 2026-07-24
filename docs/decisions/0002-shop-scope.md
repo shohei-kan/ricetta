@@ -112,6 +112,6 @@ MVPでは、以下のように簡略化してよいです。
 
 ## Related Docs
 
-- `docs/data/data-model.md`
-- `docs/api/api-design.md`
-- `docs/planning/mvp-requirements.md`
+- `docs/technical/data-model.md`
+- `docs/technical/api-design.md`
+- `docs/product/mvp-requirements.md`

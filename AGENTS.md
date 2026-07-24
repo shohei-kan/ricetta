@@ -76,14 +76,14 @@ Expected structure:
 frontend/
 backend/
 docs/
-  api/
-  planning/
+  README.md
   product/
-  data/
+  technical/
+  decisions/
+  figma/
   handoff/
     latest.md
     archive/
-  decisions/
 README.md
 AGENTS.md
 docker-compose.yml
@@ -380,7 +380,7 @@ Use database constraints where they protect important integrity, but keep reques
 - Validation errors should be clear enough for forms to display.
 - Do not return raw stack traces or internal implementation details to the frontend.
 - Keep API response shapes stable once frontend integration starts.
-- When an API response changes, update `docs/api/api-design.md`.
+- When an API response changes, update `docs/technical/api-design.md`.
 
 For nested writes, such as Recipe with ingredients and steps:
 
@@ -437,13 +437,13 @@ Keep documentation current when implementation changes.
 Important docs:
 
 ```text
-docs/planning/concept.md
-docs/planning/mvp-requirements.md
-docs/planning/mvp-roadmap.md
+docs/product/concept.md
+docs/product/mvp-requirements.md
+docs/product/mvp-roadmap.md
 docs/product/screens.md
 docs/product/ui-guidelines.md
-docs/data/data-model.md
-docs/api/api-design.md
+docs/technical/data-model.md
+docs/technical/api-design.md
 docs/handoff/latest.md
 docs/decisions/
 ```
@@ -452,11 +452,11 @@ Update docs according to the type of change:
 
 | Change | Update |
 |---|---|
-| Product scope change | `docs/planning/mvp-requirements.md` |
-| Implementation order change | `docs/planning/mvp-roadmap.md` |
+| Product scope change | `docs/product/mvp-requirements.md` |
+| Implementation order change | `docs/product/mvp-roadmap.md` |
 | Screen or UI change | `docs/product/screens.md` or `docs/product/ui-guidelines.md` |
-| Data model change | `docs/data/data-model.md` |
-| API change | `docs/api/api-design.md` |
+| Data model change | `docs/technical/data-model.md` |
+| API change | `docs/technical/api-design.md` |
 | Long-term decision | `docs/decisions/` |
 | Completed task or next context | `docs/handoff/latest.md` |
 | Setup or command change | `README.md` |

@@ -79,8 +79,8 @@ Also verified backend against a PostgreSQL test container after Ingredient imple
 - `backend/ricetta/settings.py`
 - `docker-compose.yml`
 - `.github/workflows/ci.yml`
-- `docs/api/api-design.md`
-- `docs/data/data-model.md`
+- `docs/technical/api-design.md`
+- `docs/technical/data-model.md`
 
 ## 2026-05-05 Recipe API
 
@@ -147,8 +147,8 @@ Result:
 - `backend/api/costing.py`
 - `backend/api/tests.py`
 - `backend/api/migrations/0003_recipe_recipeingredient_recipestep_and_more.py`
-- `docs/api/api-design.md`
-- `docs/data/data-model.md`
+- `docs/technical/api-design.md`
+- `docs/technical/data-model.md`
 
 ## 2026-05-05 PrepTask API
 
@@ -212,8 +212,8 @@ Result:
 - `backend/api/urls.py`
 - `backend/api/tests.py`
 - `backend/api/migrations/0004_preptask.py`
-- `docs/api/api-design.md`
-- `docs/data/data-model.md`
+- `docs/technical/api-design.md`
+- `docs/technical/data-model.md`
 
 ## 2026-05-05 Dashboard API
 
@@ -268,8 +268,8 @@ Result:
 - `backend/api/views.py`
 - `backend/api/urls.py`
 - `backend/api/tests.py`
-- `docs/api/api-design.md`
-- `docs/data/data-model.md`
+- `docs/technical/api-design.md`
+- `docs/technical/data-model.md`
 
 ## 2026-06-29 Account API, owner permission, and local CSRF
 
@@ -304,7 +304,7 @@ Account Phase 1 + 2のバックエンドと、ローカルViteからSession認�
 - `backend/ricetta/settings.py`
 - `.env.example`
 - `README.md`
-- `docs/api/api-design.md`
+- `docs/technical/api-design.md`
 - `docs/product/screens.md`
 
 ### Verification
