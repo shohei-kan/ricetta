@@ -19,6 +19,12 @@ API、データモデルなど、実装に近い設計をまとめます。
 - [API design](./technical/api-design.md)
 - [Data model](./technical/data-model.md)
 
+## Deploy
+
+公開デモやデプロイ運用に関するメモをまとめます。
+
+- [Public demo environment](./deploy/demo.md)
+
 ## Decisions
 
 長期的に残すべき判断を記録します。

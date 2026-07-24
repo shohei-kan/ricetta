@@ -87,3 +87,45 @@ AWS公開デモ環境の定期初期化に向けて、`seed_portfolio_data` 管�
 - AWS公開デモ用の環境変数とデプロイ手順を整理する。
 - デモ環境で禁止する操作範囲を決め、必要なViewに `deny_in_demo()` を適用する。
 - 定期実行方法（cron / systemd timer等）は別タスクで検討する。
+
+## 2026-07-24 Demo deployment docs
+
+AWS公開デモ環境に向けて、デモ運用方針、env example、公開前チェックを整理した。
+
+### Summary
+
+- `docs/deploy/demo.md` を追加した。
+- READMEにPublic Demo Environmentの短い案内を追加した。
+- `docs/README.md` にDeployセクションを追加した。
+- `.env.prod.example` を追加し、production向けのダミー値と公開デモ用コメントを用意した。
+- `AGENTS.md` のdocs構成例へ `deploy/` を追加した。
+- デモリセットボタン/APIはまだ作らない方針を明記した。
+- cron / systemd timerは今後検討する方針を明記した。
+
+### Key Files
+
+- `docs/deploy/demo.md`
+- `.env.prod.example`
+- `README.md`
+- `docs/README.md`
+- `AGENTS.md`
+- `docs/handoff/latest.md`
+
+### Verification
+
+- 旧docsパスの新規参照なし
+- READMEと `docs/deploy/demo.md` のデモ方針に矛盾なし
+- env exampleに実secret / 実ドメインなし
+- Backend check: pass
+- Backend migration dry-run: no changes detected
+- Backend tests: 99 pass
+- Frontend lint: pass
+- Frontend build: pass
+- `seed_portfolio_data`: pass
+- `seed_portfolio_data --reset`: pass
+
+### Next
+
+- `VITE_DEMO_MODE=true` で実ブラウザのDemoBanner表示を確認する。
+- デモ環境で禁止する操作範囲を決め、必要なViewに `deny_in_demo()` を適用する。
+- 定期resetの実行方法を別タスクで決める。

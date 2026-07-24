@@ -79,6 +79,7 @@ docs/
   README.md
   product/
   technical/
+  deploy/
   decisions/
   figma/
   handoff/

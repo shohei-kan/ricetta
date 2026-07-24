@@ -366,6 +366,19 @@ shop: 〇〇食堂
 
 `seed_portfolio_data` は撮影・公開デモ用の開発データです。本番運用データとしては使いません。既存データが重複しにくいように冪等に作成し、カポナータをRecipe DetailとCost Summary確認用の主役レシピとして用意します。
 
+### Public Demo Environment
+
+Ricetta supports a public demo mode using the same codebase.
+Demo behavior is controlled by `DEMO_MODE` and `VITE_DEMO_MODE`.
+
+Sample data can be recreated with:
+
+```bash
+docker compose exec backend python manage.py seed_portfolio_data --reset
+```
+
+See [docs/deploy/demo.md](docs/deploy/demo.md) for details.
+
 ### Local frontend development
 
 backendとdatabaseをDockerで起動したまま、frontendだけホストで起動できます。
@@ -416,10 +429,14 @@ npm run build
 | `POSTGRES_HOST_PORT` | Host公開Database port | `5433` |
 | `FRONTEND_ORIGIN` | 開発frontend URL | `http://localhost:5174` |
 | `BACKEND_ORIGIN` | 開発backend URL | `http://localhost:8010` |
+| `DEMO_MODE` | backend demo mode | `False` |
+| `VITE_DEMO_MODE` | frontend demo banner flag | `false` |
 
 localhostのtrusted originsは開発専用です。本番環境では `DJANGO_SECRET_KEY` を安全な値へ変更し、`DJANGO_ALLOWED_HOSTS` と `DJANGO_CSRF_TRUSTED_ORIGINS` に本番環境の値だけを設定します。
 
 `.env` はコミットしません。
+
+production向けのダミー例は `.env.prod.example` を参照してください。実際のsecret値や実ドメインはGit管理しない `.env` / `.env.production` で設定します。
 
 ## Test / CI
 
@@ -473,6 +490,7 @@ Vite proxyを使うローカル環境でもOrigin checkingを通せるよう、�
 ## Documentation
 
 - [Docs index](docs/README.md)
+- [Public demo deployment](docs/deploy/demo.md)
 - [MVP requirements](docs/product/mvp-requirements.md)
 - [MVP roadmap](docs/product/mvp-roadmap.md)
 - [Screen specifications](docs/product/screens.md)
