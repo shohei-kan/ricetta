@@ -3,6 +3,7 @@ import {
   archiveBoardMemo,
   createBoardMemo,
   fetchBoardMemos,
+  unarchiveBoardMemo,
   type BoardMemo,
 } from '../api/boardMemos'
 import {
@@ -149,14 +150,18 @@ export function PrepTodayPage({ navigate }: PrepTodayPageProps) {
     }
   }
 
-  async function handleArchiveBoardMemo(id: number) {
-    setArchivingBoardMemoId(id)
+  async function handleToggleBoardMemo(memo: BoardMemo) {
+    setArchivingBoardMemoId(memo.id)
     setBoardMemoError(null)
     try {
-      await archiveBoardMemo(id)
+      if (memo.is_archived) {
+        await unarchiveBoardMemo(memo.id)
+      } else {
+        await archiveBoardMemo(memo.id)
+      }
       await loadBoardMemos()
     } catch {
-      setBoardMemoError('メモを完了できませんでした。もう一度お試しください。')
+      setBoardMemoError('メモを更新できませんでした。もう一度お試しください。')
     } finally {
       setArchivingBoardMemoId(null)
     }
@@ -169,7 +174,7 @@ export function PrepTodayPage({ navigate }: PrepTodayPageProps) {
 
   const tasksByStatus = groupTasksByStatus(data?.tasks ?? [])
   return (
-    <div className="mx-auto max-w-7xl px-5 py-6 md:px-8 md:py-8">
+    <div className="mx-auto max-w-7xl px-5 pb-24 pt-6 md:px-8 md:py-8">
       <div className="mb-6 flex flex-col gap-4 border-b border-[#ded2c2] pb-5 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p className="text-sm font-bold text-[#c76738]">Prep Today</p>
@@ -218,7 +223,7 @@ export function PrepTodayPage({ navigate }: PrepTodayPageProps) {
 
       {data && (
         <>
-          <div className="grid gap-6 lg:grid-cols-3">
+          <div className="grid gap-4 md:gap-5 lg:grid-cols-3 lg:gap-6">
             {statusOrder.map((status) => (
               <StatusColumn
                 key={status}
@@ -238,7 +243,7 @@ export function PrepTodayPage({ navigate }: PrepTodayPageProps) {
             history={memoHistory}
             memoText={boardMemoText}
             memos={boardMemos}
-            onArchive={(id) => void handleArchiveBoardMemo(id)}
+            onToggle={(memo) => void handleToggleBoardMemo(memo)}
             onMemoTextChange={setBoardMemoText}
             onSubmit={(event) => void handleAddBoardMemo(event)}
             saving={savingBoardMemo}
@@ -267,8 +272,8 @@ function StatusColumn({
   updatingTaskId: number | null
 }) {
   return (
-    <section className={`min-h-130 rounded-xl border p-5 ${columnSurface(status)}`}>
-      <div className="mb-5 border-b border-current/10 pb-4">
+    <section className={`rounded-xl border p-4 lg:min-h-130 lg:p-5 ${columnSurface(status)}`}>
+      <div className="mb-4 border-b border-current/10 pb-3 lg:mb-5 lg:pb-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <h2 className="text-2xl font-bold">{label}</h2>
@@ -298,7 +303,7 @@ function StatusColumn({
         )}
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-2.5 lg:space-y-3">
         {tasks.length > 0 ? (
           tasks.map((task) => (
             <PrepTaskCard
@@ -387,13 +392,13 @@ function PrepTaskCard({
 
 function LoadingState() {
   return (
-    <div className="grid gap-4 lg:grid-cols-3">
+    <div className="grid gap-4 md:gap-5 lg:grid-cols-3 lg:gap-6">
       {statusOrder.map((status) => (
-        <section className={`rounded-xl border p-5 ${columnSurface(status)}`} key={status}>
+        <section className={`rounded-xl border p-4 lg:min-h-130 lg:p-5 ${columnSurface(status)}`} key={status}>
           <div className="mb-4 h-6 w-24 rounded bg-[#eadfce]" />
           <div className="space-y-3">
-            <div className="h-36 rounded-xl bg-white/55" />
-            <div className="h-28 rounded-xl bg-white/55" />
+            <div className="h-28 rounded-xl bg-white/55 lg:h-36" />
+            <div className="h-24 rounded-xl bg-white/55 lg:h-28" />
           </div>
         </section>
       ))}
@@ -407,9 +412,9 @@ function BoardMemoSection({
   history,
   memoText,
   memos,
-  onArchive,
   onMemoTextChange,
   onSubmit,
+  onToggle,
   saving,
 }: {
   archivingMemoId: number | null
@@ -417,15 +422,18 @@ function BoardMemoSection({
   history: BoardMemo[]
   memoText: string
   memos: BoardMemo[]
-  onArchive: (id: number) => void
   onMemoTextChange: (value: string) => void
   onSubmit: (event: FormEvent<HTMLFormElement>) => void
+  onToggle: (memo: BoardMemo) => void
   saving: boolean
 }) {
   const suggestions = uniqueMemoTexts(history)
+  const uncheckedMemos = memos.filter((memo) => !memo.is_archived)
+  const checkedTodayMemos = memos.filter((memo) => memo.is_archived)
+  const hasNoMemos = uncheckedMemos.length === 0 && checkedTodayMemos.length === 0
 
   return (
-    <section className="mt-6 rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-4 shadow-sm md:p-5">
+    <section className="mt-6 rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-4 pb-8 shadow-sm md:p-5">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <h2 className="text-xl font-bold text-[#2e2822]">メモ</h2>
@@ -466,30 +474,77 @@ function BoardMemoSection({
         </p>
       )}
 
-      <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-        {memos.length > 0 ? (
-          memos.map((memo) => (
-            <label
-              className="flex min-h-11 items-center gap-3 rounded-lg border border-[#eadfce] bg-white px-3 py-2 text-[#3d342d] transition hover:bg-[#fbf7f0]"
-              key={memo.id}
-            >
-              <input
-                checked={false}
-                className="h-4 w-4 accent-[#c76738]"
-                disabled={archivingMemoId === memo.id}
-                onChange={() => onArchive(memo.id)}
-                type="checkbox"
-              />
-              <span className="text-sm font-semibold leading-6">{memo.text}</span>
-            </label>
-          ))
-        ) : (
+      {hasNoMemos ? (
+        <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           <p className="rounded-lg border border-[#eadfce] bg-white px-4 py-3 text-sm font-semibold text-[#75685e] sm:col-span-2 lg:col-span-3">
             メモはありません。
           </p>
-        )}
-      </div>
+        </div>
+      ) : (
+        <div className="mt-4 space-y-4">
+          {uncheckedMemos.length > 0 && (
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {uncheckedMemos.map((memo) => (
+                <BoardMemoItem
+                  key={memo.id}
+                  memo={memo}
+                  onToggle={onToggle}
+                  toggling={archivingMemoId === memo.id}
+                />
+              ))}
+            </div>
+          )}
+
+          {checkedTodayMemos.length > 0 && (
+            <div>
+              <h3 className="text-sm font-bold text-[#9a8b7f]">チェック済み</h3>
+              <div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                {checkedTodayMemos.map((memo) => (
+                  <BoardMemoItem
+                    checked
+                    key={memo.id}
+                    memo={memo}
+                    onToggle={onToggle}
+                    toggling={archivingMemoId === memo.id}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </section>
+  )
+}
+
+function BoardMemoItem({
+  checked = false,
+  memo,
+  onToggle,
+  toggling,
+}: {
+  checked?: boolean
+  memo: BoardMemo
+  onToggle: (memo: BoardMemo) => void
+  toggling: boolean
+}) {
+  return (
+    <label
+      className={`flex min-h-11 items-center gap-3 rounded-lg border px-3 py-2 transition ${
+        checked
+          ? 'border-[#eadfce] bg-[#f8f3eb] text-[#9a8b7f] hover:bg-[#f4ece1]'
+          : 'border-[#eadfce] bg-white text-[#3d342d] hover:bg-[#fbf7f0]'
+      }`}
+    >
+      <input
+        checked={checked}
+        className="h-4 w-4 accent-[#c76738]"
+        disabled={toggling}
+        onChange={() => onToggle(memo)}
+        type="checkbox"
+      />
+      <span className="text-sm font-semibold leading-6">{memo.text}</span>
+    </label>
   )
 }
 

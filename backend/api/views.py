@@ -381,10 +381,23 @@ class BoardMemoViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         shop = get_current_shop(self.request.user)
-        queryset = BoardMemo.objects.filter(shop=shop).order_by("created_at", "id")
+        return BoardMemo.objects.filter(shop=shop)
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
         if self.request.query_params.get("include_archived") in {"1", "true"}:
-            return queryset
-        return queryset.filter(archived_at__isnull=True)
+            memos = list(queryset.order_by("-updated_at", "-id"))
+        else:
+            target_date = timezone.localdate()
+            active_memos = list(
+                queryset.filter(archived_at__isnull=True).order_by("created_at", "id")
+            )
+            archived_today_memos = list(
+                queryset.filter(archived_at__date=target_date).order_by("-archived_at", "-id")
+            )
+            memos = active_memos + archived_today_memos
+
+        return Response(self.get_serializer(memos, many=True).data)
 
     def perform_create(self, serializer):
         shop = get_current_shop(self.request.user)
@@ -395,6 +408,14 @@ class BoardMemoViewSet(viewsets.ModelViewSet):
         memo = self.get_object()
         if memo.archived_at is None:
             memo.archived_at = timezone.now()
+            memo.save(update_fields=["archived_at", "updated_at"])
+        return Response(self.get_serializer(memo).data)
+
+    @action(detail=True, methods=["patch"])
+    def unarchive(self, request, pk=None):
+        memo = self.get_object()
+        if memo.archived_at is not None:
+            memo.archived_at = None
             memo.save(update_fields=["archived_at", "updated_at"])
         return Response(self.get_serializer(memo).data)
 

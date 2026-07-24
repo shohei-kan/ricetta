@@ -2,7 +2,7 @@
 
 ## Date
 
-2026-07-11
+2026-07-12
 
 ## Project
 
@@ -10,11 +10,11 @@ Ricetta
 
 ## Status
 
-Prep Today board memo and compact cards added
+Board memo daily checked display adjusted
 
 ## Summary
 
-Prep Todayの仕込みカードをコンパクト化し、各カードの操作を3カラム横並びにした。3カラムの下にはShopスコープの軽量BoardMemoを追加し、未アーカイブメモの追加・チェックでアーカイブ・履歴候補表示に対応した。
+Prep TodayのBoardMemo表示を、未チェック上段 + 今日チェック済み下段の同一カード構成に調整した。未チェックは日付をまたいでも残り、今日チェック済みは薄く表示し、再クリックで未チェックへ戻せる。
 
 ## Current Goal
 
@@ -31,7 +31,10 @@ Prep Todayの仕込みカードをコンパクト化し、各カードの操作�
 - モーダルを閉じるとcomponentをアンマウントし、入力stateをリセットする。
 - Recipe選択時に基準量と基準単位を初期入力し、今日・todoで作成する。
 - Prep Todayの仕込みカードは、詳細 + 2つのstatus操作を3カラム横並びで表示する。
-- BoardMemoはPrep Todayの3カラム下に表示し、チェックで `archived_at` を設定して一覧から消す。
+- Prep Todayのステータスカラムはスマホでは中身の高さに合わせ、`lg`以上だけカンバン風のmin-heightを使う。
+- BoardMemoはPrep Todayの3カラム下に表示し、未チェック上段 + 今日チェック済み下段に分ける。
+- 未チェックBoardMemoは作成日に関係なく表示し、今日チェック済みBoardMemoは薄く表示する。
+- チェック済みBoardMemoは再クリックで `archived_at=null` に戻し、未チェックへ戻せる。
 - BoardMemoは現在Shopにスコープし、カテゴリ、期限、担当者、優先度はMVPでは持たない。
 - Recipe Detailはレシピ確認・編集、Prep Todayは仕込み追加・進捗管理を担当する。
 - Dashboard主見出しは認証sessionのShop名と権限バッジを表示する。
@@ -81,11 +84,18 @@ Prep Todayの仕込みカードをコンパクト化し、各カードの操作�
 - Dashboardの次にやることカードとstatusバッジを作業中=黄色系、未着手=オレンジ系へ変更した。
 - Dashboard APIテストを作業中優先の順序へ更新した。
 - `BoardMemo` model / serializer / API / migrationを追加した。
-- BoardMemo APIは未アーカイブのみをデフォルト表示し、`include_archived=1`で履歴候補用に過去メモも返す。
+- BoardMemo APIは未チェック全件 + 今日チェック済みをデフォルト表示し、`include_archived=1`で履歴候補用に過去メモも返す。
 - Prep Todayの3カラム下へ横長のメモカードを追加し、`＋ 追加` とチェックでアーカイブできるようにした。
 - Prep Todayの仕込みカード余白を詰め、メモは空なら非表示、ある場合は1行表示へ調整した。
 - Prep Todayカードの操作を、未着手=詳細/開始/完了、作業中=詳細/未着手/完了、完了=詳細/未着手/作業中にした。
+- Prep Todayのステータスカラムをスマホでは高さautoにし、paddingとカラム間gapを少し詰めた。
 - BoardMemo APIテストを追加した。
+- BoardMemo一覧APIを、未チェック全件 + 今日チェック済みに変更した。
+- BoardMemo serializerへ `is_archived` を追加した。
+- BoardMemoの `unarchive` APIを追加した。
+- Prep Todayのメモカード内で未チェックと今日チェック済みを分け、チェック済みを薄く表示した。
+- 今日チェック済みメモを再クリックして未チェックへ戻せるようにした。
+- BoardMemoテストを未チェック継続、今日チェック済み表示、過去チェック済み非表示、unarchive、Shopスコープに合わせて更新した。
 
 ## Key Decisions
 
@@ -126,16 +136,18 @@ Prep Todayの仕込みカードをコンパクト化し、各カードの操作�
 実行済み:
 
 ```bash
-docker compose exec backend python manage.py test api.tests.BoardMemoApiTests api.tests.PrepTaskApiTests api.tests.DashboardApiTests
-docker compose exec backend python manage.py makemigrations --check --dry-run
+docker compose exec backend python manage.py makemigrations
+docker compose exec backend python manage.py migrate
+docker compose exec backend python manage.py test
 cd frontend && npm run lint
 cd frontend && npm run build
 ```
 
 Result:
 
-- BoardMemo + PrepTask + Dashboard API tests: 38 pass
-- Migration check: pass（変更なし）
+- makemigrations: no changes detected
+- migrate: no migrations to apply
+- Full backend tests: 98 pass
 - Frontend lint: pass
 - Frontend build: pass
 - Creation modal lint/build: pass
@@ -180,5 +192,5 @@ Result:
 ## Suggested Commit Message
 
 ```text
-feat(prep): add board memos and compact task cards
+fix(prep): keep checked board memos visible for today
 ```

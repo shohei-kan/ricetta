@@ -675,10 +675,15 @@ class PrepTaskStatusSerializer(serializers.ModelSerializer):
 
 
 class BoardMemoSerializer(serializers.ModelSerializer):
+    is_archived = serializers.SerializerMethodField()
+
     class Meta:
         model = BoardMemo
-        fields = ["id", "text", "archived_at", "created_at", "updated_at"]
-        read_only_fields = ["id", "archived_at", "created_at", "updated_at"]
+        fields = ["id", "text", "is_archived", "archived_at", "created_at", "updated_at"]
+        read_only_fields = ["id", "is_archived", "archived_at", "created_at", "updated_at"]
+
+    def get_is_archived(self, obj):
+        return obj.archived_at is not None
 
     def validate_text(self, value):
         text = value.strip()

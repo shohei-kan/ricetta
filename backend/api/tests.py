@@ -1378,7 +1378,22 @@ class PrepTaskApiTests(ApiTestCase):
 
 
 class BoardMemoApiTests(ApiTestCase):
-    def test_list_returns_unarchived_current_shop_memos(self):
+    def test_list_returns_unarchived_current_shop_memos_even_when_created_before_today(self):
+        self.login_owner()
+        active = BoardMemo.objects.create(shop=self.shop, text="玉ねぎ")
+        BoardMemo.objects.filter(id=active.id).update(
+            created_at=timezone.now() - timedelta(days=2)
+        )
+        active.refresh_from_db()
+        BoardMemo.objects.create(shop=self.other_shop, text="別店舗メモ")
+
+        response = self.client.get(reverse("board-memo-list"))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual([item["id"] for item in response.data], [active.id])
+        self.assertFalse(response.data[0]["is_archived"])
+
+    def test_list_returns_today_archived_memos_after_unarchived_memos(self):
         self.login_owner()
         active = BoardMemo.objects.create(shop=self.shop, text="玉ねぎ")
         archived = BoardMemo.objects.create(
@@ -1386,12 +1401,25 @@ class BoardMemoApiTests(ApiTestCase):
             text="ラップ",
             archived_at=timezone.now(),
         )
-        BoardMemo.objects.create(shop=self.other_shop, text="別店舗メモ")
 
         response = self.client.get(reverse("board-memo-list"))
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual([item["id"] for item in response.data], [active.id])
+        self.assertEqual([item["id"] for item in response.data], [active.id, archived.id])
+        self.assertFalse(response.data[0]["is_archived"])
+        self.assertTrue(response.data[1]["is_archived"])
+
+    def test_list_excludes_memos_archived_before_today(self):
+        self.login_owner()
+        archived = BoardMemo.objects.create(
+            shop=self.shop,
+            text="昨日のメモ",
+            archived_at=timezone.now() - timedelta(days=1),
+        )
+
+        response = self.client.get(reverse("board-memo-list"))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertNotIn(archived.id, [item["id"] for item in response.data])
 
     def test_list_can_include_archived_for_history_candidates(self):
@@ -1400,13 +1428,13 @@ class BoardMemoApiTests(ApiTestCase):
         archived = BoardMemo.objects.create(
             shop=self.shop,
             text="フライヤー油交換",
-            archived_at=timezone.now(),
+            archived_at=timezone.now() - timedelta(days=3),
         )
 
         response = self.client.get(reverse("board-memo-list"), {"include_archived": "1"})
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual([item["id"] for item in response.data], [active.id, archived.id])
+        self.assertCountEqual([item["id"] for item in response.data], [active.id, archived.id])
 
     def test_create_board_memo_sets_current_shop(self):
         self.login_owner()
@@ -1434,7 +1462,7 @@ class BoardMemoApiTests(ApiTestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("text", response.data)
 
-    def test_archive_board_memo_hides_it_from_default_list(self):
+    def test_archive_board_memo_sets_archived_at_and_keeps_it_in_today_list(self):
         self.login_owner()
         memo = BoardMemo.objects.create(shop=self.shop, text="玉ねぎ")
 
@@ -1443,8 +1471,27 @@ class BoardMemoApiTests(ApiTestCase):
 
         self.assertEqual(archive_response.status_code, status.HTTP_200_OK)
         self.assertIsNotNone(archive_response.data["archived_at"])
+        self.assertTrue(archive_response.data["is_archived"])
         self.assertEqual(list_response.status_code, status.HTTP_200_OK)
-        self.assertEqual(list_response.data, [])
+        self.assertEqual([item["id"] for item in list_response.data], [memo.id])
+        self.assertTrue(list_response.data[0]["is_archived"])
+
+    def test_unarchive_board_memo_returns_it_to_unchecked(self):
+        self.login_owner()
+        memo = BoardMemo.objects.create(
+            shop=self.shop,
+            text="玉ねぎ",
+            archived_at=timezone.now(),
+        )
+
+        unarchive_response = self.client.patch(reverse("board-memo-unarchive", args=[memo.id]))
+        list_response = self.client.get(reverse("board-memo-list"))
+
+        self.assertEqual(unarchive_response.status_code, status.HTTP_200_OK)
+        self.assertIsNone(unarchive_response.data["archived_at"])
+        self.assertFalse(unarchive_response.data["is_archived"])
+        self.assertEqual([item["id"] for item in list_response.data], [memo.id])
+        self.assertFalse(list_response.data[0]["is_archived"])
 
     def test_cannot_archive_other_shop_board_memo(self):
         self.login_owner()
@@ -1455,6 +1502,20 @@ class BoardMemoApiTests(ApiTestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         memo.refresh_from_db()
         self.assertIsNone(memo.archived_at)
+
+    def test_cannot_unarchive_other_shop_board_memo(self):
+        self.login_owner()
+        memo = BoardMemo.objects.create(
+            shop=self.other_shop,
+            text="秘密メモ",
+            archived_at=timezone.now(),
+        )
+
+        response = self.client.patch(reverse("board-memo-unarchive", args=[memo.id]))
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        memo.refresh_from_db()
+        self.assertIsNotNone(memo.archived_at)
 
 
 class DashboardApiTests(ApiTestCase):

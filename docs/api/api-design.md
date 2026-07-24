@@ -848,7 +848,7 @@ Prep Today下部のホワイトボード的な軽量メモを扱う。
 
 ## GET /api/v1/board-memos/
 
-未アーカイブのメモ一覧を取得する。
+Prep Todayで表示するメモ一覧を取得する。
 
 ログイン必須。現在ShopのBoardMemoのみ返す。
 
@@ -858,7 +858,14 @@ Prep Today下部のホワイトボード的な軽量メモを扱う。
 include_archived=1
 ```
 
-`include_archived=1` を指定した場合は、履歴候補用にアーカイブ済みも含めて返す。未指定時は `archived_at=null` のメモだけ返す。
+`include_archived=1` を指定した場合は、履歴候補用にアーカイブ済みも含めて返す。未指定時は次のメモを返す。
+
+- `archived_at=null` の未チェックメモ全件
+- `archived_at` のローカル日付が今日のチェック済みメモ
+
+昨日以前にチェック済みのメモは、通常一覧では返さない。
+
+未チェックメモは `created_at` 昇順、今日チェック済みメモは `archived_at` 降順で返す。
 
 ### Response
 
@@ -867,6 +874,7 @@ include_archived=1
   {
     "id": 1,
     "text": "玉ねぎ",
+    "is_archived": false,
     "archived_at": null,
     "created_at": "2026-05-05T10:00:00+09:00",
     "updated_at": "2026-05-05T10:00:00+09:00"
@@ -892,7 +900,13 @@ include_archived=1
 
 メモをアーカイブする。
 
-Prep Todayではチェック操作でこのAPIを呼び、アーカイブ後は未アーカイブ一覧から消える。
+Prep Todayでは未チェックメモのチェック操作でこのAPIを呼ぶ。アーカイブ後もチェックした当日中は、同じメモカード内の「チェック済み」エリアに薄く表示する。
+
+## PATCH /api/v1/board-memos/{id}/unarchive/
+
+メモのアーカイブを取り消す。
+
+Prep Todayではチェック済みメモを再度クリックした場合にこのAPIを呼び、未チェックエリアへ戻す。
 
 ---
 
