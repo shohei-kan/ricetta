@@ -117,7 +117,7 @@ function RecipeDetailContent({
   return (
     <>
       <div
-        className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+        className="mb-5 flex items-center justify-between gap-3"
       >
         <BackButton navigate={navigate} withBottomMargin={false} />
         {canManageRecipes && (

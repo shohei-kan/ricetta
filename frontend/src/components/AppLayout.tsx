@@ -28,7 +28,14 @@ type AppLayoutProps = {
   navigate: (path: RoutePath) => void
 }
 
-const mobileBottomNavPaths = new Set(['/dashboard', '/prep', '/recipes', '/ingredients', '/settings'])
+const mobileBottomNavPaths = new Set([
+  '/dashboard',
+  '/prep',
+  '/recipes',
+  '/ingredients',
+  '/settings',
+  '/account',
+])
 
 export function AppLayout({ children, currentPath, pathname, navigate }: AppLayoutProps) {
   const showMobileBottomNav = mobileBottomNavPaths.has(pathname)
