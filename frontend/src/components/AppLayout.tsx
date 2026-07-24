@@ -9,6 +9,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { ricettaLogoSimple } from '../assets'
+import { DemoBanner } from './demo/DemoBanner'
 
 export type RoutePath = '/dashboard' | '/prep' | '/recipes' | '/ingredients' | '/settings' | '/account'
 
@@ -74,6 +75,7 @@ export function AppLayout({ children, currentPath, pathname, navigate }: AppLayo
       </aside>
 
       <main className={`min-h-screen min-w-0 flex-1 bg-[#f7f3ec] md:pb-0 ${showMobileBottomNav ? 'pb-20' : ''}`}>
+        <DemoBanner />
         <header className="border-b border-[#ded2c2] bg-[#fffdf9] px-5 py-4 md:hidden">
           <div className="flex items-center justify-between">
             <button

@@ -37,6 +37,8 @@ SECRET_KEY = env('DJANGO_SECRET_KEY', 'django-insecure-dev-only-change-me')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env_bool('DJANGO_DEBUG', True)
 
+DEMO_MODE = env_bool('DEMO_MODE', False)
+
 ALLOWED_HOSTS = [host.strip() for host in env('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',') if host.strip()]
 
 CSRF_TRUSTED_ORIGINS = [

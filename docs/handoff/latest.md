@@ -2,7 +2,7 @@
 
 ## Date
 
-2026-07-12
+2026-07-24
 
 ## Project
 
@@ -10,187 +10,130 @@ Ricetta
 
 ## Status
 
-Board memo daily checked display adjusted
+Demo mode foundation added; backend Pylance typing cleanup completed.
 
 ## Summary
 
-Prep TodayのBoardMemo表示を、未チェック上段 + 今日チェック済み下段の同一カード構成に調整した。未チェックは日付をまたいでも残り、今日チェック済みは薄く表示し、再クリックで未チェックへ戻せる。
+AWS公開デモ環境に向けて、同一コードベースを環境変数でデモ表示へ切り替える最小基盤を追加した。あわせて直前に `backend/api/views.py` のPylance型エラーを、実行時挙動を変えずに型補助で解消した。
 
 ## Current Goal
 
-実ブラウザで過去の未完了表示、当日完了表示、Prep Todayからの追加フォームを確認する。
+次はAWS公開デモ用の運用準備へ進める。具体的には、デモ用seed/reset方針、公開環境の環境変数、デプロイ手順、デモ環境で禁止する操作の範囲を決める。
 
 ## Current State
 
-- `todo` / `doing` は予定日に関係なくPrepTask一覧へ表示する。
-- `done` は `completed_at` のローカル日付が指定日（通常は今日）の場合だけ表示する。
-- Prep TodayとDashboardの仕込みsummaryは、同じ表示対象の3status件数を返す。
-- `completed_at`、done時の設定、未完了へ戻した際のnull化は既存実装を利用する。
-- Prep Todayの追加フォームは現在Shopの有効Recipeと利用可能UnitをAPIから取得する。
-- 追加フォームは未着手カラムのボタンからモーダルで開く。
-- モーダルを閉じるとcomponentをアンマウントし、入力stateをリセットする。
-- Recipe選択時に基準量と基準単位を初期入力し、今日・todoで作成する。
-- Prep Todayの仕込みカードは、詳細 + 2つのstatus操作を3カラム横並びで表示する。
-- Prep Todayのステータスカラムはスマホでは中身の高さに合わせ、`lg`以上だけカンバン風のmin-heightを使う。
-- BoardMemoはPrep Todayの3カラム下に表示し、未チェック上段 + 今日チェック済み下段に分ける。
-- 未チェックBoardMemoは作成日に関係なく表示し、今日チェック済みBoardMemoは薄く表示する。
-- チェック済みBoardMemoは再クリックで `archived_at=null` に戻し、未チェックへ戻せる。
-- BoardMemoは現在Shopにスコープし、カテゴリ、期限、担当者、優先度はMVPでは持たない。
-- Recipe Detailはレシピ確認・編集、Prep Todayは仕込み追加・進捗管理を担当する。
-- Dashboard主見出しは認証sessionのShop名と権限バッジを表示する。
-- Dashboardは今日の仕込み、次にやること、サマリー、期限注意に絞る。
-- Dashboardの「今日の仕込み」「次にやること」「stats.prep_task_count」はPrep Todayと同じ表示対象を使う。
-- Dashboardの「次にやること」は作業中を未着手より先に表示し、同status内は `sort_order, id` 順にする。
-- Dashboardの「次にやること」カードは作業中を黄色系、未着手をオレンジ系で表示する。
-- サイドバー下部はアカウントアイコンとアカウントラベルだけの導線にする。
-- Recipe Editの材料行は材料名を広く、使用量・単位をコンパクトにし、メモを下段へ置く。
-- 材料使用量の編集初期値は不要な小数末尾ゼロを除いて表示する。
-- 材料・工程削除は右上×から確認後に実行する。
-- 作り方は工程ごとの全幅入力＋下段メモで縦に並べる。
-- 主要textareaは共通`AutoResizeTextarea`を使い、1行表示を基本にして既存値の表示時と入力時に内容量へ合わせて自動伸縮する。
+- backendは `DEMO_MODE` を `settings.py` で扱える。
+- frontendは `VITE_DEMO_MODE=true` のときだけデモバナーを表示する。
+- DemoBannerはログイン後の共通レイアウト上部に表示される。
+- `backend/api/demo_policy.py` に `deny_in_demo()` を追加済み。
+- 今回は既存Viewへ `deny_in_demo()` を適用していないため、通常機能の挙動は変えていない。
+- `.env.example` に `DEMO_MODE=False` と `VITE_DEMO_MODE=false` を追加済み。
+- `backend/api/views.py` はPylance向けにDRF `Request` / `query_params` / serializer `validated_data` / PrepTask summary集計の型を整理済み。
+- 既存のPrep Today / BoardMemo / Recipe / Dashboard機能は維持している。
 
 ## What Was Done
 
-- PrepTask一覧querysetを未完了全件＋指定日完了へ変更した。
-- 表示対象を基準にsummaryを集計するよう維持した。
-- 過去todo / doing、当日done、過去完了除外、summaryのAPIテストを追加した。
-- Prep Todayへ「仕込みを追加」ボタンとレスポンシブフォームを追加した。
-- 画面上部の追加ボタンとインラインフォームを削除した。
-- PCでは未着手ヘッダー右側に＋、スマホでは未着手上部に「＋ 仕込みを追加」を配置した。
-- フォームをoverlay付き中央モーダルへ変更した。
-- キャンセル、×、Esc、overlayクリックで閉じられるようにした。
-- Recipe Detailの追加ボタン、フォーム、専用のAPI呼び出し・単位取得・バリデーションを削除した。
-- 作成成功後に一覧を再取得してフォームを閉じるようにした。
-- 完了カードの完了時刻表示を維持した。
-- API、データモデル、画面仕様、decisionを更新した。
-- Dashboardから「よく使うレシピ」と小さいRicetta見出しを削除した。
-- Dashboard見出しをShop名＋権限へ変更し、2カラム比率を現場情報優先に調整した。
-- サイドバー下部のAccount導線をアイコン＋ラベルだけに簡略化した。
-- Recipe Editの材料カードをレスポンシブな3列＋メモ下段へ変更した。
-- 材料行削除を右上のaria-label付き×ボタンへ変更した。
-- RecipeIngredient数量のフォーム初期値から不要な末尾ゼロを除くhelperを追加した。
-- 材料追加を背景なしの「＋ 追加」へ軽量化した。
-- 材料・工程削除へwindow.confirmを追加した。
-- 工程カードを番号ヘッダー、全幅作り方、下段メモ、右上×へ変更した。
-- 工程追加を背景なしの「＋ 追加」へ軽量化した。
-- 工程カードを白背景へ変更し、材料カードとトーンを統一した。
-- `frontend/src/components/ui/AutoResizeTextarea.tsx` を追加した。
-- Recipeの説明、材料メモ、作り方、工程メモ、アレルゲンメモ、注意点を共通textareaへ置き換えた。
-- Ingredientのメモ、Prep Today追加モーダルのメモ、Accountの店舗メモを共通textareaへ置き換えた。
-- Dashboard APIのPrepTask抽出条件をPrep Today APIと共通化した。
-- Dashboard APIテストを未完了全件 + 対象日完了の表示対象に合わせて更新した。
-- Dashboard API / data model / screen docsをPrep Today基準の表示に更新した。
-- Dashboard APIの`next_tasks`を作業中 → 未着手の順に変更した。
-- Dashboardの次にやることカードとstatusバッジを作業中=黄色系、未着手=オレンジ系へ変更した。
-- Dashboard APIテストを作業中優先の順序へ更新した。
-- `BoardMemo` model / serializer / API / migrationを追加した。
-- BoardMemo APIは未チェック全件 + 今日チェック済みをデフォルト表示し、`include_archived=1`で履歴候補用に過去メモも返す。
-- Prep Todayの3カラム下へ横長のメモカードを追加し、`＋ 追加` とチェックでアーカイブできるようにした。
-- Prep Todayの仕込みカード余白を詰め、メモは空なら非表示、ある場合は1行表示へ調整した。
-- Prep Todayカードの操作を、未着手=詳細/開始/完了、作業中=詳細/未着手/完了、完了=詳細/未着手/作業中にした。
-- Prep Todayのステータスカラムをスマホでは高さautoにし、paddingとカラム間gapを少し詰めた。
-- BoardMemo APIテストを追加した。
-- BoardMemo一覧APIを、未チェック全件 + 今日チェック済みに変更した。
-- BoardMemo serializerへ `is_archived` を追加した。
-- BoardMemoの `unarchive` APIを追加した。
-- Prep Todayのメモカード内で未チェックと今日チェック済みを分け、チェック済みを薄く表示した。
-- 今日チェック済みメモを再クリックして未チェックへ戻せるようにした。
-- BoardMemoテストを未チェック継続、今日チェック済み表示、過去チェック済み非表示、unarchive、Shopスコープに合わせて更新した。
+- `backend/ricetta/settings.py` に `DEMO_MODE = env_bool('DEMO_MODE', False)` を追加した。
+- `backend/api/demo_policy.py` を追加し、デモ環境で将来の禁止操作に使う `deny_in_demo()` を用意した。
+- `frontend/src/config/demo.ts` を追加し、`VITE_DEMO_MODE === 'true'` で `isDemoMode` を判定するようにした。
+- `frontend/src/components/demo/DemoBanner.tsx` を追加した。
+- `frontend/src/components/AppLayout.tsx` に `DemoBanner` を組み込んだ。
+- `.env.example` にbackend/frontendのデモモード環境変数を追記した。
+- `backend/api/views.py` のPylance型エラーを型注釈・helper・castで解消した。
 
 ## Key Decisions
 
-- 予定日より作業状態と完了日時をPrep Todayの表示基準にする。
-- Dashboardの仕込み表示もPrep Todayを正として同じ表示基準にする。
-- PrepTaskとBoardMemoは意味が違うため、BoardMemoは3カラム内に混ぜず下部補助カードに置く。
-- MVPでは持ち越しラベル、優先度、トリアージ色を追加しない。
-- 完了レコードは削除せず履歴として保持する。
-- 追加操作は作成後に入る未着手カラムへ置き、一覧の視認性を優先する。
-- 仕込み追加導線をPrep Todayへ一本化し、Recipe Detailは確認・編集に集中させる。
-- 詳細は `docs/decisions/0006-prep-today-active-task-scope.md` を参照する。
+- デモ版は別ディレクトリ、別ブランチ、複製コードを作らず、同じコードベースを環境変数で切り替える。
+- `DEMO_MODE` / `VITE_DEMO_MODE` のデフォルトは通常モード（false）。
+- デモ環境で禁止する操作は、各Viewに直接 `settings.DEMO_MODE` を書かず、`deny_in_demo()` 経由にする。
+- 今回はseed reset、リセットAPI、リセットボタン、docs/deploy整備はまだ行わない。
 
 ## Key Files
 
+- `backend/ricetta/settings.py`
+- `backend/api/demo_policy.py`
 - `backend/api/views.py`
-- `backend/api/tests.py`
-- `backend/api/models.py`
-- `backend/api/serializers.py`
-- `backend/api/urls.py`
-- `backend/api/migrations/0005_boardmemo.py`
-- `frontend/src/pages/PrepTodayPage.tsx`
-- `frontend/src/api/boardMemos.ts`
-- `frontend/src/pages/RecipeDetailPage.tsx`
-- `frontend/src/pages/DashboardPage.tsx`
+- `frontend/src/config/demo.ts`
+- `frontend/src/components/demo/DemoBanner.tsx`
 - `frontend/src/components/AppLayout.tsx`
-- `frontend/src/components/ui/AutoResizeTextarea.tsx`
-- `frontend/src/pages/RecipeFormPage.tsx`
-- `frontend/src/pages/IngredientFormPage.tsx`
-- `frontend/src/pages/PrepTodayPage.tsx`
-- `frontend/src/pages/AccountPage.tsx`
-- `docs/api/api-design.md`
-- `docs/data/data-model.md`
-- `docs/product/screens.md`
-- `docs/decisions/0006-prep-today-active-task-scope.md`
+- `.env.example`
 
 ## Verification
 
 実行済み:
 
 ```bash
-docker compose exec backend python manage.py makemigrations
-docker compose exec backend python manage.py migrate
+PYTHONPYCACHEPREFIX=/private/tmp/ricetta-pycache python3 -m compileall backend/api/views.py
+docker compose exec backend python manage.py check
+docker compose exec backend python manage.py makemigrations --check --dry-run
 docker compose exec backend python manage.py test
 cd frontend && npm run lint
 cd frontend && npm run build
+cd frontend && VITE_DEMO_MODE=true npm run build
+git diff --check
 ```
 
 Result:
 
-- makemigrations: no changes detected
-- migrate: no migrations to apply
-- Full backend tests: 98 pass
-- Frontend lint: pass
-- Frontend build: pass
-- Creation modal lint/build: pass
-- Dashboard lint/build: pass
-- Recipe form lint/build: pass
-- Recipe step auto-resize lint/build: pass
-- Global textarea lint/build: pass
-- in-app browser: 実行環境メタデータの`sandboxPolicy`欠落により起動できず、手動確認は未実施
+- backend compile: pass
+- backend check: pass
+- makemigrations dry-run: no changes detected
+- backend tests: 98 pass
+- frontend lint: pass
+- frontend build: pass
+- frontend build with `VITE_DEMO_MODE=true`: pass
+- whitespace check: pass
+
+Manual browser verification:
+
+- 未実施。次にUI確認する場合は、`VITE_DEMO_MODE=true` でログイン後レイアウト上部にバナーが出ることを確認する。
 
 ## Current Product Scope
 
 - Login / logout and Shop scope
 - Recipe / Ingredient / Prep Today / Dashboard / Settings / Account
 - Active Prep Today board and direct PrepTask creation
+- BoardMemo as lightweight whiteboard memo under Prep Today columns
 - Smartphone, tablet landscape, and PC layouts
+- Demo mode foundation via environment variables
 
 ## Out of Scope for MVP
 
-- 持ち越しラベル
-- 仕込み優先度 / トリアージ色
-- PrepTask履歴専用画面
-- BoardMemoのカテゴリ / 期限 / 担当者 / 優先度
-- Stripe / POS / inventory automation
+- Stripe / Checkout / Billing portal
+- POS integration
+- Automatic inventory deduction
+- Advanced ordering
+- Multi-shop management UI
+- Advanced role management
+- Shop device mode
+- Demo reset API / reset button
+- Demo-specific branch or duplicated app directories
 
 ## Next Recommended Tasks
 
-1. 過去未完了、当日完了、過去完了除外を実データで確認する。
-2. Prep Todayから追加でき、Recipe Detailには追加導線がないことを確認する。
+1. `VITE_DEMO_MODE=true` で実ブラウザを開き、ログイン後にDemoBannerが自然に表示されるか確認する。
+2. AWS公開デモ用の環境変数一覧を整理する。
+3. `seed_portfolio_data --reset` を公開デモ向けに安全に使える形へ調整する。
+4. デモ環境で禁止する操作（メール変更、パスワード変更、アカウント削除、店舗削除など）の範囲を決め、必要なViewに `deny_in_demo()` を適用する。
+5. `docs/deploy/demo.md` など、デモ公開手順のドキュメント整備を行う。
 
 ## Open Questions
 
-- 将来の履歴画面で完了タスクをどの期間・単位で検索するか。
+- デモ環境の自動リセット頻度をどうするか。
+- デモ環境でどの操作を許可し、どの操作を禁止するか。
+- 公開デモの認証情報を固定表示するか、README/docsだけに記載するか。
 
 ## Notes for Next Agent
 
-- `completed_at` は既存の `0004_preptask` migrationに含まれるため、新規migrationは不要。
-- `date` query parameterは完了日の基準日として残している。
-- backendのShop scopeとRecipe / Unit scoped validationは既存serializer fieldで維持している。
+- 現在の未コミット差分には、今回のデモモード基盤に加えて、直前の `backend/api/views.py` Pylance型エラー対応が含まれる。
+- `backend/api/demo_policy.py` はまだ既存Viewから使っていない。挙動変更は次タスクで明示的に行う。
+- `VITE_DEMO_MODE` はViteのbuild時環境変数なので、公開環境ではfrontend build/deploy時に設定する必要がある。
+- `.env` は編集していない。実環境値はGit管理外で設定する。
 - 開発用ログインは `owner@example.com` / `password`。
 - Docker frontendは `http://localhost:5174`。
 
 ## Suggested Commit Message
 
 ```text
-fix(prep): keep checked board memos visible for today
+feat(demo): add environment-driven demo mode foundation
 ```
