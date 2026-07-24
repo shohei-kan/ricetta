@@ -216,10 +216,25 @@ class CategoryViewSet(viewsets.ModelViewSet):
         return Category.objects.filter(shop=shop, is_active=True)
 
     def perform_create(self, serializer):
+        get_current_owner_membership(
+            self.request.user,
+            "カテゴリを作成・編集できるのはオーナーのみです。",
+        )
         shop = get_current_shop(self.request.user)
         serializer.save(shop=shop)
 
+    def perform_update(self, serializer):
+        get_current_owner_membership(
+            self.request.user,
+            "カテゴリを作成・編集できるのはオーナーのみです。",
+        )
+        serializer.save()
+
     def perform_destroy(self, instance):
+        get_current_owner_membership(
+            self.request.user,
+            "カテゴリを作成・編集できるのはオーナーのみです。",
+        )
         instance.is_active = False
         instance.save(update_fields=["is_active", "updated_at"])
 
@@ -237,11 +252,19 @@ class UnitViewSet(viewsets.ModelViewSet):
         )
 
     def perform_create(self, serializer):
+        get_current_owner_membership(
+            self.request.user,
+            "単位を作成・編集できるのはオーナーのみです。",
+        )
         shop = get_current_shop(self.request.user)
         serializer.save(shop=shop, is_default=False)
 
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
+        get_current_owner_membership(
+            request.user,
+            "単位を作成・編集できるのはオーナーのみです。",
+        )
         if instance.shop_id is None:
             return Response(
                 {"detail": "標準単位は編集できません。"},
@@ -251,6 +274,10 @@ class UnitViewSet(viewsets.ModelViewSet):
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
+        get_current_owner_membership(
+            request.user,
+            "単位を作成・編集できるのはオーナーのみです。",
+        )
         if instance.shop_id is None:
             return Response(
                 {"detail": "標準単位は削除できません。"},
@@ -281,10 +308,25 @@ class IngredientViewSet(viewsets.ModelViewSet):
         return queryset
 
     def perform_create(self, serializer):
+        get_current_owner_membership(
+            self.request.user,
+            "材料を作成・編集できるのはオーナーのみです。",
+        )
         shop = get_current_shop(self.request.user)
         serializer.save(shop=shop)
 
+    def perform_update(self, serializer):
+        get_current_owner_membership(
+            self.request.user,
+            "材料を作成・編集できるのはオーナーのみです。",
+        )
+        serializer.save()
+
     def perform_destroy(self, instance):
+        get_current_owner_membership(
+            self.request.user,
+            "材料を作成・編集できるのはオーナーのみです。",
+        )
         instance.is_active = False
         instance.save(update_fields=["is_active", "updated_at"])
 
@@ -324,13 +366,25 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return queryset
 
     def perform_create(self, serializer):
+        get_current_owner_membership(
+            self.request.user,
+            "レシピを作成・編集できるのはオーナーのみです。",
+        )
         shop = get_current_shop(self.request.user)
         serializer.save(shop=shop, created_by=self.request.user, updated_by=self.request.user)
 
     def perform_update(self, serializer):
+        get_current_owner_membership(
+            self.request.user,
+            "レシピを作成・編集できるのはオーナーのみです。",
+        )
         serializer.save(updated_by=self.request.user)
 
     def perform_destroy(self, instance):
+        get_current_owner_membership(
+            self.request.user,
+            "レシピを作成・編集できるのはオーナーのみです。",
+        )
         instance.is_active = False
         instance.save(update_fields=["is_active", "updated_at"])
 

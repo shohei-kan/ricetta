@@ -62,6 +62,21 @@ class ApiTestCase(TestCase):
         logged_in = self.client.login(username="owner@example.com", password="password")
         self.assertTrue(logged_in)
 
+    def create_staff_membership(self):
+        staff = self.create_user("staff@example.com", "password")
+        membership = Membership.objects.create(
+            user=staff,
+            shop=self.shop,
+            role=Membership.Role.STAFF,
+            display_name="スタッフ",
+        )
+        return staff, membership
+
+    def login_staff(self):
+        self.create_staff_membership()
+        logged_in = self.client.login(username="staff@example.com", password="password")
+        self.assertTrue(logged_in)
+
     def create_standard_unit(self, name="g", unit_type=Unit.UnitType.WEIGHT):
         return Unit.objects.create(
             shop=None,
@@ -338,6 +353,75 @@ class CategoryApiTests(ApiTestCase):
         self.assertEqual(category.shop, self.shop)
         self.assertEqual(category.name, "ソース")
 
+    def test_owner_can_update_category(self):
+        self.login_owner()
+        category = Category.objects.create(shop=self.shop, name="仕込み")
+
+        response = self.client.patch(
+            reverse("category-detail", args=[category.id]),
+            {"name": "ソース"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        category.refresh_from_db()
+        self.assertEqual(category.name, "ソース")
+
+    def test_owner_can_delete_category(self):
+        self.login_owner()
+        category = Category.objects.create(shop=self.shop, name="仕込み")
+
+        response = self.client.delete(reverse("category-detail", args=[category.id]))
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        category.refresh_from_db()
+        self.assertFalse(category.is_active)
+
+    def test_staff_can_view_categories(self):
+        self.login_staff()
+        Category.objects.create(shop=self.shop, name="仕込み")
+
+        response = self.client.get(reverse("category-list"))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual([item["name"] for item in response.data], ["仕込み"])
+
+    def test_staff_cannot_create_category(self):
+        self.login_staff()
+
+        response = self.client.post(
+            reverse("category-list"),
+            {"name": "ソース"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertFalse(Category.objects.filter(shop=self.shop, name="ソース").exists())
+
+    def test_staff_cannot_update_category(self):
+        self.login_staff()
+        category = Category.objects.create(shop=self.shop, name="仕込み")
+
+        response = self.client.patch(
+            reverse("category-detail", args=[category.id]),
+            {"name": "更新できない"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        category.refresh_from_db()
+        self.assertEqual(category.name, "仕込み")
+
+    def test_staff_cannot_delete_category(self):
+        self.login_staff()
+        category = Category.objects.create(shop=self.shop, name="仕込み")
+
+        response = self.client.delete(reverse("category-detail", args=[category.id]))
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        category.refresh_from_db()
+        self.assertTrue(category.is_active)
+
 
 class UnitApiTests(ApiTestCase):
     def setUp(self):
@@ -361,6 +445,42 @@ class UnitApiTests(ApiTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         names = [item["name"] for item in response.data]
         self.assertEqual(names, ["g", "kg", "皿"])
+
+    def test_staff_can_view_units(self):
+        self.login_staff()
+        Unit.objects.create(shop=self.shop, name="皿", unit_type=Unit.UnitType.COUNT, sort_order=10)
+
+        response = self.client.get(reverse("unit-list"))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        names = [item["name"] for item in response.data]
+        self.assertEqual(names, ["g", "kg", "皿"])
+
+    def test_owner_can_create_shop_unit(self):
+        self.login_owner()
+
+        response = self.client.post(
+            reverse("unit-list"),
+            {"name": "ポーション", "unit_type": "custom", "sort_order": 10},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        unit = Unit.objects.get(id=response.data["id"])
+        self.assertEqual(unit.shop, self.shop)
+        self.assertFalse(unit.is_default)
+
+    def test_staff_cannot_create_unit(self):
+        self.login_staff()
+
+        response = self.client.post(
+            reverse("unit-list"),
+            {"name": "ポーション", "unit_type": "custom"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertFalse(Unit.objects.filter(shop=self.shop, name="ポーション").exists())
 
     def test_standard_unit_cannot_be_updated(self):
         self.login_owner()
@@ -389,6 +509,40 @@ class UnitApiTests(ApiTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         shop_unit.refresh_from_db()
         self.assertEqual(shop_unit.name, "プレート")
+
+    def test_staff_cannot_update_unit(self):
+        self.login_staff()
+        shop_unit = Unit.objects.create(shop=self.shop, name="皿", unit_type=Unit.UnitType.COUNT)
+
+        response = self.client.patch(
+            reverse("unit-detail", args=[shop_unit.id]),
+            {"name": "更新できない"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        shop_unit.refresh_from_db()
+        self.assertEqual(shop_unit.name, "皿")
+
+    def test_owner_can_delete_shop_unit(self):
+        self.login_owner()
+        shop_unit = Unit.objects.create(shop=self.shop, name="皿", unit_type=Unit.UnitType.COUNT)
+
+        response = self.client.delete(reverse("unit-detail", args=[shop_unit.id]))
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        shop_unit.refresh_from_db()
+        self.assertFalse(shop_unit.is_active)
+
+    def test_staff_cannot_delete_unit(self):
+        self.login_staff()
+        shop_unit = Unit.objects.create(shop=self.shop, name="皿", unit_type=Unit.UnitType.COUNT)
+
+        response = self.client.delete(reverse("unit-detail", args=[shop_unit.id]))
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        shop_unit.refresh_from_db()
+        self.assertTrue(shop_unit.is_active)
 
 
 class IngredientApiTests(ApiTestCase):
@@ -582,6 +736,84 @@ class IngredientApiTests(ApiTestCase):
         ingredient = Ingredient.objects.get(id=response.data["id"])
         self.assertEqual(ingredient.shop, self.shop)
 
+    def test_owner_can_update_ingredient(self):
+        self.login_owner()
+        ingredient = Ingredient.objects.create(
+            shop=self.shop,
+            name="砂糖",
+            cost_mode=Ingredient.CostMode.NONE,
+        )
+
+        response = self.client.patch(
+            reverse("ingredient-detail", args=[ingredient.id]),
+            {"name": "グラニュー糖"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        ingredient.refresh_from_db()
+        self.assertEqual(ingredient.name, "グラニュー糖")
+
+    def test_staff_can_view_ingredients(self):
+        self.login_staff()
+        ingredient = Ingredient.objects.create(
+            shop=self.shop,
+            name="塩",
+            cost_mode=Ingredient.CostMode.NONE,
+        )
+
+        list_response = self.client.get(reverse("ingredient-list"))
+        detail_response = self.client.get(reverse("ingredient-detail", args=[ingredient.id]))
+
+        self.assertEqual(list_response.status_code, status.HTTP_200_OK)
+        self.assertEqual([item["name"] for item in list_response.data], ["塩"])
+        self.assertEqual(detail_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(detail_response.data["name"], "塩")
+
+    def test_staff_cannot_create_ingredient(self):
+        self.login_staff()
+
+        response = self.client.post(
+            reverse("ingredient-list"),
+            {"name": "砂糖", "cost_mode": "none"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertFalse(Ingredient.objects.filter(shop=self.shop, name="砂糖").exists())
+
+    def test_staff_cannot_update_ingredient(self):
+        self.login_staff()
+        ingredient = Ingredient.objects.create(
+            shop=self.shop,
+            name="砂糖",
+            cost_mode=Ingredient.CostMode.NONE,
+        )
+
+        response = self.client.patch(
+            reverse("ingredient-detail", args=[ingredient.id]),
+            {"name": "更新できない"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        ingredient.refresh_from_db()
+        self.assertEqual(ingredient.name, "砂糖")
+
+    def test_staff_cannot_delete_ingredient(self):
+        self.login_staff()
+        ingredient = Ingredient.objects.create(
+            shop=self.shop,
+            name="砂糖",
+            cost_mode=Ingredient.CostMode.NONE,
+        )
+
+        response = self.client.delete(reverse("ingredient-detail", args=[ingredient.id]))
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        ingredient.refresh_from_db()
+        self.assertTrue(ingredient.is_active)
+
     def test_cannot_access_other_shop_detail(self):
         self.login_owner()
         ingredient = Ingredient.objects.create(
@@ -760,6 +992,31 @@ class RecipeApiTests(ApiTestCase):
         self.assertNotIn("cost", response.data["ingredients"][0])
         self.assertIn("cost_summary", response.data)
 
+    def test_staff_can_view_recipes(self):
+        self.login_staff()
+        unit = self.create_standard_unit("バッチ", Unit.UnitType.CUSTOM)
+        recipe = self.create_recipe("トマトソース", unit=unit)
+
+        list_response = self.client.get(reverse("recipe-list"))
+        detail_response = self.client.get(reverse("recipe-detail", args=[recipe.id]))
+
+        self.assertEqual(list_response.status_code, status.HTTP_200_OK)
+        self.assertEqual([item["name"] for item in list_response.data], ["トマトソース"])
+        self.assertEqual(detail_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(detail_response.data["name"], "トマトソース")
+
+    def test_staff_cannot_create_recipe(self):
+        self.login_staff()
+
+        response = self.client.post(
+            reverse("recipe-list"),
+            self.recipe_payload(),
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertFalse(Recipe.objects.filter(shop=self.shop, name="トマトソース").exists())
+
     def test_recipe_requires_name(self):
         self.login_owner()
         payload = self.recipe_payload()
@@ -898,6 +1155,30 @@ class RecipeApiTests(ApiTestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         recipe.refresh_from_db()
         self.assertEqual(recipe.name, "秘密レシピ")
+
+    def test_staff_cannot_update_recipe(self):
+        self.login_staff()
+        recipe = self.create_recipe()
+
+        response = self.client.patch(
+            reverse("recipe-detail", args=[recipe.id]),
+            {"name": "更新できない"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        recipe.refresh_from_db()
+        self.assertEqual(recipe.name, "トマトソース")
+
+    def test_staff_cannot_delete_recipe(self):
+        self.login_staff()
+        recipe = self.create_recipe()
+
+        response = self.client.delete(reverse("recipe-detail", args=[recipe.id]))
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        recipe.refresh_from_db()
+        self.assertTrue(recipe.is_active)
 
     def test_cannot_delete_other_shop_recipe(self):
         self.login_owner()
@@ -1082,6 +1363,20 @@ class PrepTaskApiTests(ApiTestCase):
         self.assertEqual(task.shop, self.shop)
         self.assertEqual(task.status, PrepTask.Status.TODO)
         self.assertEqual(response.data["status"], "todo")
+
+    def test_staff_can_create_prep_task(self):
+        self.login_staff()
+
+        response = self.client.post(
+            reverse("prep-task-list"),
+            self.prep_task_payload(),
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        task = PrepTask.objects.get(id=response.data["id"])
+        self.assertEqual(task.shop, self.shop)
+        self.assertEqual(task.status, PrepTask.Status.TODO)
 
     def test_planned_quantity_must_be_positive(self):
         self.login_owner()
@@ -1320,6 +1615,20 @@ class PrepTaskApiTests(ApiTestCase):
         self.assertEqual(response.data["status"], "done")
         self.assertIsNotNone(response.data["completed_at"])
 
+    def test_staff_can_update_prep_task_status(self):
+        self.login_staff()
+        task = self.create_prep_task(status=PrepTask.Status.TODO)
+
+        response = self.client.patch(
+            reverse("prep-task-update-status", args=[task.id]),
+            {"status": "doing"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        task.refresh_from_db()
+        self.assertEqual(task.status, PrepTask.Status.DOING)
+
     def test_regular_patch_status_updates_completed_at(self):
         self.login_owner()
         task = self.create_prep_task(status=PrepTask.Status.TODO)
@@ -1451,6 +1760,20 @@ class BoardMemoApiTests(ApiTestCase):
         self.assertEqual(memo.shop, self.shop)
         self.assertEqual(memo.text, "ラップ補充")
 
+    def test_staff_can_create_board_memo(self):
+        self.login_staff()
+
+        response = self.client.post(
+            reverse("board-memo-list"),
+            {"text": "ラップ補充"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        memo = BoardMemo.objects.get(id=response.data["id"])
+        self.assertEqual(memo.shop, self.shop)
+        self.assertEqual(memo.text, "ラップ補充")
+
     def test_create_board_memo_rejects_blank_text(self):
         self.login_owner()
 
@@ -1476,6 +1799,30 @@ class BoardMemoApiTests(ApiTestCase):
         self.assertEqual(list_response.status_code, status.HTTP_200_OK)
         self.assertEqual([item["id"] for item in list_response.data], [memo.id])
         self.assertTrue(list_response.data[0]["is_archived"])
+
+    def test_staff_can_archive_board_memo(self):
+        self.login_staff()
+        memo = BoardMemo.objects.create(shop=self.shop, text="玉ねぎ")
+
+        response = self.client.patch(reverse("board-memo-archive", args=[memo.id]))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        memo.refresh_from_db()
+        self.assertIsNotNone(memo.archived_at)
+
+    def test_staff_can_unarchive_board_memo(self):
+        self.login_staff()
+        memo = BoardMemo.objects.create(
+            shop=self.shop,
+            text="玉ねぎ",
+            archived_at=timezone.now(),
+        )
+
+        response = self.client.patch(reverse("board-memo-unarchive", args=[memo.id]))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        memo.refresh_from_db()
+        self.assertIsNone(memo.archived_at)
 
     def test_unarchive_board_memo_returns_it_to_unchecked(self):
         self.login_owner()

@@ -18,6 +18,7 @@ import {
   type UnitPayload,
   type UnitType,
 } from '../api/units'
+import { useAuth } from '../auth/useAuth'
 
 type CategoryFormState = {
   name: string
@@ -51,6 +52,7 @@ const unitTypeLabels: Record<UnitType, string> = {
 const unitTypeOptions: UnitType[] = ['weight', 'volume', 'count', 'custom']
 
 export function SettingsPage() {
+  const { session } = useAuth()
   const [categories, setCategories] = useState<Category[]>([])
   const [units, setUnits] = useState<Unit[]>([])
   const [loading, setLoading] = useState(true)
@@ -103,6 +105,7 @@ export function SettingsPage() {
     () => [...units].sort((a, b) => a.sort_order - b.sort_order || a.id - b.id),
     [units],
   )
+  const canManageSettings = session?.membership.role === 'owner'
 
   async function handleCategorySubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -267,6 +270,11 @@ export function SettingsPage() {
         <p className="mt-2 text-base leading-7 text-[#75685e]">
           MVPではレシピ台帳の運用に必要なカテゴリと単位だけを管理します。
         </p>
+        {!canManageSettings && (
+          <p className="mt-3 rounded-lg border border-[#eadfce] bg-[#fffdf9] px-4 py-3 text-sm font-semibold text-[#75685e]">
+            カテゴリと単位の管理はオーナーのみ行えます。スタッフは現在の設定を確認できます。
+          </p>
+        )}
       </div>
 
       <div className="grid gap-5 lg:grid-cols-2">
@@ -276,36 +284,38 @@ export function SettingsPage() {
             Recipe Formで選ぶ分類です。現在Shopのカテゴリだけを管理します。
           </p>
 
-          <form className="mt-5 rounded-lg border border-[#eadfce] bg-white p-4" onSubmit={handleCategorySubmit}>
-            <p className="text-lg font-bold text-[#34291f]">
-              {editingCategoryId === null ? 'カテゴリを追加' : 'カテゴリを編集'}
-            </p>
-            <div className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_120px]">
-              <TextField
-                label="カテゴリ名"
-                onChange={(value) => setCategoryForm((current) => ({ ...current, name: value }))}
-                required
-                value={categoryForm.name}
+          {canManageSettings && (
+            <form className="mt-5 rounded-lg border border-[#eadfce] bg-white p-4" onSubmit={handleCategorySubmit}>
+              <p className="text-lg font-bold text-[#34291f]">
+                {editingCategoryId === null ? 'カテゴリを追加' : 'カテゴリを編集'}
+              </p>
+              <div className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_120px]">
+                <TextField
+                  label="カテゴリ名"
+                  onChange={(value) => setCategoryForm((current) => ({ ...current, name: value }))}
+                  required
+                  value={categoryForm.name}
+                />
+                <TextField
+                  inputMode="numeric"
+                  label="表示順"
+                  onChange={(value) => setCategoryForm((current) => ({ ...current, sort_order: value }))}
+                  value={categoryForm.sort_order}
+                />
+              </div>
+              {categoryError && <ErrorBox message={categoryError} />}
+              <FormActions
+                cancelLabel="キャンセル"
+                isEditing={editingCategoryId !== null}
+                onCancel={() => {
+                  setEditingCategoryId(null)
+                  setCategoryForm(emptyCategoryForm)
+                  setCategoryError(null)
+                }}
+                saving={categorySaving}
               />
-              <TextField
-                inputMode="numeric"
-                label="表示順"
-                onChange={(value) => setCategoryForm((current) => ({ ...current, sort_order: value }))}
-                value={categoryForm.sort_order}
-              />
-            </div>
-            {categoryError && <ErrorBox message={categoryError} />}
-            <FormActions
-              cancelLabel="キャンセル"
-              isEditing={editingCategoryId !== null}
-              onCancel={() => {
-                setEditingCategoryId(null)
-                setCategoryForm(emptyCategoryForm)
-                setCategoryError(null)
-              }}
-              saving={categorySaving}
-            />
-          </form>
+            </form>
+          )}
 
           <div className="mt-5 space-y-3">
             {sortedCategories.length === 0 ? (
@@ -320,23 +330,25 @@ export function SettingsPage() {
                       <p className="text-lg font-bold text-[#332820]">{category.name}</p>
                       <p className="mt-1 text-sm text-[#75685e]">表示順: {category.sort_order}</p>
                     </div>
-                    <div className="flex gap-2">
-                      <button
-                        className="rounded-lg border border-[#dfd1bf] bg-white px-4 py-2 text-sm font-bold text-[#5d5148] transition hover:bg-[#fbf7f0]"
-                        onClick={() => startCategoryEdit(category)}
-                        type="button"
-                      >
-                        編集
-                      </button>
-                      <button
-                        className="rounded-lg bg-[#fff0ed] px-4 py-2 text-sm font-semibold text-[#a23d2d] transition hover:bg-[#f9dfd9] disabled:cursor-not-allowed disabled:opacity-60"
-                        disabled={deletingKey === `category-${category.id}`}
-                        onClick={() => void handleCategoryDelete(category)}
-                        type="button"
-                      >
-                        削除
-                      </button>
-                    </div>
+                    {canManageSettings && (
+                      <div className="flex gap-2">
+                        <button
+                          className="rounded-lg border border-[#dfd1bf] bg-white px-4 py-2 text-sm font-bold text-[#5d5148] transition hover:bg-[#fbf7f0]"
+                          onClick={() => startCategoryEdit(category)}
+                          type="button"
+                        >
+                          編集
+                        </button>
+                        <button
+                          className="rounded-lg bg-[#fff0ed] px-4 py-2 text-sm font-semibold text-[#a23d2d] transition hover:bg-[#f9dfd9] disabled:cursor-not-allowed disabled:opacity-60"
+                          disabled={deletingKey === `category-${category.id}`}
+                          onClick={() => void handleCategoryDelete(category)}
+                          type="button"
+                        >
+                          削除
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))
@@ -350,53 +362,55 @@ export function SettingsPage() {
             標準Unitは表示のみです。店舗独自Unitだけ追加・編集・削除できます。
           </p>
 
-          <form className="mt-5 rounded-lg border border-[#eadfce] bg-white p-4" onSubmit={handleUnitSubmit}>
-            <p className="text-lg font-bold text-[#34291f]">
-              {editingUnitId === null ? '単位を追加' : '単位を編集'}
-            </p>
-            <div className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_140px_120px]">
-              <TextField
-                label="単位名"
-                onChange={(value) => setUnitForm((current) => ({ ...current, name: value }))}
-                required
-                value={unitForm.name}
+          {canManageSettings && (
+            <form className="mt-5 rounded-lg border border-[#eadfce] bg-white p-4" onSubmit={handleUnitSubmit}>
+              <p className="text-lg font-bold text-[#34291f]">
+                {editingUnitId === null ? '単位を追加' : '単位を編集'}
+              </p>
+              <div className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_140px_120px]">
+                <TextField
+                  label="単位名"
+                  onChange={(value) => setUnitForm((current) => ({ ...current, name: value }))}
+                  required
+                  value={unitForm.name}
+                />
+                <label className="block">
+                  <span className="text-sm font-semibold text-[#4b4037]">種別 *</span>
+                  <select
+                    className="mt-2 min-h-12 w-full rounded-lg border border-[#d7cbbb] bg-white px-4 text-base text-[#2b2621] outline-none ring-[#b88458] transition focus:ring-2"
+                    onChange={(event) => setUnitForm((current) => ({
+                      ...current,
+                      unit_type: event.target.value as UnitType,
+                    }))}
+                    value={unitForm.unit_type}
+                  >
+                    {unitTypeOptions.map((type) => (
+                      <option key={type} value={type}>
+                        {unitTypeLabels[type]}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <TextField
+                  inputMode="numeric"
+                  label="表示順"
+                  onChange={(value) => setUnitForm((current) => ({ ...current, sort_order: value }))}
+                  value={unitForm.sort_order}
+                />
+              </div>
+              {unitError && <ErrorBox message={unitError} />}
+              <FormActions
+                cancelLabel="キャンセル"
+                isEditing={editingUnitId !== null}
+                onCancel={() => {
+                  setEditingUnitId(null)
+                  setUnitForm(emptyUnitForm)
+                  setUnitError(null)
+                }}
+                saving={unitSaving}
               />
-              <label className="block">
-                <span className="text-sm font-semibold text-[#4b4037]">種別 *</span>
-                <select
-                  className="mt-2 min-h-12 w-full rounded-lg border border-[#d7cbbb] bg-white px-4 text-base text-[#2b2621] outline-none ring-[#b88458] transition focus:ring-2"
-                  onChange={(event) => setUnitForm((current) => ({
-                    ...current,
-                    unit_type: event.target.value as UnitType,
-                  }))}
-                  value={unitForm.unit_type}
-                >
-                  {unitTypeOptions.map((type) => (
-                    <option key={type} value={type}>
-                      {unitTypeLabels[type]}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <TextField
-                inputMode="numeric"
-                label="表示順"
-                onChange={(value) => setUnitForm((current) => ({ ...current, sort_order: value }))}
-                value={unitForm.sort_order}
-              />
-            </div>
-            {unitError && <ErrorBox message={unitError} />}
-            <FormActions
-              cancelLabel="キャンセル"
-              isEditing={editingUnitId !== null}
-              onCancel={() => {
-                setEditingUnitId(null)
-                setUnitForm(emptyUnitForm)
-                setUnitError(null)
-              }}
-              saving={unitSaving}
-            />
-          </form>
+            </form>
+          )}
 
           <div className="mt-5 space-y-3">
             {sortedUnits.length === 0 ? (
@@ -429,7 +443,7 @@ export function SettingsPage() {
                         </p>
                       )}
                     </div>
-                    {!unit.is_standard && (
+                    {canManageSettings && !unit.is_standard && (
                       <div className="flex gap-2">
                         <button
                           className="rounded-lg border border-[#dfd1bf] bg-white px-4 py-2 text-sm font-bold text-[#5d5148] transition hover:bg-[#fbf7f0]"

@@ -129,3 +129,81 @@ AWS公開デモ環境に向けて、デモ運用方針、env example、公開前
 - `VITE_DEMO_MODE=true` で実ブラウザのDemoBanner表示を確認する。
 - デモ環境で禁止する操作範囲を決め、必要なViewに `deny_in_demo()` を適用する。
 - 定期resetの実行方法を別タスクで決める。
+
+## 2026-07-24 Owner staff permission alignment
+
+AWS公開デモ前に、owner / staffの操作範囲を整理した。
+
+### Summary
+
+- Recipe / Ingredient / Shopの管理操作をowner限定にした。
+- staffはRecipe / Ingredientを閲覧できるが、作成・編集・削除はAPIで403になる。
+- staffはPrepTask作成、PrepTask status変更、BoardMemo追加・チェック、自分の表示名編集を行える。
+- frontendではstaffにRecipe / Ingredientの作成・編集導線を表示しない。
+- Recipe / Ingredientフォームへstaffが直URLでアクセスした場合、権限メッセージを表示する。
+- README、API design、data model、MVP requirements、roadmap、screensのrole説明を更新した。
+
+### Key Files
+
+- `backend/api/shop_scope.py`
+- `backend/api/views.py`
+- `backend/api/tests.py`
+- `frontend/src/pages/RecipeListPage.tsx`
+- `frontend/src/pages/RecipeDetailPage.tsx`
+- `frontend/src/pages/RecipeFormPage.tsx`
+- `frontend/src/pages/IngredientListPage.tsx`
+- `frontend/src/pages/IngredientDetailPage.tsx`
+- `frontend/src/pages/IngredientFormPage.tsx`
+- `docs/technical/api-design.md`
+
+### Verification
+
+- role関連backend tests: 96 pass
+- frontend lint: pass
+- frontend build: pass
+- backend tests: 113 pass
+- backend check: pass
+- makemigrations dry-run: no changes detected
+
+### Next
+
+- 実ブラウザでowner / staff両方の導線を確認する。
+- SettingsのCategory / Unit管理は、この後の `2026-07-24 Category unit permission alignment` でowner限定へ揃えた。
+- DEMO_MODE固有の追加禁止操作は `deny_in_demo()` で別途実装する。
+
+## 2026-07-24 Category unit permission alignment
+
+AWS公開デモ前に、Settings内のCategory / Unit管理をowner限定へ揃えた。
+
+### Summary
+
+- Category / UnitのGETはowner / staffとも参照可能なまま維持した。
+- Category / Unitの作成・編集・削除はAPI側でowner限定にした。
+- staffがCategory / Unit変更APIを直接叩いた場合は403になる。
+- Settings画面ではstaffにCategory / Unitの管理フォーム、編集ボタン、削除ボタンを表示しない。
+- staffには現在のカテゴリ・単位一覧と、管理はオーナーのみである旨を表示する。
+- README、API design、data model、MVP requirements、roadmap、screensのrole説明を更新した。
+
+### Key Files
+
+- `backend/api/views.py`
+- `backend/api/tests.py`
+- `frontend/src/pages/SettingsPage.tsx`
+- `docs/technical/api-design.md`
+- `docs/product/screens.md`
+- `docs/handoff/latest.md`
+
+### Verification
+
+- Category / Unit backend tests: 17 pass
+- frontend lint: pass
+- frontend build: pass
+- backend tests: 125 pass
+- backend check: pass
+- makemigrations dry-run: no changes detected
+- whitespace check: pass
+
+### Next
+
+- 実ブラウザでowner / staff両方のSettings表示を確認する。
+- DEMO_MODE固有の追加禁止操作は `deny_in_demo()` で別途実装する。

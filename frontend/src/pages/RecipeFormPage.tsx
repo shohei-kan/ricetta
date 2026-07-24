@@ -10,6 +10,7 @@ import {
   type RecipeFormPayload,
 } from '../api/recipes'
 import { fetchUnits, type Unit } from '../api/units'
+import { useAuth } from '../auth/useAuth'
 import { AutoResizeTextarea } from '../components/ui/AutoResizeTextarea'
 
 type RecipeFormPageProps = {
@@ -68,6 +69,7 @@ const emptyStepRow: StepRow = {
 }
 
 export function RecipeFormPage({ id, navigate }: RecipeFormPageProps) {
+  const { session } = useAuth()
   const isEdit = id !== undefined
   const [form, setForm] = useState<FormState>(initialFormState)
   const [categories, setCategories] = useState<Category[]>([])
@@ -152,6 +154,7 @@ export function RecipeFormPage({ id, navigate }: RecipeFormPageProps) {
     () => ingredients.filter((ingredient) => ingredient.name),
     [ingredients],
   )
+  const canManageRecipes = session?.membership.role === 'owner'
 
   function updateForm(updates: Partial<FormState>) {
     setForm((current) => ({ ...current, ...updates }))
@@ -255,6 +258,16 @@ export function RecipeFormPage({ id, navigate }: RecipeFormPageProps) {
           {loadError}
         </div>
       </div>
+    )
+  }
+
+  if (!canManageRecipes) {
+    return (
+      <ForbiddenFormPage
+        backLabel="← レシピ一覧へ"
+        message="レシピの作成・編集はオーナーのみ利用できます。"
+        navigate={() => navigate('/recipes')}
+      />
     )
   }
 
@@ -535,6 +548,31 @@ export function RecipeFormPage({ id, navigate }: RecipeFormPageProps) {
         </div>
         </div>
       </form>
+    </div>
+  )
+}
+
+function ForbiddenFormPage({
+  backLabel,
+  message,
+  navigate,
+}: {
+  backLabel: string
+  message: string
+  navigate: () => void
+}) {
+  return (
+    <div className="mx-auto max-w-4xl px-5 py-6 md:px-7 md:py-8">
+      <button
+        className="mb-5 rounded-lg border border-[#dfd1bf] bg-[#fffdf9] px-4 py-3 text-base font-bold text-[#5d5148] transition hover:bg-[#fbf7f0]"
+        onClick={navigate}
+        type="button"
+      >
+        {backLabel}
+      </button>
+      <div className="rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-6 text-[#75685e] shadow-sm">
+        {message}
+      </div>
     </div>
   )
 }

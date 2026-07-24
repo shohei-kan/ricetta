@@ -5,6 +5,7 @@ import {
   type IngredientCostMode,
   type IngredientListItem,
 } from '../api/ingredients'
+import { useAuth } from '../auth/useAuth'
 import { EmptyState } from '../components/EmptyState'
 
 type IngredientListPageProps = {
@@ -18,6 +19,7 @@ const costModeLabels: Record<IngredientCostMode, string> = {
 }
 
 export function IngredientListPage({ navigate }: IngredientListPageProps) {
+  const { session } = useAuth()
   const [ingredients, setIngredients] = useState<IngredientListItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -57,6 +59,8 @@ export function IngredientListPage({ navigate }: IngredientListPageProps) {
     setQuery(searchInput.trim())
   }
 
+  const canManageIngredients = session?.membership.role === 'owner'
+
   return (
     <div className="mx-auto max-w-7xl px-5 py-6 md:px-8 md:py-8">
       <div className="mb-6 flex flex-col gap-4 border-b border-[#ded2c2] pb-5 lg:flex-row lg:items-end lg:justify-between">
@@ -69,13 +73,15 @@ export function IngredientListPage({ navigate }: IngredientListPageProps) {
             仕入先、原価計算モード、単価を確認する材料マスターです。
           </p>
         </div>
-        <button
-          className="rounded-lg bg-[#c76738] px-5 py-3 text-base font-bold text-white shadow-[0_8px_18px_rgba(198,103,56,0.22)] transition hover:bg-[#b65b31]"
-          onClick={() => navigate('/ingredients/new')}
-          type="button"
-        >
-          材料を追加
-        </button>
+        {canManageIngredients && (
+          <button
+            className="rounded-lg bg-[#c76738] px-5 py-3 text-base font-bold text-white shadow-[0_8px_18px_rgba(198,103,56,0.22)] transition hover:bg-[#b65b31]"
+            onClick={() => navigate('/ingredients/new')}
+            type="button"
+          >
+            材料を追加
+          </button>
+        )}
       </div>
 
       <form

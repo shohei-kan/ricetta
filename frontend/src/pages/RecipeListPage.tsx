@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { fetchRecipes, type RecipeListItem } from '../api/recipes'
 import { emptyRecipeAdd, emptyRecipeSearch, leafSprigSimple } from '../assets'
+import { useAuth } from '../auth/useAuth'
 import { EmptyState } from '../components/EmptyState'
 
 type RecipeListPageProps = {
@@ -8,6 +9,7 @@ type RecipeListPageProps = {
 }
 
 export function RecipeListPage({ navigate }: RecipeListPageProps) {
+  const { session } = useAuth()
   const [recipes, setRecipes] = useState<RecipeListItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -47,6 +49,8 @@ export function RecipeListPage({ navigate }: RecipeListPageProps) {
     setQuery(searchInput.trim())
   }
 
+  const canManageRecipes = session?.membership.role === 'owner'
+
   return (
     <div className="mx-auto max-w-7xl px-5 py-6 md:px-8 md:py-8">
       <div className="mb-6 flex flex-col gap-4 border-b border-[#ded2c2] pb-5 md:flex-row md:items-end md:justify-between">
@@ -67,13 +71,15 @@ export function RecipeListPage({ navigate }: RecipeListPageProps) {
             仕込み場で確認するレシピ台帳です。材料と作り方をすぐ開けるようにします。
           </p>
         </div>
-        <button
-          className="rounded-lg bg-[#c76738] px-5 py-3 text-base font-bold text-white shadow-[0_8px_18px_rgba(198,103,56,0.22)] transition hover:bg-[#b65b31]"
-          onClick={() => navigate('/recipes/new')}
-          type="button"
-        >
-          レシピを追加
-        </button>
+        {canManageRecipes && (
+          <button
+            className="rounded-lg bg-[#c76738] px-5 py-3 text-base font-bold text-white shadow-[0_8px_18px_rgba(198,103,56,0.22)] transition hover:bg-[#b65b31]"
+            onClick={() => navigate('/recipes/new')}
+            type="button"
+          >
+            レシピを追加
+          </button>
+        )}
       </div>
 
       <form

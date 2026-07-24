@@ -4,6 +4,7 @@ import {
   type IngredientCostMode,
   type IngredientDetail,
 } from '../api/ingredients'
+import { useAuth } from '../auth/useAuth'
 
 type IngredientDetailPageProps = {
   id: number
@@ -94,7 +95,9 @@ function IngredientDetailContent({
   ingredient: IngredientDetail
   navigate: (path: string) => void
 }) {
+  const { session } = useAuth()
   const mode = costModeText[ingredient.cost_mode]
+  const canManageIngredients = session?.membership.role === 'owner'
 
   return (
     <>
@@ -106,13 +109,15 @@ function IngredientDetailContent({
         <p className="mt-4 text-xl font-bold text-[#c76738]">
           {ingredient.unit_cost_label ?? '計算なし'}
         </p>
-        <button
-          className="mt-5 rounded-lg bg-[#c76738] px-5 py-3 text-base font-bold text-white transition hover:bg-[#b65b31]"
-          onClick={() => navigate(`/ingredients/${ingredient.id}/edit`)}
-          type="button"
-        >
-          編集
-        </button>
+        {canManageIngredients && (
+          <button
+            className="mt-5 rounded-lg bg-[#c76738] px-5 py-3 text-base font-bold text-white transition hover:bg-[#b65b31]"
+            onClick={() => navigate(`/ingredients/${ingredient.id}/edit`)}
+            type="button"
+          >
+            編集
+          </button>
+        )}
       </header>
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(340px,0.9fr)]">

@@ -227,9 +227,11 @@ frontendはDjango Session Authenticationを利用します。ログイン前に 
 
 ローカル開発ではViteの `http://localhost:5173` とDocker frontendの `http://localhost:5174` をtrusted originに設定しています。本番では環境変数から本番Originだけを指定する想定です。
 
-### Role-based shop editing
+### Role-based permissions
 
-Membershipには `owner` / `staff` のroleがあります。店舗情報の更新では、現在MembershipがownerであることをAPI側で確認し、staffからの更新には403を返します。表示名はowner / staffとも自分のMembershipだけを更新できます。
+Membershipには `owner` / `staff` のroleがあります。ownerはレシピ・材料・カテゴリ・単位・店舗情報を作成/編集でき、staffはレシピ・材料・カテゴリ・単位を参照しつつ、Prep Todayの仕込みタスクとメモを操作できます。
+
+API側では、Recipe / Ingredient / Category / Unit / Shopの管理系更新にowner権限を確認し、staffからの作成・更新・削除には403を返します。表示名はowner / staffとも自分のMembershipだけを更新できます。
 
 ### Ingredient cost calculation modes
 
@@ -306,9 +308,11 @@ Representative endpoints:
 | GET / PATCH | `/api/v1/auth/me/` | 現在ユーザー取得、表示名更新 |
 | GET / PATCH | `/api/v1/shop/me/` | 現在店舗取得、ownerによる更新 |
 | GET | `/api/v1/dashboard/` | 今日の現場サマリー |
-| GET / POST | `/api/v1/recipes/` | レシピ一覧・作成 |
-| GET / PATCH / DELETE | `/api/v1/recipes/{id}/` | レシピ詳細・更新・論理削除 |
-| GET / POST | `/api/v1/ingredients/` | 材料一覧・作成 |
+| GET / POST | `/api/v1/recipes/` | レシピ一覧・ownerによる作成 |
+| GET / PATCH / DELETE | `/api/v1/recipes/{id}/` | レシピ詳細・ownerによる更新・論理削除 |
+| GET / POST | `/api/v1/ingredients/` | 材料一覧・ownerによる作成 |
+| GET / POST | `/api/v1/categories/` | カテゴリ一覧・ownerによる作成 |
+| GET / POST | `/api/v1/units/` | 単位一覧・ownerによる店舗独自単位作成 |
 | GET / POST | `/api/v1/prep-tasks/` | 仕込み一覧・作成 |
 | PATCH | `/api/v1/prep-tasks/{id}/status/` | 仕込みstatus更新 |
 

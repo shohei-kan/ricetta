@@ -650,9 +650,12 @@ Shop 1 - 0..1 Subscription
 
 ### 権限
 
-MVPではOwner中心で実装します。
+MVPでは `owner` / `staff` の2権限を使います。
 
-Membershipは作っておきますが、細かなStaff制御は後回しにします。
+- owner: レシピ、材料、カテゴリ、単位、店舗情報の作成・編集ができる
+- staff: レシピ、材料、カテゴリ、単位を参照でき、Prep Todayの仕込みタスクとメモを操作できる
+
+高度な権限管理やロール追加は将来拡張に残します。
 
 ### Subscription
 

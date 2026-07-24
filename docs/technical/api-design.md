@@ -247,6 +247,8 @@ staffが更新しようとした場合は `403 Forbidden` を返す。
 
 レシピ一覧を取得する。
 
+owner / staffとも閲覧できる。
+
 ### Query Params
 
 ```text
@@ -283,6 +285,8 @@ category=1
 ## POST /api/v1/recipes/
 
 レシピを作成する。
+
+`Membership.role=owner` のユーザーのみ実行できる。staffが実行した場合は `403 Forbidden`。
 
 `shop_id` は受け取りません。サーバー側でログイン中ユーザーのMembershipから現在Shopを特定して設定します。
 
@@ -387,6 +391,8 @@ Recipeで指定できるCategoryは現在ShopのCategoryのみです。Unitは�
 
 レシピ詳細を取得する。
 
+owner / staffとも閲覧できる。
+
 ### Response
 
 ```json
@@ -476,6 +482,8 @@ MVPでは、原価計算するIngredientのRecipeIngredient単位はIngredient�
 
 レシピを更新する。
 
+`Membership.role=owner` のユーザーのみ実行できる。staffが実行した場合は `403 Forbidden`。
+
 ### Request
 
 POSTと同じ構造を基本にする。
@@ -487,6 +495,8 @@ MVPでは、`ingredients` または `steps` が送られた場合、既存のRec
 ## DELETE /api/v1/recipes/{id}/
 
 レシピを削除する。
+
+`Membership.role=owner` のユーザーのみ実行できる。staffが実行した場合は `403 Forbidden`。
 
 MVPでは `is_active=false` による論理削除です。一覧・詳細・更新・削除は現在Shopの `is_active=true` のRecipeのみ対象です。
 
@@ -503,6 +513,8 @@ MVPでは `is_active=false` による論理削除です。一覧・詳細・更�
 ## GET /api/v1/ingredients/
 
 材料一覧を取得する。
+
+owner / staffとも閲覧できる。
 
 ログイン中ユーザーの現在Shopに紐づく `is_active=true` のIngredientのみ返す。
 
@@ -553,6 +565,8 @@ q=トマト
 ## POST /api/v1/ingredients/
 
 材料を作成する。
+
+`Membership.role=owner` のユーザーのみ実行できる。staffが実行した場合は `403 Forbidden`。
 
 作成時はフロントから `shop_id` を受け取らず、サーバー側で現在Shopを設定する。
 
@@ -618,6 +632,8 @@ Unit指定は `shop = null` の標準Unit、または現在Shopの店舗独自Un
 
 材料詳細を取得する。
 
+owner / staffとも閲覧できる。
+
 現在ShopのIngredientのみ取得できる。他ShopのIngredientは `404 Not Found`。
 
 ---
@@ -625,6 +641,8 @@ Unit指定は `shop = null` の標準Unit、または現在Shopの店舗独自Un
 ## PATCH /api/v1/ingredients/{id}/
 
 材料を更新する。
+
+`Membership.role=owner` のユーザーのみ実行できる。staffが実行した場合は `403 Forbidden`。
 
 現在ShopのIngredientのみ更新できる。
 
@@ -659,6 +677,8 @@ Unit指定は `shop = null` の標準Unit、または現在Shopの店舗独自Un
 ## DELETE /api/v1/ingredients/{id}/
 
 材料を削除する。
+
+`Membership.role=owner` のユーザーのみ実行できる。staffが実行した場合は `403 Forbidden`。
 
 MVPでは `is_active=false` による論理削除とする。
 
@@ -728,6 +748,8 @@ date=2026-05-05
 
 仕込みタスクを作成する。
 
+owner / staffとも実行できる。
+
 `shop_id` は受け取らない。サーバー側でログイン中ユーザーのMembershipから現在Shopを特定して設定する。
 
 指定できるRecipeは現在Shopの `is_active=true` のRecipeのみ。指定できるUnitは標準Unitまたは現在ShopのUnitのみ。
@@ -793,6 +815,8 @@ date=2026-05-05
 ## PATCH /api/v1/prep-tasks/{id}/status/
 
 仕込みタスクのステータスを更新する。
+
+owner / staffとも実行できる。
 
 ### Request
 
@@ -886,6 +910,8 @@ include_archived=1
 
 メモを追加する。
 
+owner / staffとも実行できる。
+
 `shop_id` は受け取らない。サーバー側でログイン中ユーザーのMembershipから現在Shopを特定して設定する。
 
 ### Request
@@ -900,11 +926,15 @@ include_archived=1
 
 メモをアーカイブする。
 
+owner / staffとも実行できる。
+
 Prep Todayでは未チェックメモのチェック操作でこのAPIを呼ぶ。アーカイブ後もチェックした当日中は、同じメモカード内の「チェック済み」エリアに薄く表示する。
 
 ## PATCH /api/v1/board-memos/{id}/unarchive/
 
 メモのアーカイブを取り消す。
+
+owner / staffとも実行できる。
 
 Prep Todayではチェック済みメモを再度クリックした場合にこのAPIを呼び、未チェックエリアへ戻す。
 
@@ -915,6 +945,8 @@ Prep Todayではチェック済みメモを再度クリックした場合にこ�
 ## GET /api/v1/categories/
 
 レシピカテゴリ一覧を取得する。
+
+owner / staffとも参照できる。Recipe作成・編集フォームの選択肢としても利用する。
 
 ### Response
 
@@ -939,6 +971,8 @@ Prep Todayではチェック済みメモを再度クリックした場合にこ�
 
 カテゴリを作成する。
 
+`Membership.role=owner` のユーザーのみ実行できる。staffが実行した場合は `403 Forbidden`。
+
 ### Request
 
 ```json
@@ -954,6 +988,8 @@ Prep Todayではチェック済みメモを再度クリックした場合にこ�
 
 カテゴリを更新する。
 
+`Membership.role=owner` のユーザーのみ実行できる。staffが実行した場合は `403 Forbidden`。
+
 ログイン中ユーザーの現在Shopに紐づくカテゴリのみ更新できる。
 
 ---
@@ -961,6 +997,8 @@ Prep Todayではチェック済みメモを再度クリックした場合にこ�
 ## DELETE /api/v1/categories/{id}/
 
 カテゴリを削除する。
+
+`Membership.role=owner` のユーザーのみ実行できる。staffが実行した場合は `403 Forbidden`。
 
 MVPでは `is_active=false` による論理削除とする。
 
@@ -973,6 +1011,8 @@ MVPでは `is_active=false` による論理削除とする。
 ## GET /api/v1/units/
 
 単位一覧を取得する。
+
+owner / staffとも参照できる。Recipe / Ingredient / PrepTaskの入力選択肢としても利用する。
 
 `shop = null` の標準単位と、ログイン中ユーザーの現在Shopに紐づく店舗独自単位を返す。
 
@@ -1003,6 +1043,8 @@ MVPでは `is_active=false` による論理削除とする。
 
 店舗独自の単位を作成する。
 
+`Membership.role=owner` のユーザーのみ実行できる。staffが実行した場合は `403 Forbidden`。
+
 ### Request
 
 ```json
@@ -1018,6 +1060,8 @@ MVPでは `is_active=false` による論理削除とする。
 
 単位を更新する。
 
+`Membership.role=owner` のユーザーのみ実行できる。staffが実行した場合は `403 Forbidden`。
+
 標準単位（`shop = null`）は更新できない。店舗独自単位のみ更新できる。
 
 ---
@@ -1025,6 +1069,8 @@ MVPでは `is_active=false` による論理削除とする。
 ## DELETE /api/v1/units/{id}/
 
 単位を削除する。
+
+`Membership.role=owner` のユーザーのみ実行できる。staffが実行した場合は `403 Forbidden`。
 
 標準単位（`shop = null`）は削除できない。店舗独自単位のみ `is_active=false` による論理削除とする。
 

@@ -9,6 +9,7 @@ import {
   type IngredientFormPayload,
 } from '../api/ingredients'
 import { fetchUnits, type Unit } from '../api/units'
+import { useAuth } from '../auth/useAuth'
 import { AutoResizeTextarea } from '../components/ui/AutoResizeTextarea'
 
 type IngredientFormPageProps = {
@@ -65,6 +66,7 @@ const costModeOptions: Array<{
 ]
 
 export function IngredientFormPage({ id, navigate }: IngredientFormPageProps) {
+  const { session } = useAuth()
   const isEdit = id !== undefined
   const [form, setForm] = useState<FormState>(initialFormState)
   const [units, setUnits] = useState<Unit[]>([])
@@ -145,6 +147,7 @@ export function IngredientFormPage({ id, navigate }: IngredientFormPageProps) {
     () => units.find((unit) => String(unit.id) === form.usage_unit_id),
     [form.usage_unit_id, units],
   )
+  const canManageIngredients = session?.membership.role === 'owner'
 
   function updateForm(updates: Partial<FormState>) {
     setForm((current) => {
@@ -217,6 +220,16 @@ export function IngredientFormPage({ id, navigate }: IngredientFormPageProps) {
           {loadError}
         </div>
       </div>
+    )
+  }
+
+  if (!canManageIngredients) {
+    return (
+      <ForbiddenFormPage
+        backLabel="← 材料一覧へ"
+        message="材料の作成・編集はオーナーのみ利用できます。"
+        navigate={() => navigate('/ingredients')}
+      />
     )
   }
 
@@ -404,6 +417,31 @@ export function IngredientFormPage({ id, navigate }: IngredientFormPageProps) {
           </button>
         </div>
       </form>
+    </div>
+  )
+}
+
+function ForbiddenFormPage({
+  backLabel,
+  message,
+  navigate,
+}: {
+  backLabel: string
+  message: string
+  navigate: () => void
+}) {
+  return (
+    <div className="mx-auto max-w-4xl px-5 py-6 md:px-7 md:py-8">
+      <button
+        className="mb-5 rounded-lg border border-[#dfd1bf] bg-[#fffdf9] px-4 py-3 text-base font-bold text-[#5d5148] transition hover:bg-[#fbf7f0]"
+        onClick={navigate}
+        type="button"
+      >
+        {backLabel}
+      </button>
+      <div className="rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-6 text-[#75685e] shadow-sm">
+        {message}
+      </div>
     </div>
   )
 }

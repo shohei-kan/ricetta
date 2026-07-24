@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type TouchEvent } from 'react'
 import { fetchRecipeDetail, type RecipeDetail } from '../api/recipes'
+import { useAuth } from '../auth/useAuth'
 
 type RecipeDetailPageProps = {
   id: number
@@ -67,8 +68,10 @@ function RecipeDetailContent({
   navigate: (path: string) => void
   recipe: RecipeDetail
 }) {
+  const { session } = useAuth()
   const [activeTab, setActiveTab] = useState<RecipeDetailTab>('overview')
   const touchStart = useRef<{ x: number; y: number } | null>(null)
+  const canManageRecipes = session?.membership.role === 'owner'
 
   const tabs: Array<{ id: RecipeDetailTab; label: string }> = [
     { id: 'overview', label: '概要' },
@@ -117,17 +120,19 @@ function RecipeDetailContent({
         className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
       >
         <BackButton navigate={navigate} withBottomMargin={false} />
-        <div
-          className={activeTab === 'overview' ? 'block' : 'hidden lg:block'}
-        >
-          <button
-            className="min-h-12 rounded-lg border border-[#dfd1bf] bg-white px-5 py-3 text-base font-bold text-[#5d5148] transition hover:bg-[#fbf7f0]"
-            onClick={() => navigate(`/recipes/${recipe.id}/edit`)}
-            type="button"
+        {canManageRecipes && (
+          <div
+            className={activeTab === 'overview' ? 'block' : 'hidden lg:block'}
           >
-            編集
-          </button>
-        </div>
+            <button
+              className="min-h-12 rounded-lg border border-[#dfd1bf] bg-white px-5 py-3 text-base font-bold text-[#5d5148] transition hover:bg-[#fbf7f0]"
+              onClick={() => navigate(`/recipes/${recipe.id}/edit`)}
+              type="button"
+            >
+              編集
+            </button>
+          </div>
+        )}
       </div>
 
       <header className="rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-5 pb-4 shadow-sm md:p-6 md:pb-5">
