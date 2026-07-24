@@ -1,3 +1,6 @@
+from datetime import date
+from typing import Any, Optional, cast
+
 from django.contrib.auth import login, logout
 from django.db.models import Case, Count, IntegerField, Q, Value, When
 from django.utils.decorators import method_decorator
@@ -8,6 +11,7 @@ from rest_framework.decorators import action, api_view
 from rest_framework import status, viewsets
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.request import Request
 from rest_framework.views import APIView
 
 from .models import BoardMemo, Category, Ingredient, PrepTask, Recipe, Unit
@@ -32,6 +36,11 @@ from .shop_scope import (
 )
 
 
+def get_query_param(request: Request, key: str) -> Optional[str]:
+    value = request.query_params.get(key)
+    return value if isinstance(value, str) else None
+
+
 @api_view(['GET'])
 def health_check(request):
     return Response({'status': 'ok'})
@@ -46,7 +55,8 @@ class LoginView(APIView):
             context={"request": request},
         )
         serializer.is_valid(raise_exception=True)
-        user = serializer.validated_data["user"]
+        validated_data = cast(dict[str, Any], serializer.validated_data)
+        user = validated_data["user"]
         membership = get_current_membership(user)
         login(request, user)
         return Response(AuthMeSerializer(membership).data)
@@ -106,7 +116,7 @@ class ShopMeView(APIView):
 class DashboardView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get(self, request):
+    def get(self, request: Request):
         shop = get_current_shop(request.user)
         target_date = self._target_date(request)
         if target_date is None:
@@ -119,9 +129,11 @@ class DashboardView(APIView):
             "recipe",
             "planned_unit",
         ).filter(shop=shop).filter(active_prep_task_filter(target_date))
-        prep_summary = {status_value: 0 for status_value, _label in PrepTask.Status.choices}
+        prep_summary = {
+            str(status_value): 0 for status_value, _label in PrepTask.Status.choices
+        }
         for task in prep_tasks:
-            prep_summary[task.status] += 1
+            prep_summary[str(task.status)] += 1
 
         next_tasks = prep_tasks.exclude(status=PrepTask.Status.DONE).order_by(
             prep_status_sort_order(),
@@ -158,8 +170,8 @@ class DashboardView(APIView):
             }
         )
 
-    def _target_date(self, request):
-        date_value = request.query_params.get("date")
+    def _target_date(self, request: Request) -> Optional[date]:
+        date_value = get_query_param(request, "date")
         if not date_value:
             return timezone.localdate()
         return parse_date(date_value)
@@ -262,7 +274,8 @@ class IngredientViewSet(viewsets.ModelViewSet):
             "conversion_from_unit",
             "conversion_to_unit",
         ).filter(shop=shop, is_active=True)
-        query = self.request.query_params.get("q")
+        request = cast(Request, self.request)
+        query = get_query_param(request, "q")
         if query:
             queryset = queryset.filter(name__icontains=query)
         return queryset
@@ -301,10 +314,11 @@ class RecipeViewSet(viewsets.ModelViewSet):
             )
             .filter(shop=shop, is_active=True)
         )
-        query = self.request.query_params.get("q")
+        request = cast(Request, self.request)
+        query = get_query_param(request, "q")
         if query:
             queryset = queryset.filter(name__icontains=query)
-        category_id = self.request.query_params.get("category")
+        category_id = get_query_param(request, "category")
         if category_id:
             queryset = queryset.filter(category_id=category_id)
         return queryset
@@ -333,7 +347,7 @@ class PrepTaskViewSet(viewsets.ModelViewSet):
             "planned_unit",
         ).filter(shop=shop).order_by("sort_order", "id")
 
-    def list(self, request, *args, **kwargs):
+    def list(self, request: Request, *args: Any, **kwargs: Any):
         target_date = self._target_date(request)
         if target_date is None:
             return Response(
@@ -343,9 +357,11 @@ class PrepTaskViewSet(viewsets.ModelViewSet):
 
         queryset = self.get_queryset().filter(active_prep_task_filter(target_date))
         serializer = self.get_serializer(queryset, many=True)
-        summary = {status_value: 0 for status_value, _label in PrepTask.Status.choices}
+        summary = {
+            str(status_value): 0 for status_value, _label in PrepTask.Status.choices
+        }
         for task in queryset:
-            summary[task.status] += 1
+            summary[str(task.status)] += 1
 
         return Response(
             {
@@ -360,15 +376,15 @@ class PrepTaskViewSet(viewsets.ModelViewSet):
         serializer.save(shop=shop)
 
     @action(detail=True, methods=["patch"], url_path="status")
-    def update_status(self, request, pk=None):
+    def update_status(self, request: Request, pk: Any = None):
         task = self.get_object()
         serializer = PrepTaskStatusSerializer(task, data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)
 
-    def _target_date(self, request):
-        date_value = request.query_params.get("date")
+    def _target_date(self, request: Request) -> Optional[date]:
+        date_value = get_query_param(request, "date")
         if not date_value:
             return timezone.localdate()
         return parse_date(date_value)
@@ -383,9 +399,9 @@ class BoardMemoViewSet(viewsets.ModelViewSet):
         shop = get_current_shop(self.request.user)
         return BoardMemo.objects.filter(shop=shop)
 
-    def list(self, request, *args, **kwargs):
+    def list(self, request: Request, *args: Any, **kwargs: Any):
         queryset = self.get_queryset()
-        if self.request.query_params.get("include_archived") in {"1", "true"}:
+        if get_query_param(request, "include_archived") in {"1", "true"}:
             memos = list(queryset.order_by("-updated_at", "-id"))
         else:
             target_date = timezone.localdate()
