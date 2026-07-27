@@ -4,7 +4,7 @@ from .models import Ingredient
 
 
 def calculate_recipe_cost_summary(recipe):
-    material_cost = Decimal("0")
+    total_material_cost = Decimal("0")
     for recipe_ingredient in recipe.ingredients.select_related(
         "ingredient",
         "ingredient__usage_unit",
@@ -13,8 +13,12 @@ def calculate_recipe_cost_summary(recipe):
         "ingredient__conversion_to_unit",
         "unit",
     ):
-        material_cost += _calculate_recipe_ingredient_cost(recipe_ingredient)
+        total_material_cost += _calculate_recipe_ingredient_cost(recipe_ingredient)
 
+    material_cost = _calculate_unit_material_cost(
+        total_material_cost,
+        recipe.base_yield_quantity,
+    )
     selling_price = recipe.selling_price
     gross_profit = None
     cost_rate = None
@@ -29,6 +33,16 @@ def calculate_recipe_cost_summary(recipe):
         "cost_rate": _format_rate(cost_rate) if cost_rate is not None else None,
         "gross_profit": _format_amount(gross_profit) if gross_profit is not None else None,
     }
+
+
+def _calculate_unit_material_cost(total_material_cost, base_yield_quantity):
+    try:
+        base_quantity = Decimal(base_yield_quantity)
+        if base_quantity > 0:
+            return Decimal(total_material_cost) / base_quantity
+    except (InvalidOperation, TypeError, ZeroDivisionError):
+        return Decimal(total_material_cost)
+    return Decimal(total_material_cost)
 
 
 def _calculate_recipe_ingredient_cost(recipe_ingredient):

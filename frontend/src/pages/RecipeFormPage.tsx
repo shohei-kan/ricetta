@@ -8,6 +8,7 @@ import {
   updateRecipe,
   type RecipeDetail,
   type RecipeFormPayload,
+  type RecipeType,
 } from '../api/recipes'
 import { fetchUnits, type Unit } from '../api/units'
 import { useAuth } from '../auth/useAuth'
@@ -34,6 +35,7 @@ type FormState = {
   name: string
   category_id: string
   description: string
+  recipe_type: RecipeType
   base_yield_quantity: string
   base_yield_unit_id: string
   selling_price: string
@@ -47,6 +49,7 @@ const initialFormState: FormState = {
   name: '',
   category_id: '',
   description: '',
+  recipe_type: 'prep',
   base_yield_quantity: '1',
   base_yield_unit_id: '',
   selling_price: '',
@@ -316,16 +319,26 @@ export function RecipeFormPage({ id, navigate }: RecipeFormPageProps) {
               placeholder="カテゴリなし"
               value={form.category_id}
             />
+            <SelectField
+              label="用途"
+              onChange={(value) => updateForm({ recipe_type: value as RecipeType })}
+              options={[
+                { label: '仕込み用・中間材料', value: 'prep' },
+                { label: '販売商品', value: 'menu' },
+              ]}
+              required
+              value={form.recipe_type}
+            />
             <TextField
               inputMode="decimal"
-              label="基準量"
+              label="出来上がり量"
               onChange={(value) => updateForm({ base_yield_quantity: value })}
               required
               value={form.base_yield_quantity}
             />
             <SelectField
               disabled={optionsLoading}
-              label="基準単位"
+              label="出来上がり単位"
               onChange={(value) => updateForm({ base_yield_unit_id: value })}
               options={units.map((unit) => ({ label: unit.name, value: String(unit.id) }))}
               required
@@ -651,6 +664,7 @@ function toFormState(recipe: RecipeDetail): FormState {
     name: recipe.name,
     category_id: recipe.category ? String(recipe.category.id) : '',
     description: recipe.description,
+    recipe_type: recipe.recipe_type,
     base_yield_quantity: recipe.base_yield_quantity,
     base_yield_unit_id: String(recipe.base_yield_unit.id),
     selling_price: recipe.selling_price ?? '',
@@ -682,6 +696,7 @@ function toPayload(form: FormState): RecipeFormPayload {
     category_id: toNumberOrNull(form.category_id),
     description: form.description.trim(),
     main_image: null,
+    recipe_type: form.recipe_type,
     base_yield_quantity: form.base_yield_quantity,
     base_yield_unit_id: Number(form.base_yield_unit_id),
     selling_price: form.selling_price.trim() ? form.selling_price : null,
@@ -708,9 +723,9 @@ function validateForm(form: FormState) {
   if (!form.name.trim()) {
     errors.push('レシピ名を入力してください。')
   }
-  validatePositive(form.base_yield_quantity, '基準量', errors)
+  validatePositive(form.base_yield_quantity, '出来上がり量', errors)
   if (!form.base_yield_unit_id) {
-    errors.push('基準単位を選択してください。')
+    errors.push('出来上がり単位を選択してください。')
   }
   if (form.selling_price.trim()) {
     validateNonNegative(form.selling_price, '販売価格', errors)

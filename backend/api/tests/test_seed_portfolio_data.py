@@ -41,10 +41,37 @@ class PortfolioSeedCommandTests(TestCase):
         for unit_name in ["g", "kg", "ml", "L", "個", "本", "枚", "食分"]:
             self.assertTrue(Unit.objects.filter(shop=None, name=unit_name).exists())
 
+        tomato = Recipe.objects.get(shop=shop, name="トマトソース")
+        pickles = Recipe.objects.get(shop=shop, name="ピクルス")
         caponata = Recipe.objects.get(shop=shop, name="カポナータ")
+        creme_brulee = Recipe.objects.get(shop=shop, name="クレームブリュレ")
+        self.assertEqual(tomato.recipe_type, Recipe.RecipeType.PREP)
+        self.assertEqual(tomato.base_yield_quantity, Decimal("2.5"))
+        self.assertEqual(tomato.base_yield_unit.name, "kg")
+        self.assertEqual(pickles.recipe_type, Recipe.RecipeType.PREP)
+        self.assertEqual(pickles.base_yield_quantity, Decimal("1"))
+        self.assertEqual(pickles.base_yield_unit.name, "kg")
         self.assertEqual(caponata.ingredients.count(), 12)
         self.assertEqual(caponata.steps.count(), 6)
+        self.assertEqual(caponata.recipe_type, Recipe.RecipeType.MENU)
+        self.assertEqual(caponata.base_yield_quantity, Decimal("8"))
+        self.assertEqual(caponata.base_yield_unit.name, "食分")
         self.assertIsNotNone(caponata.selling_price)
+        self.assertEqual(creme_brulee.recipe_type, Recipe.RecipeType.MENU)
+        self.assertEqual(creme_brulee.base_yield_quantity, Decimal("6"))
+        self.assertEqual(creme_brulee.base_yield_unit.name, "個")
+        self.assertEqual(
+            {
+                recipe.name: recipe.recipe_type
+                for recipe in Recipe.objects.filter(shop=shop)
+            },
+            {
+                "トマトソース": Recipe.RecipeType.PREP,
+                "ピクルス": Recipe.RecipeType.PREP,
+                "カポナータ": Recipe.RecipeType.MENU,
+                "クレームブリュレ": Recipe.RecipeType.MENU,
+            },
+        )
 
         prep_statuses = {
             task.recipe.name: task.status

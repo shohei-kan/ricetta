@@ -155,7 +155,7 @@ function RecipeCard({
       </p>
       <h2 className="mt-2 text-2xl font-bold leading-8 text-[#2e2822]">{recipe.name}</h2>
       <p className="mt-3 text-base font-bold text-[#6f6258]">
-        基準: {formatQuantity(recipe.base_yield_quantity)} {recipe.base_yield_unit.name}
+        出来上がり量: {formatQuantity(recipe.base_yield_quantity)} {recipe.base_yield_unit.name}
       </p>
       <p className="mt-2 text-sm text-[#8a7a6d]">更新: {formatDate(recipe.updated_at)}</p>
     </button>

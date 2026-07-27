@@ -259,6 +259,10 @@ class Ingredient(TimeStampedModel):
 
 
 class Recipe(TimeStampedModel):
+    class RecipeType(models.TextChoices):
+        PREP = "prep", "仕込み用"
+        MENU = "menu", "販売商品"
+
     shop = models.ForeignKey(
         Shop,
         on_delete=models.CASCADE,
@@ -274,6 +278,11 @@ class Recipe(TimeStampedModel):
     )
     description = models.TextField(blank=True)
     main_image = models.URLField(blank=True, null=True)
+    recipe_type = models.CharField(
+        max_length=20,
+        choices=RecipeType.choices,
+        default=RecipeType.PREP,
+    )
     base_yield_quantity = models.DecimalField(max_digits=10, decimal_places=2)
     base_yield_unit = models.ForeignKey(
         Unit,

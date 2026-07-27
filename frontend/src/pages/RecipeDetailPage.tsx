@@ -144,7 +144,7 @@ function RecipeDetailContent({
             {recipe.name}
           </h1>
           <p className="mt-3 text-lg font-bold text-[#c76738] md:text-xl">
-            基準: {formatQuantity(recipe.base_yield_quantity)} {recipe.base_yield_unit.name}
+            出来上がり量: {formatQuantity(recipe.base_yield_quantity)} {recipe.base_yield_unit.name}
           </p>
           <p
             className={`${activeTab === 'overview' ? 'block' : 'hidden lg:block'} mt-4 whitespace-pre-wrap text-base leading-8 text-[#75685e]`}
@@ -326,22 +326,32 @@ function StepsPanel({ recipe }: { recipe: RecipeDetail }) {
 
 function CostSummaryCard({ recipe }: { recipe: RecipeDetail }) {
   const summary = recipe.cost_summary
+  const unitCostLabel = `1${recipe.base_yield_unit.name}`
+  const isPrepRecipe = recipe.recipe_type === 'prep'
 
   return (
     <section className="rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-5 shadow-sm md:p-6">
       <h2 className="text-2xl font-bold text-[#2e2822]">原価情報</h2>
-      <p className="mt-2 text-sm leading-6 text-[#75685e]">基準量あたりの原価サマリーです。</p>
-      <div className="mt-5 grid gap-3 sm:grid-cols-2">
+      <p className="mt-2 text-sm leading-6 text-[#75685e]">
+        {isPrepRecipe
+          ? `${unitCostLabel}あたりの材料原価です。`
+          : `${unitCostLabel}あたりの原価サマリーです。`}
+      </p>
+      <div className={`mt-5 grid gap-3 ${isPrepRecipe ? '' : 'sm:grid-cols-2'}`}>
         <SummaryRow label="材料原価" value={`${formatMoney(summary.material_cost)}円`} />
-        <SummaryRow
-          label="販売価格"
-          value={summary.selling_price === null ? '未設定' : `${formatMoney(summary.selling_price)}円`}
-        />
-        <SummaryRow label="原価率" value={summary.cost_rate === null ? '-' : `${summary.cost_rate}%`} />
-        <SummaryRow
-          label="粗利"
-          value={summary.gross_profit === null ? '-' : `${formatMoney(summary.gross_profit)}円`}
-        />
+        {!isPrepRecipe && (
+          <>
+            <SummaryRow
+              label="販売価格"
+              value={summary.selling_price === null ? '未設定' : `${formatMoney(summary.selling_price)}円`}
+            />
+            <SummaryRow label="原価率" value={summary.cost_rate === null ? '-' : `${summary.cost_rate}%`} />
+            <SummaryRow
+              label="粗利"
+              value={summary.gross_profit === null ? '-' : `${formatMoney(summary.gross_profit)}円`}
+            />
+          </>
+        )}
       </div>
     </section>
   )

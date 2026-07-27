@@ -147,8 +147,9 @@ MVPでは以下の2種類です。
 | category_id | FK / nullable | カテゴリ |
 | description | text | 説明 |
 | main_image | image / string | 完成写真 |
-| base_yield_quantity | decimal | 基準量 |
-| base_yield_unit_id | FK | 基準単位 |
+| recipe_type | string | 用途。`prep` または `menu` |
+| base_yield_quantity | decimal | 出来上がり量 |
+| base_yield_unit_id | FK | 出来上がり単位 |
 | selling_price | decimal / nullable | 販売価格 |
 | notes | text | 注意点・メモ |
 | allergen_notes | text | アレルゲンメモ |
@@ -164,8 +165,9 @@ MVPでは以下の2種類です。
 
 - name: トマトソース
 - category: 仕込み
-- base_yield_quantity: 1
-- base_yield_unit: バッチ
+- recipe_type: prep
+- base_yield_quantity: 2.5
+- base_yield_unit: kg
 - selling_price: null
 
 ### 店舗スコープとバリデーション
@@ -174,12 +176,19 @@ Recipeは必ずShopに紐づきます。作成時はフロントから `shop_id`
 
 一覧・詳細・更新・削除は現在Shopの `is_active=true` のRecipeのみ対象です。削除は `is_active=false` の論理削除です。
 
-Recipeで指定できるCategoryは現在ShopのCategoryのみです。`base_yield_unit` は以下に限定します。
+Recipeで指定できるCategoryは現在ShopのCategoryのみです。`base_yield_quantity` / `base_yield_unit` は出来上がり量として扱います。`base_yield_unit` は以下に限定します。
 
 - `shop = null` の標準Unit
 - 現在Shopの店舗独自Unit
 
 `base_yield_quantity` は0より大きい値、`selling_price` は未設定または0以上の値にします。
+
+`recipe_type` はレシピの用途を表します。
+
+- `prep`: 仕込み用・中間材料
+- `menu`: 販売商品
+
+用途と販売価格は別の概念です。販売価格が未設定の販売商品や、参考売価を持つ仕込み用レシピもあり得るため、UI表示は `recipe_type` を基準に切り替えます。
 
 ## RecipeIngredient
 
@@ -245,7 +254,7 @@ Recipe detail APIでは、材料欄に材料ごとの原価情報を混ぜず、
 
 | フィールド | 説明 |
 |---|---|
-| material_cost | 材料原価合計 |
+| material_cost | 出来上がり単位1単位あたりの材料原価 |
 | selling_price | 販売価格 |
 | cost_rate | 原価率。販売価格未設定ならnull |
 | gross_profit | 粗利。販売価格未設定ならnull |
@@ -255,7 +264,13 @@ Recipe detail APIでは、材料欄に材料ごとの原価情報を混ぜず、
 - `cost_mode=none`: 原価に含めない
 - `cost_mode=same_unit`: `purchase_price / purchase_quantity * quantity`
 - `cost_mode=conversion`: `purchase_price * conversion_from_quantity / purchase_quantity / conversion_to_quantity * quantity`
+- RecipeIngredientの材料原価を合計した後、`base_yield_quantity` が正の数なら割って1単位あたりの `material_cost` にする
 - `selling_price` が未設定の場合、`cost_rate` と `gross_profit` はnull
+
+Recipe Detailの原価情報カードでは、`recipe_type` に応じて表示内容を変えます。
+
+- `prep`: 材料原価のみ表示
+- `menu`: 材料原価、販売価格、原価率、粗利を表示
 
 Decimalで計算し、MVPでは表示用に簡易丸めします。厳密な会計処理や材料ごとの原価内訳APIは後続Phaseで扱います。
 

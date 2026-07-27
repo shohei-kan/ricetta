@@ -10,10 +10,13 @@ export type SimpleUnit = {
   name: string
 }
 
+export type RecipeType = 'prep' | 'menu'
+
 export type RecipeListItem = {
   id: number
   name: string
   category: SimpleCategory | null
+  recipe_type: RecipeType
   base_yield_quantity: string
   base_yield_unit: SimpleUnit
   main_image: string | null
@@ -53,6 +56,7 @@ export type RecipeDetail = {
   category: SimpleCategory | null
   description: string
   main_image: string | null
+  recipe_type: RecipeType
   base_yield_quantity: string
   base_yield_unit: SimpleUnit
   selling_price: string | null
@@ -83,6 +87,7 @@ export type RecipeFormPayload = {
   category_id?: number | null
   description?: string
   main_image?: string | null
+  recipe_type: RecipeType
   base_yield_quantity: string
   base_yield_unit_id: number
   selling_price?: string | null

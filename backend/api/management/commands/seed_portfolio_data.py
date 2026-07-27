@@ -432,8 +432,9 @@ class Command(BaseCommand):
                 "name": "トマトソース",
                 "category": categories["ソース・仕込み"],
                 "description": "パスタ、煮込み、カポナータに回せる基本のトマトソース。",
-                "base_yield_quantity": "10",
-                "base_yield_unit": units["食分"],
+                "recipe_type": Recipe.RecipeType.PREP,
+                "base_yield_quantity": "2.5",
+                "base_yield_unit": units["kg"],
                 "selling_price": "0",
                 "notes": "酸味が強い場合は煮詰め時間を少し長めにする。",
                 "allergen_notes": "",
@@ -455,9 +456,10 @@ class Command(BaseCommand):
                 "name": "ピクルス",
                 "category": categories["前菜"],
                 "description": "ランチの付け合わせや前菜盛りに使う彩りピクルス。",
-                "base_yield_quantity": "12",
-                "base_yield_unit": units["食分"],
-                "selling_price": "6000",
+                "recipe_type": Recipe.RecipeType.PREP,
+                "base_yield_quantity": "1",
+                "base_yield_unit": units["kg"],
+                "selling_price": "540",
                 "notes": "翌日以降が食べ頃。酸味を残すため煮立てすぎない。",
                 "allergen_notes": "",
                 "ingredients": [
@@ -478,9 +480,10 @@ class Command(BaseCommand):
                 "name": "カポナータ",
                 "category": categories["惣菜"],
                 "description": "野菜をしっかり炒めて甘みを引き出す、定番の作り置き惣菜。",
+                "recipe_type": Recipe.RecipeType.MENU,
                 "base_yield_quantity": "8",
                 "base_yield_unit": units["食分"],
-                "selling_price": "4000",
+                "selling_price": "600",
                 "notes": (
                     "Recipe DetailとCost Summary確認用の主役レシピ。"
                     "温製でも冷製でも提供でき、翌日の方が味がなじむ。"
@@ -513,9 +516,10 @@ class Command(BaseCommand):
                 "name": "クレームブリュレ",
                 "category": categories["デザート"],
                 "description": "表面を香ばしく焼き上げる定番デザート。",
-                "base_yield_quantity": "8",
+                "recipe_type": Recipe.RecipeType.MENU,
+                "base_yield_quantity": "6",
                 "base_yield_unit": units["個"],
-                "selling_price": "4000",
+                "selling_price": "620",
                 "notes": "焼成後はしっかり冷やし、提供直前にキャラメリゼする。",
                 "allergen_notes": "卵・乳",
                 "ingredients": [
@@ -555,6 +559,7 @@ class Command(BaseCommand):
 
         recipe.category = spec["category"]
         recipe.description = spec["description"]
+        recipe.recipe_type = spec["recipe_type"]
         recipe.base_yield_quantity = Decimal(spec["base_yield_quantity"])
         recipe.base_yield_unit = spec["base_yield_unit"]
         recipe.selling_price = Decimal(spec["selling_price"])

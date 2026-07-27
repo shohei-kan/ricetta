@@ -3,7 +3,7 @@
 from django.urls import reverse
 from rest_framework import status
 
-from api.models import Ingredient, PrepTask, Recipe, Unit
+from api.models import Ingredient, PrepTask, Recipe, RecipeIngredient, Unit
 
 from .base import ApiTestCase
 
@@ -60,24 +60,60 @@ class RecipeApiTests(ApiTestCase):
         recipe = Recipe.objects.get(id=response.data["id"])
         self.assertEqual(recipe.shop, self.shop)
         self.assertEqual(recipe.created_by, self.owner)
+        self.assertEqual(recipe.recipe_type, Recipe.RecipeType.PREP)
+        self.assertEqual(response.data["recipe_type"], "prep")
         self.assertEqual(recipe.ingredients.count(), 1)
         self.assertEqual(recipe.steps.count(), 1)
         self.assertEqual(response.data["ingredients"][0]["ingredient"]["name"], "玉ねぎ")
         self.assertNotIn("cost", response.data["ingredients"][0])
         self.assertIn("cost_summary", response.data)
 
+    def test_create_recipe_accepts_recipe_type(self):
+        self.login_owner()
+        payload = self.recipe_payload()
+        payload["recipe_type"] = "menu"
+
+        response = self.client.post(
+            reverse("recipe-list"),
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        recipe = Recipe.objects.get(id=response.data["id"])
+        self.assertEqual(recipe.recipe_type, Recipe.RecipeType.MENU)
+        self.assertEqual(response.data["recipe_type"], "menu")
+
+    def test_invalid_recipe_type_is_rejected(self):
+        self.login_owner()
+        payload = self.recipe_payload()
+        payload["recipe_type"] = "invalid"
+
+        response = self.client.post(
+            reverse("recipe-list"),
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("recipe_type", response.data)
+
     def test_staff_can_view_recipes(self):
         self.login_staff()
         unit = self.create_standard_unit("バッチ", Unit.UnitType.CUSTOM)
         recipe = self.create_recipe("トマトソース", unit=unit)
+        recipe.recipe_type = Recipe.RecipeType.MENU
+        recipe.save()
 
         list_response = self.client.get(reverse("recipe-list"))
         detail_response = self.client.get(reverse("recipe-detail", args=[recipe.id]))
 
         self.assertEqual(list_response.status_code, status.HTTP_200_OK)
         self.assertEqual([item["name"] for item in list_response.data], ["トマトソース"])
+        self.assertEqual(list_response.data[0]["recipe_type"], "menu")
         self.assertEqual(detail_response.status_code, status.HTTP_200_OK)
         self.assertEqual(detail_response.data["name"], "トマトソース")
+        self.assertEqual(detail_response.data["recipe_type"], "menu")
 
     def test_staff_cannot_create_recipe(self):
         self.login_staff()
@@ -311,6 +347,105 @@ class RecipeApiTests(ApiTestCase):
         self.assertEqual(response.data["cost_summary"]["material_cost"], "90")
         self.assertEqual(response.data["cost_summary"]["cost_rate"], "75.00")
         self.assertEqual(response.data["cost_summary"]["gross_profit"], "30")
+
+    def test_menu_cost_summary_uses_material_cost_per_base_yield_unit(self):
+        self.login_owner()
+        piece = self.create_standard_unit("食分", Unit.UnitType.COUNT)
+        ingredient = self.create_ingredient(
+            name="惣菜材料",
+            cost_mode=Ingredient.CostMode.SAME_UNIT,
+            usage_unit=piece,
+            purchase_unit=piece,
+            purchase_quantity="1",
+            purchase_price="100",
+        )
+        payload = self.recipe_payload(ingredient=ingredient, ingredient_unit=piece)
+        payload["recipe_type"] = Recipe.RecipeType.MENU
+        payload["base_yield_quantity"] = "10"
+        payload["base_yield_unit_id"] = piece.id
+        payload["ingredients"][0]["quantity"] = "20"
+        payload["selling_price"] = "800"
+
+        response = self.client.post(reverse("recipe-list"), payload, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["cost_summary"]["material_cost"], "200")
+        self.assertEqual(response.data["cost_summary"]["gross_profit"], "600")
+        self.assertEqual(response.data["cost_summary"]["cost_rate"], "25.00")
+
+    def test_prep_cost_summary_keeps_cost_when_base_yield_quantity_is_one(self):
+        self.login_owner()
+        gram = self.create_standard_unit("g", Unit.UnitType.WEIGHT)
+        ingredient = self.create_ingredient(
+            name="ソース材料",
+            cost_mode=Ingredient.CostMode.SAME_UNIT,
+            usage_unit=gram,
+            purchase_unit=gram,
+            purchase_quantity="1000",
+            purchase_price="500",
+        )
+        payload = self.recipe_payload(ingredient=ingredient, ingredient_unit=gram)
+        payload["recipe_type"] = Recipe.RecipeType.PREP
+        payload["base_yield_quantity"] = "1"
+        payload["base_yield_unit_id"] = gram.id
+        payload["ingredients"][0]["quantity"] = "1000"
+
+        response = self.client.post(reverse("recipe-list"), payload, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["cost_summary"]["material_cost"], "500")
+
+    def test_prep_cost_summary_divides_multiple_base_yield_units(self):
+        self.login_owner()
+        kilogram = self.create_standard_unit("kg", Unit.UnitType.WEIGHT)
+        ingredient = self.create_ingredient(
+            name="ソース材料",
+            cost_mode=Ingredient.CostMode.SAME_UNIT,
+            usage_unit=kilogram,
+            purchase_unit=kilogram,
+            purchase_quantity="1",
+            purchase_price="500",
+        )
+        payload = self.recipe_payload(ingredient=ingredient, ingredient_unit=kilogram)
+        payload["recipe_type"] = Recipe.RecipeType.PREP
+        payload["base_yield_quantity"] = "2"
+        payload["base_yield_unit_id"] = kilogram.id
+        payload["ingredients"][0]["quantity"] = "2"
+
+        response = self.client.post(reverse("recipe-list"), payload, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["cost_summary"]["material_cost"], "500")
+
+    def test_cost_summary_does_not_divide_by_zero_base_yield_quantity(self):
+        self.login_owner()
+        kilogram = self.create_standard_unit("kg", Unit.UnitType.WEIGHT)
+        ingredient = self.create_ingredient(
+            name="ソース材料",
+            cost_mode=Ingredient.CostMode.SAME_UNIT,
+            usage_unit=kilogram,
+            purchase_unit=kilogram,
+            purchase_quantity="1",
+            purchase_price="500",
+        )
+        recipe = Recipe.objects.create(
+            shop=self.shop,
+            name="ゼロ出来上がり量",
+            recipe_type=Recipe.RecipeType.PREP,
+            base_yield_quantity="0",
+            base_yield_unit=kilogram,
+        )
+        RecipeIngredient.objects.create(
+            recipe=recipe,
+            ingredient=ingredient,
+            quantity="2",
+            unit=kilogram,
+        )
+
+        response = self.client.get(reverse("recipe-detail", args=[recipe.id]))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["cost_summary"]["material_cost"], "1000")
 
     def test_cost_summary_calculates_conversion(self):
         self.login_owner()

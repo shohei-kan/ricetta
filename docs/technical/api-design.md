@@ -467,11 +467,12 @@ owner / staffとも閲覧できる。
 
 材料ごとの原価内訳が必要な場合は、将来的に別APIまたは `cost_detail` として追加する。
 
-`cost_summary` はRecipe全体の材料原価を返します。
+`cost_summary` は、Recipe全体の材料原価を `base_yield_quantity` で割った、出来上がり単位1単位あたりの原価を返します。
 
 - `cost_mode=none`: 原価に含めない
 - `cost_mode=same_unit`: `purchase_price / purchase_quantity * quantity`
 - `cost_mode=conversion`: `purchase_price * conversion_from_quantity / purchase_quantity / conversion_to_quantity * quantity`
+- RecipeIngredientの材料原価を合計した後、`base_yield_quantity` が正の数なら割って1単位あたりの `material_cost` にする
 - `selling_price` が未設定の場合、`cost_rate` と `gross_profit` は `null`
 
 MVPでは、原価計算するIngredientのRecipeIngredient単位はIngredientの `usage_unit` と一致させます。一致しない場合は作成・更新時にバリデーションエラーにします。
@@ -1195,7 +1196,8 @@ cost = 0
 ## レシピ全体
 
 ```text
-material_cost = 材料原価の合計
+total_material_cost = 材料原価の合計
+material_cost = total_material_cost / base_yield_quantity
 cost_rate = material_cost / selling_price * 100
 gross_profit = selling_price - material_cost
 ```
