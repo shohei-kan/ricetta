@@ -184,6 +184,8 @@ Phase 3:
 
 公開デモ環境では、production相当の設定を使います。
 
+AWS EC2 + Docker Composeで実際に設定するenv値と運用コマンドの確認は、[AWS demo env checklist](./aws-demo-env.md) を参照してください。
+
 - `DJANGO_DEBUG=False`
 - `DJANGO_SECRET_KEY` は本番用の安全な値にする
 - `DJANGO_ALLOWED_HOSTS` は本番ドメインまたはEC2ホストのみにする

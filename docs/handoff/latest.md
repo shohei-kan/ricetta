@@ -10,15 +10,15 @@ Ricetta
 
 ## Status
 
-Demo seed uses prep tomato sauce in caponata, and Recipe Form UI is adjusted.
+AWS demo env checklist added.
 
 ## Summary
 
-公開デモ用seedを整理し、追加サンプルRecipe「ベーコンとナスのトマトソースパスタ」を削除した。仕込み用Recipe「トマトソース」はIngredient「トマトソース」として維持し、主役レシピ「カポナータ」の材料に600g使用する構成へ変更した。あわせてRecipe Formの材料追加ボタンが折り返されないようにし、材料削除×のホバー領域を調整し、フォーム内プルダウンを上下スクロールしやすく、画面内の余白に応じて上下へ開くカスタムSelectFieldへ調整した。
+AWS EC2 + Docker Composeで公開デモを動かすための実務メモとして、`docs/deploy/aws-demo-env.md` を追加した。既存の `docs/deploy/demo.md` は公開デモの仕様説明として維持し、新規docsはenv値、frontend build env、DB env、migrate/seed/resetコマンド、公開前チェックリストに絞っている。既存settingsで読んでいないenvは例に含めず、将来settings実装と揃えてから追加する方針を明記した。
 
 ## Current Goal
 
-次は実ブラウザで、Ingredient一覧 / Recipe Form / カポナータのRecipe Detailを確認する。特に、Recipe Formの材料追加ボタンが1行表示されること、材料削除×のホバー判定が自然なこと、材料selectが位置に応じて上下に開き、候補を上下にスクロールできることを確認する。
+次はAWS公開デモ用の実env値、compose運用、HTTPS/ドメイン設定、手動reset手順を実環境に合わせて詰める。UI面では、引き続きRecipe Formとカポナータの表示を実ブラウザで確認する。
 
 ## Current State
 
@@ -40,6 +40,9 @@ Demo seed uses prep tomato sauce in caponata, and Recipe Form UI is adjusted.
 - パスタRecipeは公開デモseedから削除済み。
 - Recipe Formの材料 / 作り方の `＋ 追加` ボタンは折り返されないようにしている。
 - Recipe Form内のSelectFieldは、ネイティブselectではなくスクロール制御できるカスタムドロップダウンにしている。表示位置は下側が狭い場合に上へ開く。
+- `docs/deploy/demo.md` は公開デモの仕様説明。
+- `docs/deploy/aws-demo-env.md` はAWS EC2 + Docker Compose公開時のenvと運用コマンド確認用。
+- `aws-demo-env.md` には、既存settingsで読んでいない `DJANGO_ENV` / `CORS_ALLOWED_ORIGINS` / cookie secure系envは例として追加していない。
 
 ## What Was Done
 
@@ -65,6 +68,9 @@ Demo seed uses prep tomato sauce in caponata, and Recipe Form UI is adjusted.
 - SelectFieldは画面内の空きに応じて、候補リストを下または上に開くようにした。
 - backend testsにIngredient API、prep_recipe原価計算、簡易単位変換、循環ガード、seed確認を追加した。
 - docsに仕込み用RecipeをIngredientとして使う方針を追記した。
+- `docs/deploy/aws-demo-env.md` を追加した。
+- `docs/README.md` からAWS demo env checklistへのリンクを追加した。
+- `docs/deploy/demo.md` からAWS demo env checklistへの短い導線を追加した。
 
 ## Key Decisions
 
@@ -75,6 +81,7 @@ Demo seed uses prep tomato sauce in caponata, and Recipe Form UI is adjusted.
 - `prep_recipe` Ingredientの `cost_mode` は `none` に寄せ、仕入価格・換算情報は使わない。
 - 深い循環参照の完全な保存前検証は今回やらない。計算側の再帰ガードで無限再帰を防ぐ。
 - owner/staff権限は変更しない。
+- 公開デモdocsでは、仕様説明は `demo.md`、実運用envメモは `aws-demo-env.md` に分ける。
 
 ## Key Files
 
@@ -97,6 +104,8 @@ Demo seed uses prep tomato sauce in caponata, and Recipe Form UI is adjusted.
 - `docs/technical/api-design.md`
 - `docs/product/mvp-requirements.md`
 - `docs/deploy/demo.md`
+- `docs/deploy/aws-demo-env.md`
+- `docs/README.md`
 - `docs/handoff/latest.md`
 
 ## Verification
@@ -134,6 +143,7 @@ Result:
 - whitespace check: pass
 - Recipe Form UI調整後のfrontend lint: pass
 - Recipe Form UI調整後のfrontend build: pass
+- AWS demo env docs追加後のwhitespace check: pass
 
 Manual browser verification:
 
@@ -187,7 +197,8 @@ Manual browser verification:
 3. 実ブラウザでRecipe Formの材料selectに `トマトソース（仕込み）` が出ることを確認する。
 4. カポナータのRecipe Detailで、トマトソース由来Ingredientを含む原価が自然に表示されることを確認する。
 5. owner / staff両方でログインし、staffがIngredient / Recipe編集できない既存挙動が壊れていないことを確認する。
-6. AWS公開デモ用の実env値と定期reset方法を整理する。
+6. `docs/deploy/aws-demo-env.md` をもとにAWS公開デモ用の実env値と手動reset手順を実環境へ反映する。
+7. 定期reset方法は手動運用開始後にcron / systemd timer / GitHub Actions + SSHから選ぶ。
 
 ## Open Questions
 
@@ -209,10 +220,11 @@ Manual browser verification:
 - `owner@example.com` / `password` と `staff@example.com` / `password` は `seed_portfolio_data` で再作成・更新される。
 - `backend/api/demo_policy.py` はまだ既存Viewから使っていない。DEMO_MODE固有制限は次タスクで明示的に行う。
 - production envにはlocalhostを含めない。
+- `docs/deploy/aws-demo-env.md` のenv例はダミー値のみ。実secret / 実ドメインは書かない。
 - Docker frontendは `http://localhost:5174`。
 
 ## Suggested Commit Message
 
 ```text
-fix(recipe): improve form add button and dropdown usability
+docs(deploy): add aws demo env checklist
 ```

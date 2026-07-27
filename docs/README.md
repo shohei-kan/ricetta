@@ -24,6 +24,7 @@ API、データモデルなど、実装に近い設計をまとめます。
 公開デモやデプロイ運用に関するメモをまとめます。
 
 - [Public demo environment](./deploy/demo.md)
+- [AWS demo env checklist](./deploy/aws-demo-env.md)
 
 ## Decisions
 
