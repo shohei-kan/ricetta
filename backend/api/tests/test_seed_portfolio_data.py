@@ -45,13 +45,12 @@ class PortfolioSeedCommandTests(TestCase):
         pickles = Recipe.objects.get(shop=shop, name="ピクルス")
         caponata = Recipe.objects.get(shop=shop, name="カポナータ")
         creme_brulee = Recipe.objects.get(shop=shop, name="クレームブリュレ")
-        pasta = Recipe.objects.get(shop=shop, name="ベーコンとナスのトマトソースパスタ")
         self.assertEqual(tomato.recipe_type, Recipe.RecipeType.PREP)
         self.assertEqual(tomato.base_yield_quantity, Decimal("2.5"))
         self.assertEqual(tomato.base_yield_unit.name, "kg")
-        self.assertEqual(pickles.recipe_type, Recipe.RecipeType.PREP)
-        self.assertEqual(pickles.base_yield_quantity, Decimal("1"))
-        self.assertEqual(pickles.base_yield_unit.name, "kg")
+        self.assertEqual(pickles.recipe_type, Recipe.RecipeType.MENU)
+        self.assertEqual(pickles.base_yield_quantity, Decimal("10"))
+        self.assertEqual(pickles.base_yield_unit.name, "食分")
         self.assertEqual(caponata.ingredients.count(), 12)
         self.assertEqual(caponata.steps.count(), 6)
         self.assertEqual(caponata.recipe_type, Recipe.RecipeType.MENU)
@@ -61,9 +60,12 @@ class PortfolioSeedCommandTests(TestCase):
         self.assertEqual(creme_brulee.recipe_type, Recipe.RecipeType.MENU)
         self.assertEqual(creme_brulee.base_yield_quantity, Decimal("6"))
         self.assertEqual(creme_brulee.base_yield_unit.name, "個")
-        self.assertEqual(pasta.recipe_type, Recipe.RecipeType.MENU)
-        self.assertEqual(pasta.base_yield_quantity, Decimal("1"))
-        self.assertEqual(pasta.base_yield_unit.name, "食分")
+        self.assertFalse(
+            Recipe.objects.filter(
+                shop=shop,
+                name="ベーコンとナスのトマトソースパスタ",
+            ).exists()
+        )
         self.assertEqual(
             {
                 recipe.name: recipe.recipe_type
@@ -71,10 +73,9 @@ class PortfolioSeedCommandTests(TestCase):
             },
             {
                 "トマトソース": Recipe.RecipeType.PREP,
-                "ピクルス": Recipe.RecipeType.PREP,
+                "ピクルス": Recipe.RecipeType.MENU,
                 "カポナータ": Recipe.RecipeType.MENU,
                 "クレームブリュレ": Recipe.RecipeType.MENU,
-                "ベーコンとナスのトマトソースパスタ": Recipe.RecipeType.MENU,
             },
         )
         tomato_sauce_ingredient = Ingredient.objects.get(shop=shop, name="トマトソース")
@@ -85,10 +86,11 @@ class PortfolioSeedCommandTests(TestCase):
         self.assertEqual(tomato_sauce_ingredient.source_recipe, tomato)
         self.assertEqual(tomato_sauce_ingredient.usage_unit.name, "g")
         self.assertTrue(
-            pasta.ingredients.filter(
+            caponata.ingredients.filter(
                 ingredient=tomato_sauce_ingredient,
-                quantity=Decimal("150"),
+                quantity=Decimal("600"),
                 unit__name="g",
+                memo="仕込み済みのトマトソースを使用",
             ).exists()
         )
 
@@ -206,11 +208,11 @@ class PortfolioSeedCommandTests(TestCase):
         )
         self.assertEqual(
             Recipe.objects.filter(shop=recreated_shop, is_active=True).count(),
-            5,
+            4,
         )
         self.assertEqual(
             Ingredient.objects.filter(shop=recreated_shop, is_active=True).count(),
-            23,
+            21,
         )
         self.assertEqual(PrepTask.objects.filter(shop=recreated_shop).count(), 4)
         self.assertEqual(
@@ -259,12 +261,12 @@ class PortfolioSeedCommandTests(TestCase):
         self.assertEqual(current_membership.role, Membership.Role.OWNER)
         self.assertEqual(
             Recipe.objects.filter(shop=current_membership.shop, is_active=True).count(),
-            5,
+            4,
         )
         self.assertEqual(
             Ingredient.objects.filter(
                 shop=current_membership.shop,
                 is_active=True,
             ).count(),
-            23,
+            21,
         )

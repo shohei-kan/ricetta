@@ -62,14 +62,13 @@ class Command(BaseCommand):
         ingredients = self._seed_ingredients(shop, units)
         recipes = self._seed_recipes(shop, owner, categories, units, ingredients)
         self._seed_prep_recipe_ingredients(shop, units, ingredients, recipes)
-        recipes.update(
-            self._seed_menu_recipes_with_prep_ingredients(
-                shop,
-                owner,
-                categories,
-                units,
-                ingredients,
-            )
+        recipes = self._seed_recipes(
+            shop,
+            owner,
+            categories,
+            units,
+            ingredients,
+            use_prep_recipe_ingredients=True,
         )
         self._seed_prep_tasks(shop, recipes, units)
         self._seed_board_memos(shop)
@@ -413,24 +412,6 @@ class Command(BaseCommand):
                 "purchase_price": "420",
                 "usage_unit": units["本"],
             },
-            {
-                "name": "ベーコン",
-                "supplier": "精肉卸",
-                "cost_mode": Ingredient.CostMode.SAME_UNIT,
-                "purchase_quantity": "1000",
-                "purchase_unit": units["g"],
-                "purchase_price": "1500",
-                "usage_unit": units["g"],
-            },
-            {
-                "name": "スパゲッティ",
-                "supplier": "業務用スーパー",
-                "cost_mode": Ingredient.CostMode.SAME_UNIT,
-                "purchase_quantity": "1000",
-                "purchase_unit": units["g"],
-                "purchase_price": "420",
-                "usage_unit": units["g"],
-            },
         ]
 
         ingredients = {}
@@ -477,47 +458,21 @@ class Command(BaseCommand):
             },
         )
 
-    def _seed_menu_recipes_with_prep_ingredients(
+    def _seed_recipes(
         self,
         shop,
         owner,
         categories,
         units,
         ingredients,
+        use_prep_recipe_ingredients=False,
     ):
-        spec = {
-            "name": "ベーコンとナスのトマトソースパスタ",
-            "category": categories["惣菜"],
-            "description": "仕込み用トマトソースを材料として使う販売商品レシピ。",
-            "recipe_type": Recipe.RecipeType.MENU,
-            "base_yield_quantity": "1",
-            "base_yield_unit": units["食分"],
-            "selling_price": "1200",
-            "notes": "トマトソースは仕込みレシピ由来Ingredientとして原価計算されます。",
-            "allergen_notes": "小麦・豚肉",
-            "ingredients": [
-                ("トマトソース", "150", "g", "仕込み済みソース", 1),
-                ("ベーコン", "40", "g", "短冊切り", 2),
-                ("なす", "80", "g", "輪切り", 3),
-                ("スパゲッティ", "100", "g", "", 4),
-            ],
-            "steps": [
-                "スパゲッティを茹でる。",
-                "フライパンでベーコンとなすを炒める。",
-                "トマトソースを加えて温め、茹で上がった麺と合わせる。",
-            ],
-        }
-        recipe = self._update_or_create_recipe(
-            shop=shop,
-            owner=owner,
-            units=units,
-            ingredients=ingredients,
-            spec=spec,
-        )
-        return {spec["name"]: recipe}
-
-    def _seed_recipes(self, shop, owner, categories, units, ingredients):
         recipes = {}
+        caponata_tomato_ingredient = (
+            ("トマトソース", "600", "g", "仕込み済みのトマトソースを使用", 7)
+            if use_prep_recipe_ingredients
+            else ("ホールトマト", "400", "g", "トマトソースでも可", 7)
+        )
         recipe_specs = [
             {
                 "name": "トマトソース",
@@ -547,9 +502,9 @@ class Command(BaseCommand):
                 "name": "ピクルス",
                 "category": categories["前菜"],
                 "description": "ランチの付け合わせや前菜盛りに使う彩りピクルス。",
-                "recipe_type": Recipe.RecipeType.PREP,
-                "base_yield_quantity": "1",
-                "base_yield_unit": units["kg"],
+                "recipe_type": Recipe.RecipeType.MENU,
+                "base_yield_quantity": "10",
+                "base_yield_unit": units["食分"],
                 "selling_price": "540",
                 "notes": "翌日以降が食べ頃。酸味を残すため煮立てすぎない。",
                 "allergen_notes": "",
@@ -587,7 +542,7 @@ class Command(BaseCommand):
                     ("赤パプリカ", "220", "g", "角切り", 4),
                     ("黄パプリカ", "220", "g", "角切り", 5),
                     ("セロリ", "120", "g", "筋を取って薄切り", 6),
-                    ("ホールトマト", "400", "g", "トマトソースでも可", 7),
+                    caponata_tomato_ingredient,
                     ("ケーパー", "24", "g", "軽く刻む", 8),
                     ("白ワインビネガー", "60", "ml", "", 9),
                     ("オリーブオイル", "140", "ml", "炒め用と仕上げ", 10),

@@ -10,15 +10,15 @@ Ricetta
 
 ## Status
 
-Prep recipes can now be used as ingredients.
+Demo seed uses prep tomato sauce in caponata.
 
 ## Summary
 
-仕込み用RecipeをIngredientとして別Recipeの材料に使えるようにした。Ingredientに `ingredient_type` と `source_recipe` を追加し、通常材料（`raw`）と仕込みレシピ由来材料（`prep_recipe`）を区別する。原価計算では、source recipeの出来上がり単位1単位あたり原価を使い、RecipeIngredientの使用量に応じて計算する。MVPでは `kg` ↔ `g`、`L` ↔ `ml`、同一単位の簡易変換に対応する。
+公開デモ用seedを整理し、追加サンプルRecipe「ベーコンとナスのトマトソースパスタ」を削除した。仕込み用Recipe「トマトソース」はIngredient「トマトソース」として維持し、主役レシピ「カポナータ」の材料に600g使用する構成へ変更した。これにより、トマトソースが仕込み用Recipeであり、販売商品Recipeの材料原価へ反映される流れを既存レシピ内で確認できる。
 
 ## Current Goal
 
-次は実ブラウザで、Ingredient Form / Recipe Form / Recipe Detailの操作を確認する。特に、トマトソース由来Ingredientを作成・選択し、販売商品Recipeで150g使用したときの原価表示を確認する。
+次は実ブラウザで、Ingredient一覧 / Recipe Form / カポナータのRecipe Detailを確認する。特に、Ingredient「トマトソース」が仕込み由来材料として表示され、カポナータの材料と原価に600g分が反映されることを確認する。
 
 ## Current State
 
@@ -34,7 +34,10 @@ Prep recipes can now be used as ingredients.
 - Recipe保存時、自分自身を `source_recipe` にしたIngredientを材料に入れる直接循環は400で止める。
 - 原価計算側にも再帰ガードを入れ、深い循環で無限再帰しないようにしている。
 - 深い循環参照を保存前に完全検証する仕組みはMVP後の課題。
-- seed demo dataには、仕込み用Recipe「トマトソース」、Ingredient「トマトソース」、販売商品Recipe「ベーコンとナスのトマトソースパスタ」が含まれる。
+- seed demo dataには、仕込み用Recipe「トマトソース」、Ingredient「トマトソース」、販売商品Recipe「カポナータ」が含まれる。
+- ピクルスは `recipe_type=menu`、出来上がり量10食分の販売商品Recipeとして扱う。
+- カポナータはIngredient「トマトソース」を600g使用する。
+- パスタRecipeは公開デモseedから削除済み。
 
 ## What Was Done
 
@@ -50,7 +53,9 @@ Prep recipes can now be used as ingredients.
 - 仕込みレシピ選択時は、source recipeと使用単位だけを入力し、通常の原価計算モード入力を隠すようにした。
 - Ingredient List / Detailで仕込みレシピ由来材料が分かる表示にした。
 - Recipe Formの材料selectで `トマトソース（仕込み）` のように表示するようにした。
-- `seed_portfolio_data` にベーコン、スパゲッティ、トマトソース由来Ingredient、パスタRecipeを追加した。
+- `seed_portfolio_data` からベーコン、スパゲッティ、パスタRecipeを削除した。
+- トマトソース由来Ingredientは維持し、カポナータの材料に600g追加した。
+- seed testsのピクルス期待値を `menu / 10食分` に揃えた。
 - source_recipeの `PROTECT` に合わせて、`seed_portfolio_data --reset` の削除順を調整した。
 - backend testsにIngredient API、prep_recipe原価計算、簡易単位変換、循環ガード、seed確認を追加した。
 - docsに仕込み用RecipeをIngredientとして使う方針を追記した。
@@ -95,7 +100,7 @@ Prep recipes can now be used as ingredients.
 ```bash
 docker compose exec backend python manage.py makemigrations
 docker compose exec backend python manage.py migrate
-docker compose exec backend python manage.py test api.tests.test_ingredients api.tests.test_recipes api.tests.test_seed_portfolio_data
+docker compose exec backend python manage.py test api.tests.test_seed_portfolio_data
 docker compose exec backend python manage.py test
 docker compose exec backend python manage.py check
 docker compose exec backend python manage.py makemigrations --check --dry-run
@@ -103,6 +108,7 @@ cd frontend
 npm run lint
 npm run build
 docker compose exec backend python manage.py seed_portfolio_data --reset
+docker compose exec backend python manage.py shell -c "from api.models import Recipe, Ingredient, Shop; shop=Shop.objects.get(name='〇〇食堂'); cap=Recipe.objects.get(shop=shop, name='カポナータ'); print([(ri.ingredient.name, ri.quantity, ri.unit.name, ri.ingredient.ingredient_type) for ri in cap.ingredients.select_related('ingredient','unit').all()]); print(Recipe.objects.filter(shop=shop, name__icontains='パスタ').exists())"
 git diff --check
 ```
 
@@ -110,18 +116,20 @@ Result:
 
 - migration `0007_ingredient_ingredient_type_ingredient_source_recipe.py` created.
 - migrate: pass
-- targeted backend tests: 67 pass
+- seed command tests: 3 pass
 - backend tests: 143 pass
 - backend check: pass
 - makemigrations dry-run: no changes detected
 - frontend lint: pass
 - frontend build: pass
 - `seed_portfolio_data --reset`: pass
+- seed DB確認: カポナータに `トマトソース / 600.00 g / prep_recipe` が含まれる
+- seed DB確認: パスタRecipeなし
 - whitespace check: pass
 
 Manual browser verification:
 
-- 未実施。次にUI確認する場合は、Ingredient Formで「仕込みレシピ」を選べること、Recipe Formで「トマトソース（仕込み）」を材料として選べること、Recipe DetailでパスタRecipeの原価にトマトソース150g分が反映されることを確認する。
+- 未実施。次にUI確認する場合は、Ingredient一覧で「トマトソース」が仕込み由来材料として表示されること、Recipe Formで「トマトソース（仕込み）」を材料として選べること、カポナータのRecipe Detailで材料と原価にトマトソース600g分が反映されることを確認する。
 
 ## Current Product Scope
 
@@ -162,7 +170,7 @@ Manual browser verification:
 
 1. 実ブラウザでIngredient Formの「通常材料 / 仕込みレシピ」切り替えを確認する。
 2. 実ブラウザでRecipe Formの材料selectに `トマトソース（仕込み）` が出ることを確認する。
-3. パスタRecipeのRecipe Detailで、トマトソース由来Ingredientを含む原価が自然に表示されることを確認する。
+3. カポナータのRecipe Detailで、トマトソース由来Ingredientを含む原価が自然に表示されることを確認する。
 4. owner / staff両方でログインし、staffがIngredient / Recipe編集できない既存挙動が壊れていないことを確認する。
 5. AWS公開デモ用の実env値と定期reset方法を整理する。
 
@@ -177,6 +185,8 @@ Manual browser verification:
 - `ingredient_type=prep_recipe` はIngredient経由でsource Recipeを使う設計。RecipeIngredientのDB構造は変更していない。
 - `source_recipe` は `on_delete=PROTECT`。seed resetではRecipeより先にIngredientを削除する必要がある。
 - `cost_summary.material_cost` は出来上がり量1単位あたり原価。prep_recipe Ingredientもこの値を使って計算される。
+- 公開デモseedでは、仕込み用トマトソースをカポナータの材料として使う。パスタRecipeは作らない。
+- ピクルスは公開デモseedでは販売商品Recipe（`menu / 10食分`）として扱う。
 - `kg/g` と `L/ml` 以外の単位変換は0円扱い。Unitに変換係数はまだ持たせていない。
 - `backend/api/tests.py` は削除済み。新規backend APIテストは `backend/api/tests/test_*.py` に追加する。
 - 共通fixture / helperが必要な場合は `backend/api/tests/base.py` の `ApiTestCase` を使う。
@@ -188,5 +198,5 @@ Manual browser verification:
 ## Suggested Commit Message
 
 ```text
-feat(recipe): allow prep recipes as ingredients
+chore(seed): use prep tomato sauce in caponata demo
 ```
