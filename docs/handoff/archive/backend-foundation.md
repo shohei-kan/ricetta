@@ -315,3 +315,35 @@ Account Phase 1 + 2のバックエンドと、ローカルViteからSession認�
 - Account関連12テスト: pass
 - localhost:5173から `PATCH /auth/me/`, `PATCH /shop/me/`: HTTP 200
 - localhost:5174から `PATCH /auth/me/`, `PATCH /shop/me/`: HTTP 200
+
+## 2026-07-24 Backend API test split
+
+長くなっていた `backend/api/tests.py` を、機能単位の `backend/api/tests/` パッケージへ分割した。
+
+### Summary
+
+- `ApiTestCase` と共通helperを `backend/api/tests/base.py` に移動した。
+- Auth / Shop / Category / Unit / Ingredient / Recipe / PrepTask / BoardMemo / Dashboard / seed commandごとにテストファイルを分割した。
+- テスト内容・期待値・API挙動は変更していない。
+- `backend/api/tests.py` は削除した。
+
+### Key Files
+
+- `backend/api/tests/base.py`
+- `backend/api/tests/test_auth.py`
+- `backend/api/tests/test_shop_scope.py`
+- `backend/api/tests/test_categories.py`
+- `backend/api/tests/test_units.py`
+- `backend/api/tests/test_ingredients.py`
+- `backend/api/tests/test_recipes.py`
+- `backend/api/tests/test_prep_tasks.py`
+- `backend/api/tests/test_board_memos.py`
+- `backend/api/tests/test_dashboard.py`
+- `backend/api/tests/test_seed_portfolio_data.py`
+
+### Verification
+
+- backend tests: 125 pass
+- backend check: pass
+- makemigrations dry-run: no changes detected
+- whitespace check: pass

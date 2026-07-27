@@ -457,7 +457,7 @@ class Command(BaseCommand):
                 "description": "ランチの付け合わせや前菜盛りに使う彩りピクルス。",
                 "base_yield_quantity": "12",
                 "base_yield_unit": units["食分"],
-                "selling_price": "420",
+                "selling_price": "6000",
                 "notes": "翌日以降が食べ頃。酸味を残すため煮立てすぎない。",
                 "allergen_notes": "",
                 "ingredients": [
@@ -480,7 +480,7 @@ class Command(BaseCommand):
                 "description": "野菜をしっかり炒めて甘みを引き出す、定番の作り置き惣菜。",
                 "base_yield_quantity": "8",
                 "base_yield_unit": units["食分"],
-                "selling_price": "680",
+                "selling_price": "4000",
                 "notes": (
                     "Recipe DetailとCost Summary確認用の主役レシピ。"
                     "温製でも冷製でも提供でき、翌日の方が味がなじむ。"
@@ -515,7 +515,7 @@ class Command(BaseCommand):
                 "description": "表面を香ばしく焼き上げる定番デザート。",
                 "base_yield_quantity": "8",
                 "base_yield_unit": units["個"],
-                "selling_price": "520",
+                "selling_price": "4000",
                 "notes": "焼成後はしっかり冷やし、提供直前にキャラメリゼする。",
                 "allergen_notes": "卵・乳",
                 "ingredients": [
