@@ -10,15 +10,15 @@ Ricetta
 
 ## Status
 
-Demo seed uses prep tomato sauce in caponata.
+Demo seed uses prep tomato sauce in caponata, and Recipe Form UI is adjusted.
 
 ## Summary
 
-公開デモ用seedを整理し、追加サンプルRecipe「ベーコンとナスのトマトソースパスタ」を削除した。仕込み用Recipe「トマトソース」はIngredient「トマトソース」として維持し、主役レシピ「カポナータ」の材料に600g使用する構成へ変更した。これにより、トマトソースが仕込み用Recipeであり、販売商品Recipeの材料原価へ反映される流れを既存レシピ内で確認できる。
+公開デモ用seedを整理し、追加サンプルRecipe「ベーコンとナスのトマトソースパスタ」を削除した。仕込み用Recipe「トマトソース」はIngredient「トマトソース」として維持し、主役レシピ「カポナータ」の材料に600g使用する構成へ変更した。あわせてRecipe Formの材料追加ボタンが折り返されないようにし、材料削除×のホバー領域を調整し、フォーム内プルダウンを上下スクロールしやすく、画面内の余白に応じて上下へ開くカスタムSelectFieldへ調整した。
 
 ## Current Goal
 
-次は実ブラウザで、Ingredient一覧 / Recipe Form / カポナータのRecipe Detailを確認する。特に、Ingredient「トマトソース」が仕込み由来材料として表示され、カポナータの材料と原価に600g分が反映されることを確認する。
+次は実ブラウザで、Ingredient一覧 / Recipe Form / カポナータのRecipe Detailを確認する。特に、Recipe Formの材料追加ボタンが1行表示されること、材料削除×のホバー判定が自然なこと、材料selectが位置に応じて上下に開き、候補を上下にスクロールできることを確認する。
 
 ## Current State
 
@@ -38,6 +38,8 @@ Demo seed uses prep tomato sauce in caponata.
 - ピクルスは `recipe_type=menu`、出来上がり量10食分の販売商品Recipeとして扱う。
 - カポナータはIngredient「トマトソース」を600g使用する。
 - パスタRecipeは公開デモseedから削除済み。
+- Recipe Formの材料 / 作り方の `＋ 追加` ボタンは折り返されないようにしている。
+- Recipe Form内のSelectFieldは、ネイティブselectではなくスクロール制御できるカスタムドロップダウンにしている。表示位置は下側が狭い場合に上へ開く。
 
 ## What Was Done
 
@@ -57,6 +59,10 @@ Demo seed uses prep tomato sauce in caponata.
 - トマトソース由来Ingredientは維持し、カポナータの材料に600g追加した。
 - seed testsのピクルス期待値を `menu / 10食分` に揃えた。
 - source_recipeの `PROTECT` に合わせて、`seed_portfolio_data --reset` の削除順を調整した。
+- Recipe Formの材料 / 作り方追加ボタンに `shrink-0` / `whitespace-nowrap` を追加し、`＋ 追加` を1行表示にした。
+- 材料カード右上の削除×を少し小さくし、入力行の右余白を確保してホバー領域の被りを抑えた。
+- Recipe FormのSelectFieldをカスタムドロップダウンに変更し、候補リスト内で上下スクロールできるようにした。
+- SelectFieldは画面内の空きに応じて、候補リストを下または上に開くようにした。
 - backend testsにIngredient API、prep_recipe原価計算、簡易単位変換、循環ガード、seed確認を追加した。
 - docsに仕込み用RecipeをIngredientとして使う方針を追記した。
 
@@ -126,10 +132,18 @@ Result:
 - seed DB確認: カポナータに `トマトソース / 600.00 g / prep_recipe` が含まれる
 - seed DB確認: パスタRecipeなし
 - whitespace check: pass
+- Recipe Form UI調整後のfrontend lint: pass
+- Recipe Form UI調整後のfrontend build: pass
 
 Manual browser verification:
 
-- 未実施。次にUI確認する場合は、Ingredient一覧で「トマトソース」が仕込み由来材料として表示されること、Recipe Formで「トマトソース（仕込み）」を材料として選べること、カポナータのRecipe Detailで材料と原価にトマトソース600g分が反映されることを確認する。
+- Ingredient一覧で「トマトソース」が仕込み由来材料として表示されることを確認。
+- Recipe Formで材料selectに `トマトソース（仕込み）` が表示され、材料として選べることを確認。
+- カポナータのRecipe Detailで、材料にトマトソース600gが表示されることを確認。
+- カポナータの原価にトマトソース由来Ingredient分が反映されることを確認。
+- Recipe Formの材料 / 作り方の `＋ 追加` ボタンが1行表示されることを確認。
+- 材料削除×のホバー領域が入力欄に不自然に被らないことを確認。
+- Recipe FormのSelectFieldが画面位置に応じて上下へ開き、候補をスクロールできることを確認。
 
 ## Current Product Scope
 
@@ -169,10 +183,11 @@ Manual browser verification:
 ## Next Recommended Tasks
 
 1. 実ブラウザでIngredient Formの「通常材料 / 仕込みレシピ」切り替えを確認する。
-2. 実ブラウザでRecipe Formの材料selectに `トマトソース（仕込み）` が出ることを確認する。
-3. カポナータのRecipe Detailで、トマトソース由来Ingredientを含む原価が自然に表示されることを確認する。
-4. owner / staff両方でログインし、staffがIngredient / Recipe編集できない既存挙動が壊れていないことを確認する。
-5. AWS公開デモ用の実env値と定期reset方法を整理する。
+2. 実ブラウザでRecipe Formの材料追加ボタンが1行表示され、材料削除×のホバー判定が自然で、材料selectを上下にスクロールできることを確認する。
+3. 実ブラウザでRecipe Formの材料selectに `トマトソース（仕込み）` が出ることを確認する。
+4. カポナータのRecipe Detailで、トマトソース由来Ingredientを含む原価が自然に表示されることを確認する。
+5. owner / staff両方でログインし、staffがIngredient / Recipe編集できない既存挙動が壊れていないことを確認する。
+6. AWS公開デモ用の実env値と定期reset方法を整理する。
 
 ## Open Questions
 
@@ -187,6 +202,7 @@ Manual browser verification:
 - `cost_summary.material_cost` は出来上がり量1単位あたり原価。prep_recipe Ingredientもこの値を使って計算される。
 - 公開デモseedでは、仕込み用トマトソースをカポナータの材料として使う。パスタRecipeは作らない。
 - ピクルスは公開デモseedでは販売商品Recipe（`menu / 10食分`）として扱う。
+- Recipe FormのSelectFieldはカスタム実装。表示位置は簡易的にviewport余白で上下判定している。追加でキーボード操作を強化する場合は同コンポーネント内で対応する。
 - `kg/g` と `L/ml` 以外の単位変換は0円扱い。Unitに変換係数はまだ持たせていない。
 - `backend/api/tests.py` は削除済み。新規backend APIテストは `backend/api/tests/test_*.py` に追加する。
 - 共通fixture / helperが必要な場合は `backend/api/tests/base.py` の `ApiTestCase` を使う。
@@ -198,5 +214,5 @@ Manual browser verification:
 ## Suggested Commit Message
 
 ```text
-chore(seed): use prep tomato sauce in caponata demo
+fix(recipe): improve form add button and dropdown usability
 ```

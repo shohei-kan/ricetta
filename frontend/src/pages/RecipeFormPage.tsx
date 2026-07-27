@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { ApiError } from '../api/api'
 import { fetchCategories, type Category } from '../api/categories'
 import { fetchIngredients, type IngredientListItem } from '../api/ingredients'
@@ -357,14 +357,14 @@ export function RecipeFormPage({ id, navigate }: RecipeFormPageProps) {
 
         <section className="rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-5 shadow-sm md:p-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
+            <div className="min-w-0">
               <h2 className="text-2xl font-bold text-[#2e2822]">材料</h2>
               <p className="mt-1 text-sm leading-6 text-[#75685e]">
                 使用する材料、使用量、単位だけを入力します。原価情報は表示しません。
               </p>
             </div>
             <button
-              className="rounded-lg px-3 py-2 text-base font-bold text-[#c76738] transition hover:bg-[#f7eee5]"
+              className="shrink-0 whitespace-nowrap rounded-lg px-3 py-2 text-base font-bold text-[#c76738] transition hover:bg-[#f7eee5]"
               onClick={addIngredientRow}
               type="button"
             >
@@ -382,13 +382,13 @@ export function RecipeFormPage({ id, navigate }: RecipeFormPageProps) {
               <div className="relative rounded-lg border border-[#eadfce] bg-white p-4 pt-5" key={index}>
                 <button
                   aria-label="この材料行を削除"
-                  className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full text-xl leading-none text-[#9a8b7f] transition hover:bg-[#fff0ed] hover:text-[#a23d2d]"
+                  className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full text-lg leading-none text-[#9a8b7f] transition hover:bg-[#fff0ed] hover:text-[#a23d2d]"
                   onClick={() => removeIngredientRow(index)}
                   type="button"
                 >
                   ×
                 </button>
-                <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_7rem_6.5rem]">
+                <div className="grid gap-4 pr-8 md:grid-cols-[minmax(0,1fr)_7rem_6.5rem] md:pr-9">
                   <SelectField
                     disabled={optionsLoading}
                     label="材料名"
@@ -438,14 +438,14 @@ export function RecipeFormPage({ id, navigate }: RecipeFormPageProps) {
         <div className="space-y-5 xl:bg-[#eee5d8] xl:p-6">
         <section className="rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-5 shadow-sm md:p-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
+            <div className="min-w-0">
               <h2 className="text-2xl font-bold text-[#2e2822]">作り方</h2>
               <p className="mt-1 text-sm leading-6 text-[#75685e]">
                 保存時に表示順で工程番号を振り直します。
               </p>
             </div>
             <button
-              className="rounded-lg px-3 py-2 text-base font-bold text-[#c76738] transition hover:bg-[#f7eee5]"
+              className="shrink-0 whitespace-nowrap rounded-lg px-3 py-2 text-base font-bold text-[#c76738] transition hover:bg-[#f7eee5]"
               onClick={addStepRow}
               type="button"
             >
@@ -638,26 +638,138 @@ function SelectField({
   required?: boolean
   value: string
 }) {
+  const [open, setOpen] = useState(false)
+  const [placement, setPlacement] = useState<'down' | 'up'>('down')
+  const [menuMaxHeight, setMenuMaxHeight] = useState(256)
+  const wrapperRef = useRef<HTMLDivElement | null>(null)
+  const selectedOption = options.find((option) => option.value === value)
+  const displayLabel = selectedOption?.label ?? placeholder
+
+  const updateMenuPlacement = () => {
+    if (!wrapperRef.current) {
+      return
+    }
+
+    const rect = wrapperRef.current.getBoundingClientRect()
+    const gap = 8
+    const preferredMaxHeight = 256
+    const minimumComfortHeight = 160
+    const spaceBelow = window.innerHeight - rect.bottom - gap
+    const spaceAbove = rect.top - gap
+    const shouldOpenUp = spaceBelow < minimumComfortHeight && spaceAbove > spaceBelow
+    const availableSpace = shouldOpenUp ? spaceAbove : spaceBelow
+
+    setPlacement(shouldOpenUp ? 'up' : 'down')
+    setMenuMaxHeight(Math.max(120, Math.min(preferredMaxHeight, availableSpace - 4)))
+  }
+
+  useEffect(() => {
+    if (!open) {
+      return
+    }
+
+    function handlePointerDown(event: MouseEvent | TouchEvent) {
+      if (!wrapperRef.current?.contains(event.target as Node)) {
+        setOpen(false)
+      }
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setOpen(false)
+      }
+    }
+
+    function handleViewportChange() {
+      updateMenuPlacement()
+    }
+
+    updateMenuPlacement()
+    document.addEventListener('mousedown', handlePointerDown)
+    document.addEventListener('touchstart', handlePointerDown)
+    document.addEventListener('keydown', handleKeyDown)
+    window.addEventListener('resize', handleViewportChange)
+    window.addEventListener('scroll', handleViewportChange, true)
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown)
+      document.removeEventListener('touchstart', handlePointerDown)
+      document.removeEventListener('keydown', handleKeyDown)
+      window.removeEventListener('resize', handleViewportChange)
+      window.removeEventListener('scroll', handleViewportChange, true)
+    }
+  }, [open])
+
+  const selectValue = (nextValue: string) => {
+    onChange(nextValue)
+    setOpen(false)
+  }
+
   return (
-    <label className="block">
+    <div className="relative" ref={wrapperRef}>
       <span className="text-sm font-semibold text-[#4b4037]">
         {label}
         {required ? ' *' : ''}
       </span>
-      <select
-        className="mt-2 min-h-12 w-full rounded-lg border border-[#d7cbbb] bg-white px-4 text-base text-[#2b2621] outline-none ring-[#b88458] transition focus:ring-2 disabled:bg-[#eee7db] disabled:text-[#8a7a6d]"
+      <button
+        aria-expanded={open}
+        aria-haspopup="listbox"
+        className="mt-2 flex min-h-12 w-full items-center justify-between gap-3 rounded-lg border border-[#d7cbbb] bg-white px-4 text-left text-base text-[#2b2621] outline-none ring-[#b88458] transition focus:ring-2 disabled:bg-[#eee7db] disabled:text-[#8a7a6d]"
         disabled={disabled}
-        onChange={(event) => onChange(event.target.value)}
-        value={value}
+        onClick={() => {
+          if (open) {
+            setOpen(false)
+            return
+          }
+          updateMenuPlacement()
+          setOpen(true)
+        }}
+        type="button"
       >
-        <option value="">{placeholder}</option>
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-    </label>
+        <span className={selectedOption ? 'truncate' : 'truncate text-[#75685e]'}>
+          {displayLabel}
+        </span>
+        <span aria-hidden="true" className="shrink-0 text-[#75685e]">
+          ⌄
+        </span>
+      </button>
+      {open && !disabled && (
+        <div
+          className={`absolute z-50 w-full overflow-y-auto overscroll-contain rounded-lg border border-[#d7cbbb] bg-white py-1 shadow-[0_12px_32px_rgba(84,58,35,0.18)] ${
+            placement === 'up' ? 'bottom-full mb-2' : 'top-full mt-2'
+          }`}
+          onWheel={(event) => event.stopPropagation()}
+          role="listbox"
+          style={{ maxHeight: menuMaxHeight }}
+        >
+          <button
+            aria-selected={value === ''}
+            className={`block w-full px-4 py-3 text-left text-base transition hover:bg-[#f7eee5] ${
+              value === '' ? 'bg-[#f1e7dc] font-bold text-[#c76738]' : 'text-[#75685e]'
+            }`}
+            onClick={() => selectValue('')}
+            role="option"
+            type="button"
+          >
+            {placeholder}
+          </button>
+          {options.map((option) => (
+            <button
+              aria-selected={option.value === value}
+              className={`block w-full px-4 py-3 text-left text-base transition hover:bg-[#f7eee5] ${
+                option.value === value ? 'bg-[#f1e7dc] font-bold text-[#c76738]' : 'text-[#2b2621]'
+              }`}
+              key={option.value}
+              onClick={() => selectValue(option.value)}
+              role="option"
+              type="button"
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
 
