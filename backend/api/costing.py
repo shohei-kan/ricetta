@@ -4,17 +4,7 @@ from .models import Ingredient
 
 
 def calculate_recipe_cost_summary(recipe):
-    total_material_cost = Decimal("0")
-    for recipe_ingredient in recipe.ingredients.select_related(
-        "ingredient",
-        "ingredient__usage_unit",
-        "ingredient__purchase_unit",
-        "ingredient__conversion_from_unit",
-        "ingredient__conversion_to_unit",
-        "unit",
-    ):
-        total_material_cost += _calculate_recipe_ingredient_cost(recipe_ingredient)
-
+    total_material_cost = _calculate_recipe_total_material_cost(recipe, set())
     material_cost = _calculate_unit_material_cost(
         total_material_cost,
         recipe.base_yield_quantity,
@@ -35,6 +25,31 @@ def calculate_recipe_cost_summary(recipe):
     }
 
 
+def _calculate_recipe_total_material_cost(recipe, visited_recipe_ids):
+    recipe_id = recipe.id
+    if recipe_id is not None:
+        if recipe_id in visited_recipe_ids:
+            return Decimal("0")
+        visited_recipe_ids = {*visited_recipe_ids, recipe_id}
+
+    total_material_cost = Decimal("0")
+    for recipe_ingredient in recipe.ingredients.select_related(
+        "ingredient",
+        "ingredient__source_recipe",
+        "ingredient__source_recipe__base_yield_unit",
+        "ingredient__usage_unit",
+        "ingredient__purchase_unit",
+        "ingredient__conversion_from_unit",
+        "ingredient__conversion_to_unit",
+        "unit",
+    ):
+        total_material_cost += _calculate_recipe_ingredient_cost(
+            recipe_ingredient,
+            visited_recipe_ids,
+        )
+    return total_material_cost
+
+
 def _calculate_unit_material_cost(total_material_cost, base_yield_quantity):
     try:
         base_quantity = Decimal(base_yield_quantity)
@@ -45,8 +60,14 @@ def _calculate_unit_material_cost(total_material_cost, base_yield_quantity):
     return Decimal(total_material_cost)
 
 
-def _calculate_recipe_ingredient_cost(recipe_ingredient):
+def _calculate_recipe_ingredient_cost(recipe_ingredient, visited_recipe_ids):
     ingredient = recipe_ingredient.ingredient
+    if ingredient.ingredient_type == Ingredient.IngredientType.PREP_RECIPE:
+        return _calculate_prep_recipe_ingredient_cost(
+            recipe_ingredient,
+            visited_recipe_ids,
+        )
+
     if ingredient.cost_mode == Ingredient.CostMode.NONE:
         return Decimal("0")
     if ingredient.usage_unit_id != recipe_ingredient.unit_id:
@@ -81,6 +102,54 @@ def _calculate_recipe_ingredient_cost(recipe_ingredient):
         return Decimal("0")
 
     return Decimal("0")
+
+
+def _calculate_prep_recipe_ingredient_cost(recipe_ingredient, visited_recipe_ids):
+    ingredient = recipe_ingredient.ingredient
+    source_recipe = ingredient.source_recipe
+    if source_recipe is None or source_recipe.base_yield_unit is None:
+        return Decimal("0")
+
+    converted_quantity = convert_quantity_between_units(
+        recipe_ingredient.quantity,
+        recipe_ingredient.unit,
+        source_recipe.base_yield_unit,
+    )
+    if converted_quantity is None:
+        return Decimal("0")
+
+    source_total_cost = _calculate_recipe_total_material_cost(
+        source_recipe,
+        visited_recipe_ids,
+    )
+    source_unit_cost = _calculate_unit_material_cost(
+        source_total_cost,
+        source_recipe.base_yield_quantity,
+    )
+    return source_unit_cost * converted_quantity
+
+
+def convert_quantity_between_units(quantity, from_unit, to_unit):
+    if from_unit is None or to_unit is None:
+        return None
+    try:
+        decimal_quantity = Decimal(quantity)
+    except (InvalidOperation, TypeError):
+        return None
+
+    if from_unit.id == to_unit.id or from_unit.name == to_unit.name:
+        return decimal_quantity
+
+    conversions = {
+        ("kg", "g"): Decimal("1000"),
+        ("g", "kg"): Decimal("0.001"),
+        ("L", "ml"): Decimal("1000"),
+        ("ml", "L"): Decimal("0.001"),
+    }
+    factor = conversions.get((from_unit.name, to_unit.name))
+    if factor is None:
+        return None
+    return decimal_quantity * factor
 
 
 def _format_amount(value):

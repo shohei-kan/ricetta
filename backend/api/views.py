@@ -296,6 +296,8 @@ class IngredientViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         shop = get_current_shop(self.request.user)
         queryset = Ingredient.objects.select_related(
+            "source_recipe",
+            "source_recipe__base_yield_unit",
             "purchase_unit",
             "usage_unit",
             "conversion_from_unit",
@@ -351,6 +353,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
             )
             .prefetch_related(
                 "ingredients__ingredient",
+                "ingredients__ingredient__source_recipe",
+                "ingredients__ingredient__source_recipe__base_yield_unit",
                 "ingredients__unit",
                 "steps",
             )

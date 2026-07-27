@@ -6,11 +6,22 @@ export type SimpleUnit = {
 }
 
 export type IngredientCostMode = 'none' | 'same_unit' | 'conversion'
+export type IngredientType = 'raw' | 'prep_recipe'
+
+export type SourceRecipeSummary = {
+  id: number
+  name: string
+  recipe_type: 'prep' | 'menu'
+  base_yield_quantity: string
+  base_yield_unit: SimpleUnit
+}
 
 export type IngredientListItem = {
   id: number
   name: string
   supplier: string
+  ingredient_type: IngredientType
+  source_recipe: SourceRecipeSummary | null
   cost_mode: IngredientCostMode
   purchase_quantity: string | null
   purchase_unit: SimpleUnit | null
@@ -33,6 +44,8 @@ export type IngredientFormPayload = {
   name: string
   supplier?: string
   memo?: string
+  ingredient_type: IngredientType
+  source_recipe_id?: number | null
   cost_mode: IngredientCostMode
   purchase_quantity?: string | null
   purchase_unit_id?: number | null

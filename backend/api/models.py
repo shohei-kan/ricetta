@@ -123,6 +123,10 @@ class Unit(TimeStampedModel):
 
 
 class Ingredient(TimeStampedModel):
+    class IngredientType(models.TextChoices):
+        RAW = "raw", "通常材料"
+        PREP_RECIPE = "prep_recipe", "仕込みレシピ"
+
     class CostMode(models.TextChoices):
         NONE = "none", "原価計算しない"
         SAME_UNIT = "same_unit", "仕入単位のまま計算"
@@ -136,6 +140,18 @@ class Ingredient(TimeStampedModel):
     name = models.CharField(max_length=120)
     supplier = models.CharField(max_length=120, blank=True)
     memo = models.TextField(blank=True)
+    ingredient_type = models.CharField(
+        max_length=20,
+        choices=IngredientType.choices,
+        default=IngredientType.RAW,
+    )
+    source_recipe = models.ForeignKey(
+        "Recipe",
+        on_delete=models.PROTECT,
+        related_name="ingredient_links",
+        blank=True,
+        null=True,
+    )
     cost_mode = models.CharField(
         max_length=20,
         choices=CostMode.choices,

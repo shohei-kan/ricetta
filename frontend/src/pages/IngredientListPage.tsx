@@ -3,6 +3,7 @@ import { emptyIngredients, emptyRecipeSearch } from '../assets'
 import {
   fetchIngredients,
   type IngredientCostMode,
+  type IngredientType,
   type IngredientListItem,
 } from '../api/ingredients'
 import { useAuth } from '../auth/useAuth'
@@ -16,6 +17,11 @@ const costModeLabels: Record<IngredientCostMode, string> = {
   none: '原価計算しない',
   same_unit: '仕入単位のまま計算',
   conversion: '使用単位に換算して計算',
+}
+
+const ingredientTypeLabels: Record<IngredientType, string> = {
+  raw: '通常材料',
+  prep_recipe: '仕込み',
 }
 
 export function IngredientListPage({ navigate }: IngredientListPageProps) {
@@ -157,12 +163,17 @@ function IngredientCard({
     <article className="border-b border-[#ded2c2] bg-[#fffdf9] p-5 last:border-b-0 md:grid md:grid-cols-[1.2fr_1.4fr_1fr_1fr] md:items-center md:gap-4">
       <div>
         <h2 className="text-2xl font-bold leading-8 text-[#2e2822]">{ingredient.name}</h2>
+        <p className="mt-1 text-sm font-bold text-[#c76738]">
+          {ingredientTypeLabels[ingredient.ingredient_type]}
+        </p>
         <p className="mt-1 text-sm font-semibold text-[#75685e] md:hidden">
           {ingredient.supplier || '仕入先未設定'}
         </p>
       </div>
       <p className="mt-3 text-base font-bold text-[#6f6258] md:mt-0">
-        {costModeLabels[ingredient.cost_mode]}
+        {ingredient.ingredient_type === 'prep_recipe'
+          ? `${ingredient.source_recipe?.name ?? '仕込みレシピ'}由来`
+          : costModeLabels[ingredient.cost_mode]}
       </p>
       <p className="mt-3 text-lg font-bold text-[#c76738] md:mt-0">
         {ingredient.unit_cost_label ?? '計算なし'}

@@ -394,7 +394,9 @@ export function RecipeFormPage({ id, navigate }: RecipeFormPageProps) {
                     label="材料名"
                     onChange={(value) => updateIngredientRow(index, { ingredient_id: value })}
                     options={activeIngredients.map((ingredient) => ({
-                      label: ingredient.name,
+                      label: ingredient.ingredient_type === 'prep_recipe'
+                        ? `${ingredient.name}（仕込み）`
+                        : ingredient.name,
                       value: String(ingredient.id),
                     }))}
                     required

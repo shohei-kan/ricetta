@@ -533,6 +533,8 @@ q=トマト
     "id": 1,
     "name": "ホールトマト",
     "supplier": "業務スーパー",
+    "ingredient_type": "raw",
+    "source_recipe": null,
     "cost_mode": "conversion",
     "purchase_quantity": "1.00",
     "purchase_unit": {
@@ -561,6 +563,37 @@ q=トマト
 ]
 ```
 
+`ingredient_type=prep_recipe` の場合、`source_recipe` には元になる仕込み用Recipeの概要を返します。
+
+```json
+{
+  "id": 20,
+  "name": "トマトソース",
+  "supplier": "",
+  "ingredient_type": "prep_recipe",
+  "source_recipe": {
+    "id": 1,
+    "name": "トマトソース",
+    "recipe_type": "prep",
+    "base_yield_quantity": "2.50",
+    "base_yield_unit": {
+      "id": 2,
+      "name": "kg"
+    }
+  },
+  "cost_mode": "none",
+  "purchase_quantity": null,
+  "purchase_unit": null,
+  "purchase_price": null,
+  "usage_unit": {
+    "id": 1,
+    "name": "g"
+  },
+  "conversion": null,
+  "unit_cost_label": null
+}
+```
+
 ---
 
 ## POST /api/v1/ingredients/
@@ -580,6 +613,7 @@ Unit指定は `shop = null` の標準Unit、または現在Shopの店舗独自Un
   "name": "塩少々",
   "supplier": "",
   "memo": "",
+  "ingredient_type": "raw",
   "cost_mode": "none"
 }
 ```
@@ -591,6 +625,7 @@ Unit指定は `shop = null` の標準Unit、または現在Shopの店舗独自Un
   "name": "卵",
   "supplier": "",
   "memo": "",
+  "ingredient_type": "raw",
   "cost_mode": "same_unit",
   "purchase_quantity": "1",
   "purchase_unit_id": 5,
@@ -606,6 +641,7 @@ Unit指定は `shop = null` の標準Unit、または現在Shopの店舗独自Un
   "name": "ホールトマト",
   "supplier": "業務スーパー",
   "memo": "",
+  "ingredient_type": "raw",
   "cost_mode": "conversion",
   "purchase_quantity": "1",
   "purchase_unit_id": 7,
@@ -617,6 +653,24 @@ Unit指定は `shop = null` の標準Unit、または現在Shopの店舗独自Un
   "conversion_to_unit_id": 1
 }
 ```
+
+### Request: 仕込みレシピ由来材料
+
+```json
+{
+  "name": "トマトソース",
+  "supplier": "",
+  "memo": "仕込み済みソースを材料として使う",
+  "ingredient_type": "prep_recipe",
+  "source_recipe_id": 1,
+  "usage_unit_id": 1,
+  "cost_mode": "none"
+}
+```
+
+`source_recipe_id` には、現在Shopの `recipe_type=prep` のRecipeのみ指定できます。他ShopのRecipe、販売商品Recipe、存在しないRecipeは `400 Bad Request` です。
+
+`ingredient_type=prep_recipe` の場合、仕入数量・仕入単位・仕入価格・換算情報は使わず、元Recipeの出来上がり単位1単位あたり原価からRecipeIngredientの使用量に応じて計算します。
 
 ### Response
 
@@ -650,6 +704,15 @@ owner / staffとも閲覧できる。
 Unit指定は `shop = null` の標準Unit、または現在Shopの店舗独自Unitのみ許可する。
 
 ### cost_mode validation
+
+`ingredient_type`:
+
+- `raw`: `source_recipe_id` は指定できない
+- `prep_recipe`: `source_recipe_id` と `usage_unit_id` が必須
+- `prep_recipe` の `source_recipe_id` は、現在Shopの `recipe_type=prep` のRecipeのみ指定できる
+- MVPの簡易単位変換は `kg` ↔ `g`、`L` ↔ `ml`、同一単位に対応する
+- 変換できない単位の組み合わせは原価計算上0円扱い
+- 直接循環はRecipe保存時に禁止し、計算側にも再帰ガードを入れる
 
 `none`:
 

@@ -3,7 +3,7 @@
 from django.urls import reverse
 from rest_framework import status
 
-from api.models import Ingredient, Unit
+from api.models import Ingredient, Recipe, Unit
 
 from .base import ApiTestCase
 
@@ -22,7 +22,158 @@ class IngredientApiTests(ApiTestCase):
         ingredient = Ingredient.objects.get(id=response.data["id"])
         self.assertEqual(ingredient.shop, self.shop)
         self.assertEqual(ingredient.cost_mode, Ingredient.CostMode.NONE)
+        self.assertEqual(ingredient.ingredient_type, Ingredient.IngredientType.RAW)
+        self.assertEqual(response.data["ingredient_type"], "raw")
+        self.assertIsNone(response.data["source_recipe"])
         self.assertIsNone(response.data["unit_cost_label"])
+
+    def test_create_prep_recipe_ingredient(self):
+        self.login_owner()
+        gram = self.create_standard_unit("g", Unit.UnitType.WEIGHT)
+        kilogram = self.create_standard_unit("kg", Unit.UnitType.WEIGHT)
+        source_recipe = self.create_recipe("トマトソース", unit=kilogram)
+        source_recipe.recipe_type = Recipe.RecipeType.PREP
+        source_recipe.base_yield_quantity = "2.5"
+        source_recipe.save()
+
+        response = self.client.post(
+            reverse("ingredient-list"),
+            {
+                "name": "トマトソース",
+                "ingredient_type": "prep_recipe",
+                "source_recipe_id": source_recipe.id,
+                "usage_unit_id": gram.id,
+                "cost_mode": "same_unit",
+                "purchase_quantity": "1",
+                "purchase_unit_id": gram.id,
+                "purchase_price": "100",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        ingredient = Ingredient.objects.get(id=response.data["id"])
+        self.assertEqual(ingredient.ingredient_type, Ingredient.IngredientType.PREP_RECIPE)
+        self.assertEqual(ingredient.source_recipe, source_recipe)
+        self.assertEqual(ingredient.cost_mode, Ingredient.CostMode.NONE)
+        self.assertIsNone(ingredient.purchase_price)
+        self.assertEqual(response.data["source_recipe"]["name"], "トマトソース")
+        self.assertEqual(response.data["source_recipe"]["recipe_type"], "prep")
+        self.assertEqual(response.data["source_recipe"]["base_yield_unit"]["name"], "kg")
+
+    def test_prep_recipe_ingredient_requires_source_recipe(self):
+        self.login_owner()
+        gram = self.create_standard_unit("g", Unit.UnitType.WEIGHT)
+
+        response = self.client.post(
+            reverse("ingredient-list"),
+            {
+                "name": "トマトソース",
+                "ingredient_type": "prep_recipe",
+                "usage_unit_id": gram.id,
+                "cost_mode": "none",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("source_recipe_id", response.data)
+
+    def test_prep_recipe_ingredient_requires_usage_unit(self):
+        self.login_owner()
+        kilogram = self.create_standard_unit("kg", Unit.UnitType.WEIGHT)
+        source_recipe = self.create_recipe("トマトソース", unit=kilogram)
+
+        response = self.client.post(
+            reverse("ingredient-list"),
+            {
+                "name": "トマトソース",
+                "ingredient_type": "prep_recipe",
+                "source_recipe_id": source_recipe.id,
+                "cost_mode": "none",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("usage_unit_id", response.data)
+
+    def test_raw_ingredient_rejects_source_recipe(self):
+        self.login_owner()
+        kilogram = self.create_standard_unit("kg", Unit.UnitType.WEIGHT)
+        source_recipe = self.create_recipe("トマトソース", unit=kilogram)
+
+        response = self.client.post(
+            reverse("ingredient-list"),
+            {
+                "name": "通常材料ではない",
+                "ingredient_type": "raw",
+                "source_recipe_id": source_recipe.id,
+                "cost_mode": "none",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("source_recipe_id", response.data)
+
+    def test_prep_recipe_ingredient_rejects_other_shop_source_recipe(self):
+        self.login_owner()
+        gram = self.create_standard_unit("g", Unit.UnitType.WEIGHT)
+        other_recipe = self.create_recipe(
+            "別店舗トマトソース",
+            shop=self.other_shop,
+            unit=gram,
+        )
+
+        response = self.client.post(
+            reverse("ingredient-list"),
+            {
+                "name": "別店舗由来",
+                "ingredient_type": "prep_recipe",
+                "source_recipe_id": other_recipe.id,
+                "usage_unit_id": gram.id,
+                "cost_mode": "none",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("source_recipe_id", response.data)
+
+    def test_prep_recipe_ingredient_rejects_menu_source_recipe(self):
+        self.login_owner()
+        gram = self.create_standard_unit("g", Unit.UnitType.WEIGHT)
+        menu_recipe = self.create_recipe("カポナータ", unit=gram)
+        menu_recipe.recipe_type = Recipe.RecipeType.MENU
+        menu_recipe.save()
+
+        response = self.client.post(
+            reverse("ingredient-list"),
+            {
+                "name": "販売商品由来",
+                "ingredient_type": "prep_recipe",
+                "source_recipe_id": menu_recipe.id,
+                "usage_unit_id": gram.id,
+                "cost_mode": "none",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("source_recipe_id", response.data)
+
+    def test_invalid_ingredient_type_is_rejected(self):
+        self.login_owner()
+
+        response = self.client.post(
+            reverse("ingredient-list"),
+            {"name": "不正種別", "ingredient_type": "invalid", "cost_mode": "none"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("ingredient_type", response.data)
 
     def test_create_same_unit_cost_mode(self):
         self.login_owner()

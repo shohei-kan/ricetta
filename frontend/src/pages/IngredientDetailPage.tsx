@@ -3,6 +3,7 @@ import {
   fetchIngredientDetail,
   type IngredientCostMode,
   type IngredientDetail,
+  type IngredientType,
 } from '../api/ingredients'
 import { useAuth } from '../auth/useAuth'
 
@@ -24,6 +25,11 @@ const costModeText: Record<IngredientCostMode, { label: string; description: str
     label: '使用単位に換算して計算',
     description: '1缶180円、1缶400gなど、仕入単位から使用単位へ換算する材料です。',
   },
+}
+
+const ingredientTypeText: Record<IngredientType, string> = {
+  raw: '通常材料',
+  prep_recipe: '仕込みレシピ',
 }
 
 export function IngredientDetailPage({ id, navigate }: IngredientDetailPageProps) {
@@ -97,6 +103,7 @@ function IngredientDetailContent({
 }) {
   const { session } = useAuth()
   const mode = costModeText[ingredient.cost_mode]
+  const isPrepRecipeIngredient = ingredient.ingredient_type === 'prep_recipe'
   const canManageIngredients = session?.membership.role === 'owner'
 
   return (
@@ -107,7 +114,9 @@ function IngredientDetailContent({
           {ingredient.name}
         </h1>
         <p className="mt-4 text-xl font-bold text-[#c76738]">
-          {ingredient.unit_cost_label ?? '計算なし'}
+          {isPrepRecipeIngredient
+            ? `${ingredient.source_recipe?.name ?? '仕込みレシピ'}由来`
+            : ingredient.unit_cost_label ?? '計算なし'}
         </p>
         {canManageIngredients && (
           <button
@@ -126,6 +135,13 @@ function IngredientDetailContent({
             <h2 className="text-xl font-bold text-[#2e2822]">基本情報</h2>
             <div className="mt-4 space-y-3">
               <InfoRow label="仕入先" value={ingredient.supplier || '未設定'} />
+              <InfoRow label="材料種別" value={ingredientTypeText[ingredient.ingredient_type]} />
+              {isPrepRecipeIngredient && (
+                <InfoRow
+                  label="元になる仕込みレシピ"
+                  value={ingredient.source_recipe?.name ?? '未設定'}
+                />
+              )}
               <InfoRow label="メモ" value={ingredient.memo || '未設定'} />
             </div>
           </section>
@@ -133,8 +149,14 @@ function IngredientDetailContent({
           <section className="rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-5 shadow-sm">
             <h2 className="text-xl font-bold text-[#2e2822]">原価計算モード</h2>
             <div className="mt-4 rounded-lg bg-[#f1e7dc] px-4 py-4">
-              <p className="text-lg font-bold text-[#332820]">{mode.label}</p>
-              <p className="mt-2 leading-7 text-[#75685e]">{mode.description}</p>
+              <p className="text-lg font-bold text-[#332820]">
+                {isPrepRecipeIngredient ? '仕込みレシピから計算' : mode.label}
+              </p>
+              <p className="mt-2 leading-7 text-[#75685e]">
+                {isPrepRecipeIngredient
+                  ? '仕込みレシピの出来上がり量と原価から、使用量に応じた材料原価を計算します。'
+                  : mode.description}
+              </p>
             </div>
           </section>
         </main>
@@ -149,6 +171,21 @@ function IngredientDetailContent({
 }
 
 function CostInfo({ ingredient }: { ingredient: IngredientDetail }) {
+  if (ingredient.ingredient_type === 'prep_recipe') {
+    return (
+      <section className="rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-5 shadow-sm">
+        <h2 className="text-xl font-bold text-[#34291f]">原価情報</h2>
+        <div className="mt-4 space-y-3">
+          <InfoRow label="使用単位" value={ingredient.usage_unit?.name ?? '未設定'} />
+          <InfoRow
+            label="計算方法"
+            value="仕込みレシピの1単位あたり原価から計算"
+          />
+        </div>
+      </section>
+    )
+  }
+
   if (ingredient.cost_mode === 'none') {
     return (
       <section className="rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-5 shadow-sm">

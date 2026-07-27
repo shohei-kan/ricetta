@@ -7,7 +7,9 @@ import {
   type IngredientCostMode,
   type IngredientDetail,
   type IngredientFormPayload,
+  type IngredientType,
 } from '../api/ingredients'
+import { fetchRecipes, type RecipeListItem } from '../api/recipes'
 import { fetchUnits, type Unit } from '../api/units'
 import { useAuth } from '../auth/useAuth'
 import { AutoResizeTextarea } from '../components/ui/AutoResizeTextarea'
@@ -21,6 +23,8 @@ type FormState = {
   name: string
   supplier: string
   memo: string
+  ingredient_type: IngredientType
+  source_recipe_id: string
   cost_mode: IngredientCostMode
   purchase_quantity: string
   purchase_unit_id: string
@@ -34,6 +38,8 @@ const initialFormState: FormState = {
   name: '',
   supplier: '',
   memo: '',
+  ingredient_type: 'raw',
+  source_recipe_id: '',
   cost_mode: 'none',
   purchase_quantity: '',
   purchase_unit_id: '',
@@ -65,11 +71,29 @@ const costModeOptions: Array<{
   },
 ]
 
+const ingredientTypeOptions: Array<{
+  description: string
+  label: string
+  value: IngredientType
+}> = [
+  {
+    description: '野菜、肉、調味料など、仕入原価を直接入力する材料。',
+    label: '通常材料',
+    value: 'raw',
+  },
+  {
+    description: 'トマトソースなど、仕込み用レシピを別レシピの材料として使う項目。',
+    label: '仕込みレシピ',
+    value: 'prep_recipe',
+  },
+]
+
 export function IngredientFormPage({ id, navigate }: IngredientFormPageProps) {
   const { session } = useAuth()
   const isEdit = id !== undefined
   const [form, setForm] = useState<FormState>(initialFormState)
   const [units, setUnits] = useState<Unit[]>([])
+  const [recipes, setRecipes] = useState<RecipeListItem[]>([])
   const [loading, setLoading] = useState(isEdit)
   const [unitsLoading, setUnitsLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -85,9 +109,13 @@ export function IngredientFormPage({ id, navigate }: IngredientFormPageProps) {
       setUnitsLoading(true)
       setUnitError(null)
       try {
-        const response = await fetchUnits()
+        const [unitResponse, recipeResponse] = await Promise.all([
+          fetchUnits(),
+          fetchRecipes(),
+        ])
         if (active) {
-          setUnits(response)
+          setUnits(unitResponse)
+          setRecipes(recipeResponse)
         }
       } catch {
         if (active) {
@@ -147,11 +175,28 @@ export function IngredientFormPage({ id, navigate }: IngredientFormPageProps) {
     () => units.find((unit) => String(unit.id) === form.usage_unit_id),
     [form.usage_unit_id, units],
   )
+  const prepRecipes = useMemo(
+    () => recipes.filter((recipe) => recipe.recipe_type === 'prep'),
+    [recipes],
+  )
   const canManageIngredients = session?.membership.role === 'owner'
 
   function updateForm(updates: Partial<FormState>) {
     setForm((current) => {
       const next = { ...current, ...updates }
+
+      if (updates.ingredient_type === 'raw') {
+        next.source_recipe_id = ''
+      }
+
+      if (updates.ingredient_type === 'prep_recipe') {
+        next.cost_mode = 'none'
+        next.purchase_quantity = ''
+        next.purchase_unit_id = ''
+        next.purchase_price = ''
+        next.conversion_from_quantity = ''
+        next.conversion_to_quantity = ''
+      }
 
       if (updates.cost_mode === 'none') {
         next.purchase_quantity = ''
@@ -282,6 +327,63 @@ export function IngredientFormPage({ id, navigate }: IngredientFormPageProps) {
         </section>
 
         <section className="rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-5 shadow-sm md:p-6">
+          <h2 className="text-2xl font-bold text-[#2e2822]">材料種別</h2>
+          <div className="mt-4 grid gap-3 md:grid-cols-2">
+            {ingredientTypeOptions.map((option) => (
+              <label
+                className={`block rounded-xl border p-4 ${
+                  form.ingredient_type === option.value
+                    ? 'border-[#c76738] bg-[#f1e7dc]'
+                    : 'border-[#eadfce] bg-white'
+                }`}
+                key={option.value}
+              >
+                <input
+                  checked={form.ingredient_type === option.value}
+                  className="sr-only"
+                  name="ingredient_type"
+                  onChange={() => updateForm({ ingredient_type: option.value })}
+                  type="radio"
+                />
+                <span className="text-base font-bold text-[#332820]">{option.label}</span>
+                <span className="mt-2 block text-sm leading-6 text-[#75685e]">
+                  {option.description}
+                </span>
+              </label>
+            ))}
+          </div>
+        </section>
+
+        {form.ingredient_type === 'prep_recipe' && (
+          <section className="rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-5 shadow-sm md:p-6">
+            <h2 className="text-2xl font-bold text-[#2e2822]">仕込みレシピ</h2>
+            {unitError && <p className="mt-3 text-sm font-semibold text-[#a23d2d]">{unitError}</p>}
+            <p className="mt-2 text-sm leading-6 text-[#75685e]">
+              仕込みレシピの出来上がり量と原価から、使用量に応じた材料原価を計算します。
+            </p>
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
+              <RecipeSelectField
+                disabled={unitsLoading}
+                label="元になる仕込みレシピ"
+                onChange={(value) => updateForm({ source_recipe_id: value })}
+                recipes={prepRecipes}
+                required
+                value={form.source_recipe_id}
+              />
+              <SelectField
+                disabled={unitsLoading}
+                label="使用単位"
+                onChange={(value) => updateForm({ usage_unit_id: value })}
+                required
+                units={units}
+                value={form.usage_unit_id}
+              />
+            </div>
+          </section>
+        )}
+
+        {form.ingredient_type === 'raw' && (
+          <section className="rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-5 shadow-sm md:p-6">
           <h2 className="text-2xl font-bold text-[#2e2822]">原価計算モード</h2>
           <div className="mt-4 grid gap-3 lg:grid-cols-3">
             {costModeOptions.map((option) => (
@@ -308,8 +410,9 @@ export function IngredientFormPage({ id, navigate }: IngredientFormPageProps) {
             ))}
           </div>
         </section>
+        )}
 
-        {form.cost_mode !== 'none' && (
+        {form.ingredient_type === 'raw' && form.cost_mode !== 'none' && (
           <section className="rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-5 shadow-sm md:p-6">
             <h2 className="text-2xl font-bold text-[#2e2822]">仕入・使用情報</h2>
             {unitError && <p className="mt-3 text-sm font-semibold text-[#a23d2d]">{unitError}</p>}
@@ -359,7 +462,7 @@ export function IngredientFormPage({ id, navigate }: IngredientFormPageProps) {
           </section>
         )}
 
-        {form.cost_mode === 'conversion' && (
+        {form.ingredient_type === 'raw' && form.cost_mode === 'conversion' && (
           <section className="rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-5 shadow-sm md:p-6">
             <h2 className="text-2xl font-bold text-[#2e2822]">換算情報</h2>
             <p className="mt-2 text-sm leading-6 text-[#75685e]">
@@ -516,6 +619,44 @@ function SelectField({
   )
 }
 
+function RecipeSelectField({
+  disabled,
+  label,
+  onChange,
+  recipes,
+  required,
+  value,
+}: {
+  disabled?: boolean
+  label: string
+  onChange: (value: string) => void
+  recipes: RecipeListItem[]
+  required?: boolean
+  value: string
+}) {
+  return (
+    <label className="block">
+      <span className="text-sm font-semibold text-[#4b4037]">
+        {label}
+        {required ? ' *' : ''}
+      </span>
+      <select
+        className="mt-2 min-h-12 w-full rounded-lg border border-[#d7cbbb] bg-white px-4 text-base text-[#2b2621] outline-none ring-[#b88458] transition focus:ring-2 disabled:bg-[#eee7db] disabled:text-[#8a7a6d]"
+        disabled={disabled}
+        onChange={(event) => onChange(event.target.value)}
+        value={value}
+      >
+        <option value="">選択してください</option>
+        {recipes.map((recipe) => (
+          <option key={recipe.id} value={recipe.id}>
+            {recipe.name}（出来上がり量 {formatQuantity(recipe.base_yield_quantity)} {recipe.base_yield_unit.name}）
+          </option>
+        ))}
+      </select>
+    </label>
+  )
+}
+
 function ReadOnlyField({ label, value }: { label: string; value: string }) {
   return (
     <div>
@@ -532,6 +673,8 @@ function toFormState(ingredient: IngredientDetail): FormState {
     name: ingredient.name,
     supplier: ingredient.supplier,
     memo: ingredient.memo,
+    ingredient_type: ingredient.ingredient_type,
+    source_recipe_id: ingredient.source_recipe ? String(ingredient.source_recipe.id) : '',
     cost_mode: ingredient.cost_mode,
     purchase_quantity: ingredient.purchase_quantity ?? '',
     purchase_unit_id: ingredient.purchase_unit ? String(ingredient.purchase_unit.id) : '',
@@ -547,7 +690,26 @@ function toPayload(form: FormState): IngredientFormPayload {
     name: form.name.trim(),
     supplier: form.supplier.trim(),
     memo: form.memo.trim(),
+    ingredient_type: form.ingredient_type,
+    source_recipe_id: form.ingredient_type === 'prep_recipe'
+      ? toNumberOrNull(form.source_recipe_id)
+      : null,
     cost_mode: form.cost_mode,
+  }
+
+  if (form.ingredient_type === 'prep_recipe') {
+    return {
+      ...base,
+      cost_mode: 'none',
+      purchase_quantity: null,
+      purchase_unit_id: null,
+      purchase_price: null,
+      usage_unit_id: toNumberOrNull(form.usage_unit_id),
+      conversion_from_quantity: null,
+      conversion_from_unit_id: null,
+      conversion_to_quantity: null,
+      conversion_to_unit_id: null,
+    }
   }
 
   if (form.cost_mode === 'none') {
@@ -602,6 +764,16 @@ function validateForm(form: FormState) {
     errors.push('材料名を入力してください。')
   }
 
+  if (form.ingredient_type === 'prep_recipe') {
+    if (!form.source_recipe_id) {
+      errors.push('元になる仕込みレシピを選択してください。')
+    }
+    if (!form.usage_unit_id) {
+      errors.push('使用単位を選択してください。')
+    }
+    return errors
+  }
+
   if (form.cost_mode === 'same_unit' || form.cost_mode === 'conversion') {
     validatePositive(form.purchase_quantity, '仕入数量', errors)
     if (!form.purchase_unit_id) {
@@ -643,6 +815,12 @@ function validateNonNegative(value: string, label: string, errors: string[]) {
   } else if (number < 0) {
     errors.push(`${label}は0以上の値を入力してください。`)
   }
+}
+
+function formatQuantity(value: string) {
+  return Number(value).toLocaleString('ja-JP', {
+    maximumFractionDigits: 2,
+  })
 }
 
 function toNumberOrNull(value: string) {

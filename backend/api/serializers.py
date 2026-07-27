@@ -147,11 +147,45 @@ class UnitSummarySerializer(serializers.ModelSerializer):
         fields = ["id", "name"]
 
 
+class SourceRecipeSummarySerializer(serializers.ModelSerializer):
+    base_yield_unit = UnitSummarySerializer(read_only=True)
+
+    class Meta:
+        model = Recipe
+        fields = [
+            "id",
+            "name",
+            "recipe_type",
+            "base_yield_quantity",
+            "base_yield_unit",
+        ]
+
+
+class ScopedPrepRecipeField(serializers.PrimaryKeyRelatedField):
+    def get_queryset(self):
+        request = self.context.get("request")
+        if request is None:
+            return Recipe.objects.none()
+        shop = get_current_shop(request.user)
+        return Recipe.objects.filter(
+            shop=shop,
+            recipe_type=Recipe.RecipeType.PREP,
+            is_active=True,
+        )
+
+
 class IngredientSerializer(serializers.ModelSerializer):
     purchase_unit = UnitSummarySerializer(read_only=True)
     usage_unit = UnitSummarySerializer(read_only=True)
     conversion_from_unit = UnitSummarySerializer(read_only=True)
     conversion_to_unit = UnitSummarySerializer(read_only=True)
+    source_recipe = SourceRecipeSummarySerializer(read_only=True)
+    source_recipe_id = ScopedPrepRecipeField(
+        source="source_recipe",
+        required=False,
+        allow_null=True,
+        write_only=True,
+    )
     purchase_unit_id = serializers.PrimaryKeyRelatedField(
         queryset=Unit.objects.none(),
         source="purchase_unit",
@@ -190,6 +224,9 @@ class IngredientSerializer(serializers.ModelSerializer):
             "name",
             "supplier",
             "memo",
+            "ingredient_type",
+            "source_recipe",
+            "source_recipe_id",
             "cost_mode",
             "purchase_quantity",
             "purchase_unit",
@@ -211,6 +248,7 @@ class IngredientSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = [
             "id",
+            "source_recipe",
             "purchase_unit",
             "usage_unit",
             "conversion",
@@ -255,6 +293,33 @@ class IngredientSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         values = self._merged_values(attrs)
+        ingredient_type = values.get("ingredient_type") or Ingredient.IngredientType.RAW
+        source_recipe = values.get("source_recipe")
+
+        if ingredient_type == Ingredient.IngredientType.PREP_RECIPE:
+            if source_recipe is None:
+                raise serializers.ValidationError(
+                    {"source_recipe_id": "仕込みレシピを選択してください。"}
+                )
+            if values.get("usage_unit") is None:
+                raise serializers.ValidationError(
+                    {"usage_unit_id": "使用単位を選択してください。"}
+                )
+            attrs["cost_mode"] = Ingredient.CostMode.NONE
+            attrs["purchase_quantity"] = None
+            attrs["purchase_unit"] = None
+            attrs["purchase_price"] = None
+            attrs["conversion_from_quantity"] = None
+            attrs["conversion_from_unit"] = None
+            attrs["conversion_to_quantity"] = None
+            attrs["conversion_to_unit"] = None
+            return attrs
+
+        if ingredient_type == Ingredient.IngredientType.RAW and source_recipe is not None:
+            raise serializers.ValidationError(
+                {"source_recipe_id": "通常材料では仕込みレシピを指定できません。"}
+            )
+
         cost_mode = values.get("cost_mode") or Ingredient.CostMode.NONE
 
         if cost_mode == Ingredient.CostMode.NONE:
@@ -271,6 +336,8 @@ class IngredientSerializer(serializers.ModelSerializer):
     def _merged_values(self, attrs):
         fields = [
             "cost_mode",
+            "ingredient_type",
+            "source_recipe",
             "purchase_quantity",
             "purchase_unit",
             "purchase_price",
@@ -568,6 +635,7 @@ class RecipeSerializer(serializers.ModelSerializer):
         ingredients_data = validated_data.pop("ingredients", [])
         steps_data = validated_data.pop("steps", [])
         recipe = Recipe.objects.create(**validated_data)
+        self._validate_ingredient_links(recipe, ingredients_data)
         self._replace_ingredients(recipe, ingredients_data)
         self._replace_steps(recipe, steps_data)
         return recipe
@@ -579,12 +647,32 @@ class RecipeSerializer(serializers.ModelSerializer):
             setattr(instance, field, value)
         instance.save()
         if ingredients_data is not None:
+            self._validate_ingredient_links(instance, ingredients_data)
             instance.ingredients.all().delete()
             self._replace_ingredients(instance, ingredients_data)
         if steps_data is not None:
             instance.steps.all().delete()
             self._replace_steps(instance, steps_data)
         return instance
+
+    def _validate_ingredient_links(self, recipe, ingredients_data):
+        for ingredient_data in ingredients_data:
+            ingredient = ingredient_data.get("ingredient")
+            if (
+                ingredient is not None
+                and ingredient.ingredient_type == Ingredient.IngredientType.PREP_RECIPE
+                and ingredient.source_recipe_id == recipe.id
+            ):
+                raise serializers.ValidationError(
+                    {
+                        "ingredients": [
+                            {
+                                "ingredient_id": "自分自身を材料として使用することはできません。"
+                            }
+                        ]
+                    }
+                )
+            # TODO: 深い循環参照はMVP後により厳密なグラフ検証を検討する。
 
     def _replace_ingredients(self, recipe, ingredients_data):
         for ingredient_data in ingredients_data:

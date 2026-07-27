@@ -287,6 +287,8 @@ Decimalで計算し、MVPでは表示用に簡易丸めします。厳密な会�
 | name | string | 材料名 |
 | supplier | string / nullable | 仕入先 |
 | memo | text | メモ |
+| ingredient_type | string | `raw` または `prep_recipe` |
+| source_recipe_id | FK / nullable | 仕込みレシピ由来材料の元Recipe |
 | cost_mode | string | none / same_unit / conversion |
 | purchase_quantity | decimal / nullable | 仕入数量 |
 | purchase_unit_id | FK / nullable | 仕入単位 |
@@ -314,6 +316,21 @@ Ingredientで指定できるUnitは以下に限定します。
 - 現在Shopの店舗独自Unit
 
 他ShopのUnitは指定できません。
+
+### ingredient_type
+
+| 値 | 説明 |
+|---|---|
+| raw | 通常材料。仕入価格・単位・換算情報から原価を計算する |
+| prep_recipe | 仕込みレシピ由来材料。`source_recipe` の1単位あたり原価から原価を計算する |
+
+`ingredient_type=prep_recipe` の場合、`source_recipe` は同じShopの `recipe_type=prep` のRecipeのみ指定できます。`usage_unit` は必須です。
+
+`ingredient_type=raw` の場合、`source_recipe` は指定できません。
+
+仕込みレシピ由来材料では、RecipeIngredientの使用量と単位に応じて `source_recipe` の1単位あたり原価を使います。MVPでは簡易変換として `kg` ↔ `g`、`L` ↔ `ml`、同一単位に対応します。変換できない単位の組み合わせは0円扱いにします。
+
+直接循環（Recipe A が、自分自身を `source_recipe` にしたIngredientを使う）はAPIで禁止します。原価計算側にも再帰ガードを入れ、深い循環で無限再帰しないようにします。深い循環参照を保存前に完全検証する仕組みはMVP後の課題です。
 
 ### cost_mode
 

@@ -61,6 +61,16 @@ class Command(BaseCommand):
         categories = self._seed_categories(shop)
         ingredients = self._seed_ingredients(shop, units)
         recipes = self._seed_recipes(shop, owner, categories, units, ingredients)
+        self._seed_prep_recipe_ingredients(shop, units, ingredients, recipes)
+        recipes.update(
+            self._seed_menu_recipes_with_prep_ingredients(
+                shop,
+                owner,
+                categories,
+                units,
+                ingredients,
+            )
+        )
         self._seed_prep_tasks(shop, recipes, units)
         self._seed_board_memos(shop)
 
@@ -80,14 +90,14 @@ class Command(BaseCommand):
         # AWS公開デモの定期リセット用途。
         # reset対象は固定名で特定したデモShopに限定し、全Shop削除は絶対にしない。
         # 実データやデモ対象外Shopを巻き込まないため、Userは削除せず再利用する。
-        # 削除対象: PrepTask, BoardMemo, RecipeStep, RecipeIngredient, Recipe,
-        # Ingredient, Category, shop-specific Unit, Membership, Shop.
+        # 削除対象: PrepTask, BoardMemo, RecipeStep, RecipeIngredient, Ingredient,
+        # Recipe, Category, shop-specific Unit, Membership, Shop.
         PrepTask.objects.filter(shop=demo_shop).delete()
         BoardMemo.objects.filter(shop=demo_shop).delete()
         RecipeStep.objects.filter(recipe__shop=demo_shop).delete()
         RecipeIngredient.objects.filter(recipe__shop=demo_shop).delete()
-        Recipe.objects.filter(shop=demo_shop).delete()
         Ingredient.objects.filter(shop=demo_shop).delete()
+        Recipe.objects.filter(shop=demo_shop).delete()
         Category.objects.filter(shop=demo_shop).delete()
         Unit.objects.filter(shop=demo_shop).delete()
         Membership.objects.filter(shop=demo_shop).delete()
@@ -403,6 +413,24 @@ class Command(BaseCommand):
                 "purchase_price": "420",
                 "usage_unit": units["本"],
             },
+            {
+                "name": "ベーコン",
+                "supplier": "精肉卸",
+                "cost_mode": Ingredient.CostMode.SAME_UNIT,
+                "purchase_quantity": "1000",
+                "purchase_unit": units["g"],
+                "purchase_price": "1500",
+                "usage_unit": units["g"],
+            },
+            {
+                "name": "スパゲッティ",
+                "supplier": "業務用スーパー",
+                "cost_mode": Ingredient.CostMode.SAME_UNIT,
+                "purchase_quantity": "1000",
+                "purchase_unit": units["g"],
+                "purchase_price": "420",
+                "usage_unit": units["g"],
+            },
         ]
 
         ingredients = {}
@@ -419,11 +447,74 @@ class Command(BaseCommand):
         )
         if ingredient is None:
             ingredient = Ingredient(shop=shop, name=name)
+        if "ingredient_type" not in defaults:
+            ingredient.ingredient_type = Ingredient.IngredientType.RAW
+            ingredient.source_recipe = None
         for field, value in defaults.items():
             setattr(ingredient, field, value)
         ingredient.is_active = True
         ingredient.save()
         return ingredient
+
+    def _seed_prep_recipe_ingredients(self, shop, units, ingredients, recipes):
+        ingredients["トマトソース"] = self._update_or_create_ingredient(
+            shop,
+            "トマトソース",
+            {
+                "supplier": "",
+                "memo": "仕込みレシピ「トマトソース」を別レシピの材料として使うための項目。",
+                "ingredient_type": Ingredient.IngredientType.PREP_RECIPE,
+                "source_recipe": recipes["トマトソース"],
+                "cost_mode": Ingredient.CostMode.NONE,
+                "purchase_quantity": None,
+                "purchase_unit": None,
+                "purchase_price": None,
+                "usage_unit": units["g"],
+                "conversion_from_quantity": None,
+                "conversion_from_unit": None,
+                "conversion_to_quantity": None,
+                "conversion_to_unit": None,
+            },
+        )
+
+    def _seed_menu_recipes_with_prep_ingredients(
+        self,
+        shop,
+        owner,
+        categories,
+        units,
+        ingredients,
+    ):
+        spec = {
+            "name": "ベーコンとナスのトマトソースパスタ",
+            "category": categories["惣菜"],
+            "description": "仕込み用トマトソースを材料として使う販売商品レシピ。",
+            "recipe_type": Recipe.RecipeType.MENU,
+            "base_yield_quantity": "1",
+            "base_yield_unit": units["食分"],
+            "selling_price": "1200",
+            "notes": "トマトソースは仕込みレシピ由来Ingredientとして原価計算されます。",
+            "allergen_notes": "小麦・豚肉",
+            "ingredients": [
+                ("トマトソース", "150", "g", "仕込み済みソース", 1),
+                ("ベーコン", "40", "g", "短冊切り", 2),
+                ("なす", "80", "g", "輪切り", 3),
+                ("スパゲッティ", "100", "g", "", 4),
+            ],
+            "steps": [
+                "スパゲッティを茹でる。",
+                "フライパンでベーコンとなすを炒める。",
+                "トマトソースを加えて温め、茹で上がった麺と合わせる。",
+            ],
+        }
+        recipe = self._update_or_create_recipe(
+            shop=shop,
+            owner=owner,
+            units=units,
+            ingredients=ingredients,
+            spec=spec,
+        )
+        return {spec["name"]: recipe}
 
     def _seed_recipes(self, shop, owner, categories, units, ingredients):
         recipes = {}

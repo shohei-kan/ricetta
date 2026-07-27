@@ -104,10 +104,14 @@ class ApiTestCase(TestCase):
         conversion_from_unit=None,
         conversion_to_quantity=None,
         conversion_to_unit=None,
+        ingredient_type=Ingredient.IngredientType.RAW,
+        source_recipe=None,
     ):
         return Ingredient.objects.create(
             shop=shop or self.shop,
             name=name,
+            ingredient_type=ingredient_type,
+            source_recipe=source_recipe,
             cost_mode=cost_mode,
             usage_unit=usage_unit,
             purchase_unit=purchase_unit,
