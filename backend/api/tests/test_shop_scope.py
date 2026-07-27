@@ -1,5 +1,6 @@
 # pyright: reportAttributeAccessIssue=false
 
+from django.test import override_settings
 from django.urls import reverse
 from rest_framework import status
 
@@ -36,6 +37,20 @@ class ShopScopeTests(ApiTestCase):
         self.assertEqual(self.shop.name, "新しい食堂名")
         self.assertEqual(self.shop.business_type, "定食屋")
         self.assertEqual(self.shop.memo, "駅前店舗")
+
+    @override_settings(DEMO_MODE=True)
+    def test_demo_mode_keeps_owner_shop_update_allowed(self):
+        self.login_owner()
+
+        response = self.client.patch(
+            reverse("shop_me"),
+            {"memo": "公開デモでも店舗メモ編集はownerに許可"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.shop.refresh_from_db()
+        self.assertEqual(self.shop.memo, "公開デモでも店舗メモ編集はownerに許可")
 
     def test_staff_cannot_update_current_shop(self):
         staff = self.create_user("staff@example.com", "password")

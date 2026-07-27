@@ -166,9 +166,34 @@ Phase 3:
 
 `backend/api/demo_policy.py` には、デモ環境で禁止したい操作を集約します。
 
-現在は `deny_in_demo()` を用意していますが、既存Viewにはまだ適用していません。
+`deny_in_demo()` は、`DEMO_MODE=True` のときにDRFの `PermissionDenied` を送出します。
 
-将来的な禁止候補:
+デモ環境で禁止する操作を追加する場合は、各Viewへ直接 `settings.DEMO_MODE` を書かず、`deny_in_demo()` 経由で制御します。
+
+### DEMO_MODEでも許可する操作
+
+公開デモでは、以下の業務操作は試せる状態を維持します。
+
+- Recipe 作成・編集・削除
+- Ingredient 作成・編集・削除
+- Category 作成・編集・削除
+- Unit 作成・編集・削除
+- PrepTask 作成・編集・削除・ステータス変更
+- BoardMemo 作成・チェック・戻し
+- 自分の表示名変更
+- owner / staff の通常role制御
+
+理由:
+
+- 公開デモで操作感を見せるため
+- `seed_portfolio_data --reset` で初期状態に戻せるため
+- staffは既存role制御で管理操作ができないため
+
+### DEMO_MODEで禁止する操作
+
+現時点では、メールアドレス変更、パスワード変更、アカウント削除、店舗削除、外部連携設定、ファイルアップロードのViewは未実装です。そのため、既存Viewへ新たに `deny_in_demo()` を適用する箇所はありません。
+
+将来、以下の操作を実装する場合は `deny_in_demo()` の適用対象にします。
 
 - メールアドレス変更
 - パスワード変更
@@ -178,7 +203,13 @@ Phase 3:
 - 外部連携
 - ファイルアップロード
 
-デモ環境で禁止する操作を追加する場合は、各Viewへ直接 `settings.DEMO_MODE` を書かず、`deny_in_demo()` 経由で制御します。
+現在存在する関連Viewの扱い:
+
+- `auth/me` の表示名変更は、DEMO_MODEでも許可する
+- `shop/me` の店舗情報更新は、通常role制御どおりownerのみ許可する
+- 店舗削除Viewは未実装
+- パスワード変更Viewは未実装
+- メールアドレス変更Viewは未実装
 
 ## AWS production env 注意
 

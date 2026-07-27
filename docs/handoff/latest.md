@@ -10,15 +10,15 @@ Ricetta
 
 ## Status
 
-AWS demo env checklist added.
+DEMO_MODE restriction scope clarified.
 
 ## Summary
 
-AWS EC2 + Docker Composeで公開デモを動かすための実務メモとして、`docs/deploy/aws-demo-env.md` を追加した。既存の `docs/deploy/demo.md` は公開デモの仕様説明として維持し、新規docsはenv値、frontend build env、DB env、migrate/seed/resetコマンド、公開前チェックリストに絞っている。既存settingsで読んでいないenvは例に含めず、将来settings実装と揃えてから追加する方針を明記した。
+DEMO_MODEで禁止する操作範囲を確認・整理した。現時点ではメール変更、パスワード変更、アカウント削除、店舗削除、外部連携、ファイルアップロード系Viewは未実装のため、既存Viewへ `deny_in_demo()` を適用する箇所はない。公開デモで触ってほしいRecipe / Ingredient / Category / Unit / PrepTask / BoardMemo操作と自分の表示名変更は、DEMO_MODEでも許可する方針をdocsに明記し、代表操作がDEMO_MODEで止まらないbackendテストを追加した。
 
 ## Current Goal
 
-次はAWS公開デモ用の実env値、compose運用、HTTPS/ドメイン設定、手動reset手順を実環境に合わせて詰める。UI面では、引き続きRecipe Formとカポナータの表示を実ブラウザで確認する。
+次はAWS公開デモ用の実env値、compose運用、HTTPS/ドメイン設定、手動reset手順を実環境に合わせて詰める。将来メール変更・パスワード変更・削除系Viewを追加する場合は、実装時に `deny_in_demo()` を適用する。
 
 ## Current State
 
@@ -43,6 +43,9 @@ AWS EC2 + Docker Composeで公開デモを動かすための実務メモとし�
 - `docs/deploy/demo.md` は公開デモの仕様説明。
 - `docs/deploy/aws-demo-env.md` はAWS EC2 + Docker Compose公開時のenvと運用コマンド確認用。
 - `aws-demo-env.md` には、既存settingsで読んでいない `DJANGO_ENV` / `CORS_ALLOWED_ORIGINS` / cookie secure系envは例として追加していない。
+- `backend/api/demo_policy.py` には `deny_in_demo()` がある。DEMO_MODE=TrueのときDRF `PermissionDenied` を送出する。
+- 現時点で `deny_in_demo()` を適用すべき既存の危険Viewはない。
+- `auth/me` の表示名変更、`shop/me` の店舗情報更新、Recipe作成はDEMO_MODEでも許可するテストを追加済み。
 
 ## What Was Done
 
@@ -71,6 +74,9 @@ AWS EC2 + Docker Composeで公開デモを動かすための実務メモとし�
 - `docs/deploy/aws-demo-env.md` を追加した。
 - `docs/README.md` からAWS demo env checklistへのリンクを追加した。
 - `docs/deploy/demo.md` からAWS demo env checklistへの短い導線を追加した。
+- `docs/deploy/demo.md` に、DEMO_MODEでも許可する業務操作と、将来 `deny_in_demo()` 対象にする破壊系操作を整理した。
+- `docs/deploy/aws-demo-env.md` の公開前チェックに、破壊系Viewの `deny_in_demo()` 適用確認を追加した。
+- DEMO_MODEでも表示名変更、店舗情報更新、Recipe作成が許可されるbackendテストを追加した。
 
 ## Key Decisions
 
@@ -82,6 +88,7 @@ AWS EC2 + Docker Composeで公開デモを動かすための実務メモとし�
 - 深い循環参照の完全な保存前検証は今回やらない。計算側の再帰ガードで無限再帰を防ぐ。
 - owner/staff権限は変更しない。
 - 公開デモdocsでは、仕様説明は `demo.md`、実運用envメモは `aws-demo-env.md` に分ける。
+- DEMO_MODEはowner/staff権限とは別レイヤー。業務操作は公開デモで触れる状態を保ち、アカウント破壊・店舗破壊・認証情報変更系だけを将来の禁止対象にする。
 
 ## Key Files
 
@@ -92,7 +99,9 @@ AWS EC2 + Docker Composeで公開デモを動かすための実務メモとし�
 - `backend/api/views.py`
 - `backend/api/management/commands/seed_portfolio_data.py`
 - `backend/api/tests/base.py`
+- `backend/api/tests/test_auth.py`
 - `backend/api/tests/test_ingredients.py`
+- `backend/api/tests/test_shop_scope.py`
 - `backend/api/tests/test_recipes.py`
 - `backend/api/tests/test_seed_portfolio_data.py`
 - `frontend/src/api/ingredients.ts`
@@ -144,6 +153,10 @@ Result:
 - Recipe Form UI調整後のfrontend lint: pass
 - Recipe Form UI調整後のfrontend build: pass
 - AWS demo env docs追加後のwhitespace check: pass
+- DEMO_MODE許可操作の対象backend tests: 50 pass
+- DEMO_MODE許可操作追加後のbackend tests: 146 pass
+- DEMO_MODE許可操作追加後のbackend check: pass
+- DEMO_MODE許可操作追加後のmakemigrations dry-run: no changes detected
 
 Manual browser verification:
 
@@ -199,6 +212,7 @@ Manual browser verification:
 5. owner / staff両方でログインし、staffがIngredient / Recipe編集できない既存挙動が壊れていないことを確認する。
 6. `docs/deploy/aws-demo-env.md` をもとにAWS公開デモ用の実env値と手動reset手順を実環境へ反映する。
 7. 定期reset方法は手動運用開始後にcron / systemd timer / GitHub Actions + SSHから選ぶ。
+8. 将来メール変更・パスワード変更・アカウント削除・店舗削除・upload系Viewを実装する場合は、`deny_in_demo()` を適用する。
 
 ## Open Questions
 
@@ -218,7 +232,8 @@ Manual browser verification:
 - `backend/api/tests.py` は削除済み。新規backend APIテストは `backend/api/tests/test_*.py` に追加する。
 - 共通fixture / helperが必要な場合は `backend/api/tests/base.py` の `ApiTestCase` を使う。
 - `owner@example.com` / `password` と `staff@example.com` / `password` は `seed_portfolio_data` で再作成・更新される。
-- `backend/api/demo_policy.py` はまだ既存Viewから使っていない。DEMO_MODE固有制限は次タスクで明示的に行う。
+- `backend/api/demo_policy.py` はまだ既存Viewから使っていない。現時点で適用対象になる危険Viewは未実装。
+- `deny_in_demo()` はResponseを返さず `PermissionDenied` をraiseする。Viewでは呼ぶだけでよい。
 - production envにはlocalhostを含めない。
 - `docs/deploy/aws-demo-env.md` のenv例はダミー値のみ。実secret / 実ドメインは書かない。
 - Docker frontendは `http://localhost:5174`。
@@ -226,5 +241,5 @@ Manual browser verification:
 ## Suggested Commit Message
 
 ```text
-docs(deploy): add aws demo env checklist
+docs(demo): clarify demo mode restrictions
 ```

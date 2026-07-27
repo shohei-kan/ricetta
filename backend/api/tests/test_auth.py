@@ -1,5 +1,6 @@
 # pyright: reportAttributeAccessIssue=false
 
+from django.test import override_settings
 from django.urls import reverse
 from rest_framework import status
 
@@ -73,6 +74,20 @@ class AuthApiTests(ApiTestCase):
         membership.refresh_from_db()
         self.assertEqual(membership.display_name, "佐藤 スタッフ")
         self.assertEqual(response.data["membership"]["role"], "staff")
+
+    @override_settings(DEMO_MODE=True)
+    def test_demo_mode_allows_own_display_name_update(self):
+        self.login_owner()
+
+        response = self.client.patch(
+            reverse("auth_me"),
+            {"display_name": "デモ店長"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.membership.refresh_from_db()
+        self.assertEqual(self.membership.display_name, "デモ店長")
 
     def test_logout(self):
         self.login_owner()

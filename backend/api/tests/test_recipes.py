@@ -1,5 +1,6 @@
 # pyright: reportAttributeAccessIssue=false
 
+from django.test import override_settings
 from django.urls import reverse
 from rest_framework import status
 
@@ -67,6 +68,19 @@ class RecipeApiTests(ApiTestCase):
         self.assertEqual(response.data["ingredients"][0]["ingredient"]["name"], "玉ねぎ")
         self.assertNotIn("cost", response.data["ingredients"][0])
         self.assertIn("cost_summary", response.data)
+
+    @override_settings(DEMO_MODE=True)
+    def test_demo_mode_allows_owner_recipe_create(self):
+        self.login_owner()
+
+        response = self.client.post(
+            reverse("recipe-list"),
+            self.recipe_payload(),
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(Recipe.objects.filter(shop=self.shop, name="トマトソース").exists())
 
     def test_create_recipe_accepts_recipe_type(self):
         self.login_owner()

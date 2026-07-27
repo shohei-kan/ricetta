@@ -123,6 +123,7 @@ docker compose exec backend python manage.py seed_portfolio_data --reset
 - DemoBannerが表示される
 - ログイン画面にデモアカウントカードが表示される
 - staffでRecipe / Ingredient / Category / Unit / Shop情報の編集導線が出ない
+- DEMO_MODEでもRecipe / Ingredient / Category / Unit / PrepTask / BoardMemo操作を試せる
 - カポナータにトマトソース由来Ingredientが含まれる
 - トマトソースは仕込み由来Ingredientとして表示される
 
@@ -140,6 +141,7 @@ docker compose exec backend python manage.py seed_portfolio_data --reset
 - [ ] 実店舗データを入れていない
 - [ ] `seed_portfolio_data --reset` 実行済み
 - [ ] owner / staffでログイン確認済み
+- [ ] DEMO_MODEで禁止する破壊系Viewが未実装、または `deny_in_demo()` 適用済み
 
 ## Reset automation future task
 
