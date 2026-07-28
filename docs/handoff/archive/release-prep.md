@@ -246,3 +246,96 @@ AWS公開デモ向けに、ログイン画面へdemo用ログイン情報とowne
 
 - 実ブラウザで `VITE_DEMO_MODE=true` のログイン画面表示、ownerアカウント初期入力、owner / staffカード切り替えを確認する。
 - 通常起動でログイン画面にデモ用ログイン情報が出ず、初期値も空であることを確認する。
+
+## 2026-07-28 Public demo launch polish
+
+AWS公開デモ公開前後の仕上げとして、仕込み用Recipeの材料化、production Docker構成、healthcheck、AWS運用docs、favicon / OGP metaを整えた。
+
+### Summary
+
+- Recipeには `recipe_type` を追加済み。`prep` は仕込み用・中間材料、`menu` は販売商品。
+- `base_yield_quantity` / `base_yield_unit` はUI上「出来上がり量」として扱い、`cost_summary.material_cost` は出来上がり量1単位あたり原価として計算する。
+- Ingredientには `ingredient_type` を追加済み。`raw` は通常材料、`prep_recipe` は仕込み用Recipe由来材料。
+- `ingredient_type=prep_recipe` は `source_recipe` を参照し、同一Shopの `recipe_type=prep` のRecipeだけを指定できる。
+- Recipe保存時の直接循環は400で止め、原価計算側にも再帰ガードを入れた。
+- 公開デモseedでは、仕込み用Recipe「トマトソース」をIngredient「トマトソース」として登録し、販売商品Recipe「カポナータ」の材料に600g使用する。
+- パスタRecipeは公開デモseedから削除した。
+- ピクルスは公開デモseedでは `menu / 10食分` の販売商品Recipeとして扱う。
+- Recipe Formの材料 / 作り方 `＋ 追加` ボタンを1行表示にし、材料削除×のホバー領域とSelectFieldの上下スクロール・上下開きを調整した。
+- `docs/deploy/aws-demo-env.md` を追加し、AWS EC2 + Docker Compose公開時のenv、起動、migrate、seed/reset、operation checksを整理した。
+- `docker-compose.prod.yml`、production用backend/frontend Dockerfile、Caddyfileを追加し、EC2 1台 + PostgreSQLコンテナ + Gunicorn + Caddy HTTPS構成を用意した。
+- backend healthcheckは `/api/v1/health/` を使い、認証不要で `{"status": "ok"}` を返す。
+- `docs/deploy/aws-demo-env.md` にEC2上で設定済みの `ricetta-demo-reset.service` / `ricetta-demo-reset.timer` 自動reset運用を追記した。
+- resetはEC2起動時 / 再起動時と毎日04:30 JSTに実行される。
+- `frontend/public/favicon.png` を追加し、favicon / apple-touch-iconに設定した。
+- `frontend/public/ogp.png` を配置し、`frontend/index.html` にtitle、description、OGP、Twitter Card、`noindex, nofollow` を追加した。
+- READMEのPublic Demo Environmentに、Ricettaアプリ本体はnoindexで、発見導線はLINTAKE WorksページとGitHub READMEに寄せる方針を追記した。
+
+### Key Files
+
+- `backend/api/models.py`
+- `backend/api/migrations/0007_ingredient_ingredient_type_ingredient_source_recipe.py`
+- `backend/api/serializers.py`
+- `backend/api/costing.py`
+- `backend/api/views.py`
+- `backend/api/management/commands/seed_portfolio_data.py`
+- `backend/api/tests/test_auth.py`
+- `backend/api/tests/test_recipes.py`
+- `backend/api/tests/test_seed_portfolio_data.py`
+- `frontend/src/pages/IngredientFormPage.tsx`
+- `frontend/src/pages/RecipeFormPage.tsx`
+- `frontend/index.html`
+- `frontend/public/favicon.png`
+- `frontend/public/ogp.png`
+- `docker-compose.prod.yml`
+- `backend/Dockerfile.prod`
+- `frontend/Dockerfile.prod`
+- `frontend/Caddyfile.prod`
+- `Caddyfile`
+- `.env.prod.example`
+- `docs/deploy/demo.md`
+- `docs/deploy/aws-demo-env.md`
+- `README.md`
+
+### Verification
+
+- migration `0007_ingredient_ingredient_type_ingredient_source_recipe.py` created and migrated.
+- backend tests: 149 pass
+- backend check: pass
+- makemigrations dry-run: no changes detected
+- frontend lint: pass
+- frontend build: pass
+- production compose config: pass
+- production compose config with `.env.prod.example`: pass
+- production Docker images build: pass
+- `seed_portfolio_data --reset`: pass
+- seed DB確認: カポナータに `トマトソース / 600.00 g / prep_recipe` が含まれる
+- seed DB確認: パスタRecipeなし
+- `frontend/public/ogp.png` 存在確認: pass
+- `frontend/index.html` のOGP / Twitter Card / robots / description / title確認: pass
+- whitespace check: pass
+
+### Manual Checks
+
+- Ingredient一覧で「トマトソース」が仕込み由来材料として表示されることを確認。
+- Recipe Formで材料selectに `トマトソース（仕込み）` が表示され、材料として選べることを確認。
+- カポナータのRecipe Detailで、材料にトマトソース600gが表示されることを確認。
+- カポナータの原価にトマトソース由来Ingredient分が反映されることを確認。
+- Recipe Formの材料 / 作り方の `＋ 追加` ボタンが1行表示されることを確認。
+- 材料削除×のホバー領域が入力欄に不自然に被らないことを確認。
+- Recipe FormのSelectFieldが画面位置に応じて上下へ開き、候補をスクロールできることを確認。
+
+### Decisions
+
+- Recipeを直接RecipeIngredientから参照するのではなく、Ingredientを介して仕込み用Recipeを材料化する。
+- `ingredient_type=prep_recipe` のIngredientは、source recipeの1単位あたり原価から材料原価を計算する。
+- MVPの単位変換は `kg/g` と `L/ml` の小さなhelperで対応し、Unitモデルに変換係数は追加しない。
+- 公開デモdocsでは、仕様説明は `docs/deploy/demo.md`、実運用envメモは `docs/deploy/aws-demo-env.md` に分ける。
+- DEMO_MODEはowner/staff権限とは別レイヤー。業務操作は公開デモで触れる状態を保ち、アカウント破壊・店舗破壊・認証情報変更系だけを将来の禁止対象にする。
+- AWS公開デモはEC2 1台 + Docker Compose + PostgreSQLコンテナ + Caddyから開始する。
+- Ricettaアプリ本体は `noindex, nofollow` とし、発見導線はLINTAKE WorksページとGitHub READMEに寄せる。
+
+### Next
+
+- AWS公開デモへfrontend変更を反映し、`ogp.png`、favicon、共有プレビュー、DemoBanner、owner/staffログインを確認する。
+- EC2停止/再開後に `docs/deploy/aws-demo-env.md` のOperation checksとCheck auto resetでproduction composeと自動reset timerを確認する。

@@ -10,236 +10,82 @@ Ricetta
 
 ## Status
 
-Public demo share metadata added.
+Public demo metadata is ready for deployment verification.
 
 ## Summary
 
-AWS公開デモURLを共有したときの見え方を整えるため、frontend HTMLにtitle、description、OGP、Twitter Card、noindexを追加した。OGP画像は `frontend/public/ogp.png` を `https://ricetta.lintake.net/ogp.png` として参照する。faviconは既存のRicetta PNG favicon設定を維持し、READMEにはアプリ本体をnoindexにする方針を短く追記した。
+AWS公開デモURL共有時の見え方を整えた。`frontend/index.html` にtitle、description、OGP、Twitter Card、`noindex, nofollow` を追加し、`frontend/public/ogp.png` を `https://ricetta.lintake.net/ogp.png` として参照する。faviconは `frontend/public/favicon.png` を使う。完了済みの長い公開準備ログは `docs/handoff/archive/release-prep.md` の `2026-07-28 Public demo launch polish` へ退避済み。
 
 ## Current Goal
 
-次はAWS公開デモへfrontend変更を反映し、`https://ricetta.lintake.net/ogp.png` とfavicon、共有プレビュー、DemoBanner、owner/staffログインを実ブラウザで確認する。
+次はAWS公開デモへfrontend変更を反映し、`https://ricetta.lintake.net/ogp.png`、favicon、共有プレビュー、DemoBanner、owner/staffログインを実ブラウザで確認する。
 
 ## Current State
 
-- Recipeには `recipe_type` がある。値は `prep` / `menu`。
-- `base_yield_quantity` / `base_yield_unit` はUI上「出来上がり量」として扱う。
-- `cost_summary.material_cost` は、出来上がり量1単位あたり原価。
-- Ingredientには `ingredient_type` がある。値は `raw` / `prep_recipe`。
-- `ingredient_type=raw` は従来通り `cost_mode=none / same_unit / conversion` で原価計算する。
-- `ingredient_type=prep_recipe` は `source_recipe` を参照する。
-- `source_recipe` に指定できるのは、同じShopの `recipe_type=prep` のRecipeのみ。
-- `raw` で `source_recipe` を指定するとAPIは400を返す。
-- `prep_recipe` で `source_recipe` または `usage_unit` がない場合、APIは400を返す。
-- Recipe保存時、自分自身を `source_recipe` にしたIngredientを材料に入れる直接循環は400で止める。
-- 原価計算側にも再帰ガードを入れ、深い循環で無限再帰しないようにしている。
-- 深い循環参照を保存前に完全検証する仕組みはMVP後の課題。
-- seed demo dataには、仕込み用Recipe「トマトソース」、Ingredient「トマトソース」、販売商品Recipe「カポナータ」が含まれる。
-- ピクルスは `recipe_type=menu`、出来上がり量10食分の販売商品Recipeとして扱う。
-- カポナータはIngredient「トマトソース」を600g使用する。
-- パスタRecipeは公開デモseedから削除済み。
-- Recipe Formの材料 / 作り方の `＋ 追加` ボタンは折り返されないようにしている。
-- Recipe Form内のSelectFieldは、ネイティブselectではなくスクロール制御できるカスタムドロップダウンにしている。表示位置は下側が狭い場合に上へ開く。
+- 公開URLは `https://ricetta.lintake.net`。
+- production構成は `docker-compose.prod.yml` を使う。
+- productionは backend / frontend / db / caddy の4サービス構成。
+- backendはDjango + gunicorn。
+- frontendはVite build済みdistをCaddyで配信する。
+- 外向きCaddyはHTTPS / reverse proxyを担当する。
+- backend healthcheckは `/api/v1/health/` を使い、未認証でも200を返す。
+- demo data resetは `seed_portfolio_data --reset` を使う。
+- EC2上では `ricetta-demo-reset.service` / `ricetta-demo-reset.timer` により、EC2起動時・再起動時と毎日04:30 JSTに自動resetされる。
 - `docs/deploy/demo.md` は公開デモの仕様説明。
 - `docs/deploy/aws-demo-env.md` はAWS EC2 + Docker Compose公開時のenvと運用コマンド確認用。
-- `aws-demo-env.md` には、既存settingsで読んでいない `DJANGO_ENV` / `CORS_ALLOWED_ORIGINS` / cookie secure系envは例として追加していない。
-- `docker-compose.prod.yml` を追加済み。backend / frontend / db / caddy の4サービス構成。
-- backend production imageは `backend/Dockerfile.prod` でgunicorn起動。
-- frontend production imageは `frontend/Dockerfile.prod` でVite build後、`frontend/Caddyfile.prod` によりCaddyでdistを配信する。
-- `frontend/Caddyfile.prod` はReact Routerの直接URLアクセス・リロードで404にならないように `try_files {path} /index.html` のSPA fallbackを持つ。
-- 外向きCaddyはroot `Caddyfile` を使い、`handle` で `/api/*`、`/admin*`、`/static/*` をbackendへ、それ以外をfrontendへreverse proxyする。
-- production demo composeは `.env.prod` から `DJANGO_DEBUG` / `DEMO_MODE` / `VITE_DEMO_MODE` を読む。`.env.prod.example` は公開デモ向けに `False` / `True` / `true` のダミー値で揃えている。
-- backend healthcheckは `/api/v1/health/` を使う。
-- `/api/v1/health/` は認証不要でHTTP 200と `{"status": "ok"}` を返す。
-- `frontend/index.html` には公開デモ共有用のtitle、description、OGP、Twitter Card、noindexを設定済み。
-- OGP画像は `frontend/public/ogp.png` を使い、HTMLでは `https://ricetta.lintake.net/ogp.png` を参照する。
-- faviconは `frontend/public/favicon.png` を使う。
-- `backend/api/demo_policy.py` には `deny_in_demo()` がある。DEMO_MODE=TrueのときDRF `PermissionDenied` を送出する。
-- 現時点で `deny_in_demo()` を適用すべき既存の危険Viewはない。
-- `auth/me` の表示名変更、`shop/me` の店舗情報更新、Recipe作成はDEMO_MODEでも許可するテストを追加済み。
+- Recipe / Ingredient / prep recipe materialization / production compose / auto reset / OGP整備の詳細履歴は `docs/handoff/archive/release-prep.md` に移動済み。
 
 ## What Was Done
 
-- `Ingredient.IngredientType` を追加した。
-- `Ingredient.ingredient_type` / `Ingredient.source_recipe` を追加し、migration `0007_ingredient_ingredient_type_ingredient_source_recipe.py` を作成・適用した。
-- Ingredient serializerで `ingredient_type` / `source_recipe_id` を読み書き可能にした。
-- Ingredient list/detail responseに `ingredient_type` と `source_recipe` 概要を含めた。
-- Ingredient APIで、同一Shop・prep recipe限定、raw/source_recipe禁止、prep_recipe/source_recipe必須を検証するようにした。
-- `calculate_recipe_cost_summary()` を更新し、prep_recipe Ingredientの原価をsource recipeから計算するようにした。
-- `convert_quantity_between_units()` を追加し、`kg` ↔ `g`、`L` ↔ `ml`、同一単位に対応した。
-- Recipe serializerで直接循環を検証し、計算側にもvisited setの再帰ガードを追加した。
-- Ingredient Formに「材料種別」を追加した。
-- 仕込みレシピ選択時は、source recipeと使用単位だけを入力し、通常の原価計算モード入力を隠すようにした。
-- Ingredient List / Detailで仕込みレシピ由来材料が分かる表示にした。
-- Recipe Formの材料selectで `トマトソース（仕込み）` のように表示するようにした。
-- `seed_portfolio_data` からベーコン、スパゲッティ、パスタRecipeを削除した。
-- トマトソース由来Ingredientは維持し、カポナータの材料に600g追加した。
-- seed testsのピクルス期待値を `menu / 10食分` に揃えた。
-- source_recipeの `PROTECT` に合わせて、`seed_portfolio_data --reset` の削除順を調整した。
-- Recipe Formの材料 / 作り方追加ボタンに `shrink-0` / `whitespace-nowrap` を追加し、`＋ 追加` を1行表示にした。
-- 材料カード右上の削除×を少し小さくし、入力行の右余白を確保してホバー領域の被りを抑えた。
-- Recipe FormのSelectFieldをカスタムドロップダウンに変更し、候補リスト内で上下スクロールできるようにした。
-- SelectFieldは画面内の空きに応じて、候補リストを下または上に開くようにした。
-- backend testsにIngredient API、prep_recipe原価計算、簡易単位変換、循環ガード、seed確認を追加した。
-- docsに仕込み用RecipeをIngredientとして使う方針を追記した。
-- `docs/deploy/aws-demo-env.md` を追加した。
-- `docs/README.md` からAWS demo env checklistへのリンクを追加した。
-- `docs/deploy/demo.md` からAWS demo env checklistへの短い導線を追加した。
-- `docs/deploy/demo.md` に、DEMO_MODEでも許可する業務操作と、将来 `deny_in_demo()` 対象にする破壊系操作を整理した。
-- `docs/deploy/aws-demo-env.md` の公開前チェックに、破壊系Viewの `deny_in_demo()` 適用確認を追加した。
-- DEMO_MODEでも表示名変更、店舗情報更新、Recipe作成が許可されるbackendテストを追加した。
-- `docker-compose.prod.yml` を追加した。
-- `backend/Dockerfile.prod` を追加し、gunicorn起動にした。
-- `frontend/Dockerfile.prod` を追加し、`VITE_DEMO_MODE` をbuild argで渡せるようにした。
-- `frontend/Caddyfile.prod` を追加し、frontend静的配信とSPA fallbackを定義した。
-- root `Caddyfile` を追加し、`handle` ベースのCaddy reverse proxyを定義した。
-- backend requirementsに `gunicorn==23.0.0` を追加した。
-- backend / frontendに `.dockerignore` を追加した。
-- `.env.prod.example` に `CADDY_SITE_ADDRESS` を追加し、未使用の `FRONTEND_ORIGIN` / `BACKEND_ORIGIN` を削除し、公開デモ用ダミー値へ揃えた。
-- `docs/deploy/aws-demo-env.md` にproduction composeの起動、migrate、reset、config確認コマンドを追記した。
-- `health_check` viewに `@permission_classes([AllowAny])` を追加した。
-- health endpointが未ログイン/ログイン済みで200になるbackendテストを追加した。
-- 他の認証必須APIが未ログイン401のままであることを確認するテストを追加した。
-- `docs/deploy/aws-demo-env.md` にbackend healthcheckの説明を追記した。
-- `docs/deploy/aws-demo-env.md` にEC2起動後・デプロイ後のoperation checks、停止/再開運用、manual reset、healthcheck noteを追記した。
-- `docs/deploy/aws-demo-env.md` にEC2上で設定済みのsystemd自動reset運用を追記した。
-- `frontend/public/favicon.png` を追加し、`frontend/index.html` のfavicon / apple-touch-iconに設定した。
-- `frontend/index.html` に公開デモ共有用のtitle、description、OGP、Twitter Card、noindexを追加した。
+- `frontend/index.html` に公開デモ共有用のmeta情報を追加した。
+- `frontend/public/favicon.png` をfavicon / apple-touch-iconに設定した。
+- `frontend/public/ogp.png` をOGP / Twitter Card画像として参照するようにした。
 - READMEのPublic Demo Environmentに、Ricettaアプリ本体はnoindexで、発見導線はLINTAKE WorksページとGitHub READMEに寄せる方針を追記した。
+- `docs/handoff/archive/release-prep.md` に `2026-07-28 Public demo launch polish` を追加し、長くなった公開準備ログを退避した。
+- `docs/handoff/latest.md` を次作業向けの短い現在地情報に整理した。
 
 ## Key Decisions
 
-- Recipeを直接RecipeIngredientから参照するのではなく、Ingredientを介して仕込み用Recipeを材料化する。
-- `ingredient_type=prep_recipe` のIngredientは、source recipeの1単位あたり原価から材料原価を計算する。
-- Unitモデルに変換係数は追加しない。MVPでは `kg/g` と `L/ml` の小さなhelperで対応する。
-- 変換できない単位の組み合わせは0円扱いにする。
-- `prep_recipe` Ingredientの `cost_mode` は `none` に寄せ、仕入価格・換算情報は使わない。
-- 深い循環参照の完全な保存前検証は今回やらない。計算側の再帰ガードで無限再帰を防ぐ。
-- owner/staff権限は変更しない。
-- 公開デモdocsでは、仕様説明は `demo.md`、実運用envメモは `aws-demo-env.md` に分ける。
-- DEMO_MODEはowner/staff権限とは別レイヤー。業務操作は公開デモで触れる状態を保ち、アカウント破壊・店舗破壊・認証情報変更系だけを将来の禁止対象にする。
-- AWS公開デモはEC2 1台 + Docker Compose + PostgreSQLコンテナ + Caddyから開始する。
-- production demo composeは `--env-file .env.prod` 付きで使い、公開デモでは `.env.prod` に `DJANGO_DEBUG=False` / `DEMO_MODE=True` / `VITE_DEMO_MODE=true` を設定する。
+- Ricettaアプリ本体は `noindex, nofollow` とし、検索・発見導線はLINTAKE WorksページとGitHub READMEに寄せる。
+- OGP画像は `frontend/public/ogp.png` を使い、HTMLでは絶対URL `https://ricetta.lintake.net/ogp.png` を指定する。
+- Handoffの詳細履歴は `latest.md` に溜めず、作業テーマごとにarchiveへ追記する。
+- 今回の公開準備履歴は `docs/handoff/archive/release-prep.md` に集約する。
 
 ## Key Files
 
-- `backend/api/models.py`
-- `backend/api/migrations/0007_ingredient_ingredient_type_ingredient_source_recipe.py`
-- `backend/api/serializers.py`
-- `backend/api/costing.py`
-- `backend/api/views.py`
-- `backend/api/management/commands/seed_portfolio_data.py`
-- `backend/api/tests/base.py`
-- `backend/api/tests/test_auth.py`
-- `backend/api/tests/test_shop_scope.py`
-- `backend/api/tests/test_recipes.py`
-- `backend/api/tests/test_seed_portfolio_data.py`
-- `backend/Dockerfile.prod`
-- `backend/.dockerignore`
-- `backend/requirements.txt`
-- `frontend/Dockerfile.prod`
-- `frontend/Caddyfile.prod`
-- `frontend/.dockerignore`
 - `frontend/index.html`
 - `frontend/public/favicon.png`
 - `frontend/public/ogp.png`
-- `docker-compose.prod.yml`
-- `Caddyfile`
-- `.env.prod.example`
-- `frontend/src/api/ingredients.ts`
-- `frontend/src/pages/IngredientFormPage.tsx`
-- `frontend/src/pages/IngredientListPage.tsx`
-- `frontend/src/pages/IngredientDetailPage.tsx`
-- `frontend/src/pages/RecipeFormPage.tsx`
-- `docs/technical/data-model.md`
-- `docs/technical/api-design.md`
-- `docs/product/mvp-requirements.md`
+- `README.md`
+- `docs/handoff/latest.md`
+- `docs/handoff/archive/release-prep.md`
 - `docs/deploy/demo.md`
 - `docs/deploy/aws-demo-env.md`
-- `docs/README.md`
-- `docs/handoff/latest.md`
 
 ## Verification
 
 実行済み:
 
 ```bash
-docker compose exec backend python manage.py makemigrations
-docker compose exec backend python manage.py migrate
-docker compose exec backend python manage.py test api.tests.test_seed_portfolio_data
-docker compose exec backend python manage.py test
-docker compose exec backend python manage.py check
-docker compose exec backend python manage.py makemigrations --check --dry-run
 cd frontend
 npm run lint
 npm run build
-docker compose exec backend python manage.py seed_portfolio_data --reset
-docker compose exec backend python manage.py shell -c "from api.models import Recipe, Ingredient, Shop; shop=Shop.objects.get(name='〇〇食堂'); cap=Recipe.objects.get(shop=shop, name='カポナータ'); print([(ri.ingredient.name, ri.quantity, ri.unit.name, ri.ingredient.ingredient_type) for ri in cap.ingredients.select_related('ingredient','unit').all()]); print(Recipe.objects.filter(shop=shop, name__icontains='パスタ').exists())"
+ls -lh frontend/public/ogp.png
+grep -n "og:image\|twitter:image\|robots\|description\|title" frontend/index.html
 git diff --check
 ```
 
 Result:
 
-- migration `0007_ingredient_ingredient_type_ingredient_source_recipe.py` created.
-- migrate: pass
-- seed command tests: 3 pass
-- backend tests: 143 pass
-- backend check: pass
-- makemigrations dry-run: no changes detected
 - frontend lint: pass
 - frontend build: pass
-- `seed_portfolio_data --reset`: pass
-- seed DB確認: カポナータに `トマトソース / 600.00 g / prep_recipe` が含まれる
-- seed DB確認: パスタRecipeなし
-- whitespace check: pass
-- Recipe Form UI調整後のfrontend lint: pass
-- Recipe Form UI調整後のfrontend build: pass
-- AWS demo env docs追加後のwhitespace check: pass
-- DEMO_MODE許可操作の対象backend tests: 50 pass
-- DEMO_MODE許可操作追加後のbackend tests: 146 pass
-- DEMO_MODE許可操作追加後のbackend check: pass
-- DEMO_MODE許可操作追加後のmakemigrations dry-run: no changes detected
-- production compose config: pass
-- production compose config with `.env.prod.example`: pass
-- production Docker images build: pass
-- production compose追加後のbackend tests: 146 pass
-- production compose追加後のfrontend lint: pass
-- production compose追加後のfrontend build: pass
-- production compose追加後のbackend check: pass
-- production compose追加後のmakemigrations dry-run: no changes detected
-- production compose整理後のconfig: pass
-- production compose整理後のconfig with `.env.prod.example`: pass
-- production compose整理後のbuild with `.env.prod.example`: pass
-- production compose整理後のbackend tests: 146 pass
-- production compose整理後のbackend check: pass
-- production compose整理後のmakemigrations dry-run: no changes detected
-- production compose整理後のfrontend lint: pass
-- production compose整理後のfrontend build: pass
-- health endpoint修正後のbackend tests: 149 pass
-- health endpoint修正後のbackend check: pass
-- health endpoint修正後のmakemigrations dry-run: no changes detected
-- health endpoint修正後のproduction compose config: pass
-- health endpoint修正後のproduction compose config with `.env.prod.example`: pass
-- health endpoint修正後のwhitespace check: pass
-- AWS demo operation docs追加後のwhitespace check: pass
-- AWS demo auto reset docs追加後のwhitespace check: pass
-- favicon設定後のfrontend build: pass
-- favicon設定後のwhitespace check: pass
-- public demo meta追加後のfrontend lint: pass
-- public demo meta追加後のfrontend build: pass
 - `frontend/public/ogp.png` 存在確認: pass
 - `frontend/index.html` のOGP / Twitter Card / robots / description / title確認: pass
-- public demo meta追加後のwhitespace check: pass
+- whitespace check: pass
 
 Manual browser verification:
 
-- Ingredient一覧で「トマトソース」が仕込み由来材料として表示されることを確認。
-- Recipe Formで材料selectに `トマトソース（仕込み）` が表示され、材料として選べることを確認。
-- カポナータのRecipe Detailで、材料にトマトソース600gが表示されることを確認。
-- カポナータの原価にトマトソース由来Ingredient分が反映されることを確認。
-- Recipe Formの材料 / 作り方の `＋ 追加` ボタンが1行表示されることを確認。
-- 材料削除×のホバー領域が入力欄に不自然に被らないことを確認。
-- Recipe FormのSelectFieldが画面位置に応じて上下へ開き、候補をスクロールできることを確認。
+- 未実施。次にAWS公開デモへ反映後、実ブラウザと共有プレビューを確認する。
 
 ## Current Product Scope
 
@@ -251,10 +97,10 @@ Manual browser verification:
 - Active Prep Today board and direct PrepTask creation
 - BoardMemo as lightweight whiteboard memo under Prep Today columns
 - Smartphone, tablet landscape, and PC layouts
-- Demo mode foundation via environment variables
+- Demo mode via environment variables
 - Safe portfolio demo seed reset
-- Public demo operation docs
-- Demo login account information on LoginPage
+- Production demo deployment on EC2 + Docker Compose + Caddy HTTPS
+- Public demo share metadata
 
 ## Out of Scope for MVP
 
@@ -267,55 +113,48 @@ Manual browser verification:
 - Shop device mode
 - Yield loss / waste rate / cooked weight
 - Complex unit conversion table
-- Unit model conversion factors
 - Automatic Ingredient creation button from prep Recipe
 - Full deep cycle validation before save
 - Demo reset API / reset button
-- cron / systemd timer実設定
-- AWSインスタンス作成
-- Docker Compose production構成のさらなる大幅変更
+- AWS構成のECS / ALB / RDS分離
 - Demo-specific branch or duplicated app directories
 
 ## Next Recommended Tasks
 
-1. 実ブラウザでIngredient Formの「通常材料 / 仕込みレシピ」切り替えを確認する。
-2. 実ブラウザでRecipe Formの材料追加ボタンが1行表示され、材料削除×のホバー判定が自然で、材料selectを上下にスクロールできることを確認する。
-3. 実ブラウザでRecipe Formの材料selectに `トマトソース（仕込み）` が出ることを確認する。
-4. カポナータのRecipe Detailで、トマトソース由来Ingredientを含む原価が自然に表示されることを確認する。
-5. owner / staff両方でログインし、staffがIngredient / Recipe編集できない既存挙動が壊れていないことを確認する。
-6. EC2停止/再開後は `docs/deploy/aws-demo-env.md` のOperation checksに沿ってproduction composeとログを確認する。
-7. `systemctl status ricetta-demo-reset.timer` と `journalctl -u ricetta-demo-reset.service -n 80 --no-pager` で自動reset運用を確認する。
-8. HTTPSアクセス、DemoBanner、owner/staffログイン、カポナータのトマトソース由来Ingredient表示を確認する。
+1. EC2でfrontend imageを再buildし、Caddyをrestartしてmeta / favicon / OGP変更を反映する。
+2. `https://ricetta.lintake.net/ogp.png` が200で表示されることを確認する。
+3. faviconがブラウザタブに表示されることを確認する。
+4. Slack / Notion / GitHub README等で共有プレビューを確認する。OGPキャッシュで即時反映されない場合がある点に注意する。
+5. DemoBanner、owner/staffログイン、カポナータのトマトソース由来Ingredient表示を確認する。
+6. EC2停止/再開後は `docs/deploy/aws-demo-env.md` のOperation checksとCheck auto resetに沿ってproduction composeと自動reset timerを確認する。
 
 ## Open Questions
 
-- 深い循環参照を保存時にどこまで厳密に検証するか。
-- `prep_recipe` Ingredientの詳細画面で、source recipeへの導線を追加するか。
-- 仕込み用RecipeからIngredientを自動作成する導線を将来追加するか。
+- OGP共有プレビューのキャッシュ更新をどのサービスで確認するか。
+- LINTAKE Worksページ側にもRicetta公開デモURLとGitHub README導線をどう掲載するか。
 
 ## Notes for Next Agent
 
-- `ingredient_type=prep_recipe` はIngredient経由でsource Recipeを使う設計。RecipeIngredientのDB構造は変更していない。
-- `source_recipe` は `on_delete=PROTECT`。seed resetではRecipeより先にIngredientを削除する必要がある。
-- `cost_summary.material_cost` は出来上がり量1単位あたり原価。prep_recipe Ingredientもこの値を使って計算される。
-- 公開デモseedでは、仕込み用トマトソースをカポナータの材料として使う。パスタRecipeは作らない。
-- ピクルスは公開デモseedでは販売商品Recipe（`menu / 10食分`）として扱う。
-- Recipe FormのSelectFieldはカスタム実装。表示位置は簡易的にviewport余白で上下判定している。追加でキーボード操作を強化する場合は同コンポーネント内で対応する。
-- `kg/g` と `L/ml` 以外の単位変換は0円扱い。Unitに変換係数はまだ持たせていない。
-- `backend/api/tests.py` は削除済み。新規backend APIテストは `backend/api/tests/test_*.py` に追加する。
-- 共通fixture / helperが必要な場合は `backend/api/tests/base.py` の `ApiTestCase` を使う。
-- `owner@example.com` / `password` と `staff@example.com` / `password` は `seed_portfolio_data` で再作成・更新される。
-- `backend/api/demo_policy.py` はまだ既存Viewから使っていない。現時点で適用対象になる危険Viewは未実装。
-- `deny_in_demo()` はResponseを返さず `PermissionDenied` をraiseする。Viewでは呼ぶだけでよい。
-- production envにはlocalhostを含めない。
-- `docs/deploy/aws-demo-env.md` のenv例はダミー値のみ。実secret / 実ドメインは書かない。
-- production composeは `--env-file .env.prod` 付きで使う。素の `docker compose -f docker-compose.prod.yml config` はローカル `.env` を読むため、値確認には向かない。
-- EC2側の `.env.prod` ではhealthcheck用に `DJANGO_ALLOWED_HOSTS=ricetta.lintake.net,127.0.0.1` のようにlocalhostアクセスのHostも許可している。
-- Caddyの公開アドレスは `CADDY_SITE_ADDRESS` で指定する。EC2公開時は `ricetta.lintake.net` などの実ドメインを設定する。
-- Docker frontendは `http://localhost:5174`。
+- `frontend/public/ogp.png` は未追跡ファイルとして追加されている可能性がある。コミット時に含める。
+- `frontend/public/favicon.png` は既にRicettaアイコンとして使う。
+- frontend meta変更をAWSへ反映するにはfrontend imageの再buildが必要。
+- 反映例:
+
+```bash
+ssh ricetta
+cd /srv/ricetta
+git pull
+docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build frontend
+docker compose --env-file .env.prod -f docker-compose.prod.yml restart caddy
+```
+
+- production composeは `--env-file .env.prod` 付きで使う。
+- EC2側の実secret / `.env.prod` の値はdocsやリポジトリに書かない。
+- 詳しい公開準備履歴は `docs/handoff/archive/release-prep.md` の `2026-07-28 Public demo launch polish` を参照する。
+- Docker frontendのローカル開発URLは `http://localhost:5174`。
 
 ## Suggested Commit Message
 
 ```text
-docs(deploy): document aws demo auto reset
+feat(frontend): add public demo meta tags
 ```
