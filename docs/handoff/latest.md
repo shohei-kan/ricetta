@@ -10,11 +10,11 @@ Ricetta
 
 ## Status
 
-Public demo metadata is ready for deployment verification.
+README reflects the published public demo state.
 
 ## Summary
 
-AWS公開デモURL共有時の見え方を整えた。`frontend/index.html` にtitle、description、OGP、Twitter Card、`noindex, nofollow` を追加し、`frontend/public/ogp.png` を `https://ricetta.lintake.net/ogp.png` として参照する。faviconは `frontend/public/favicon.png` を使う。完了済みの長い公開準備ログは `docs/handoff/archive/release-prep.md` の `2026-07-28 Public demo launch polish` へ退避済み。
+READMEをAWS公開デモ完了後の状態に合わせて更新した。Public Demo Environmentに実URL、owner/staffデモアカウント、自動reset、AWS EC2 + Docker Compose + PostgreSQL + Gunicorn + Caddy HTTPS構成を明記し、Current Statusから未デプロイ表現を削除した。公開デモURL共有用のmeta / OGP / noindex整備も反映済み。
 
 ## Current Goal
 
@@ -33,6 +33,7 @@ AWS公開デモURL共有時の見え方を整えた。`frontend/index.html` にt
 - EC2上では `ricetta-demo-reset.service` / `ricetta-demo-reset.timer` により、EC2起動時・再起動時と毎日04:30 JSTに自動resetされる。
 - `docs/deploy/demo.md` は公開デモの仕様説明。
 - `docs/deploy/aws-demo-env.md` はAWS EC2 + Docker Compose公開時のenvと運用コマンド確認用。
+- READMEは公開済みportfolio demoの状態に更新済み。
 - Recipe / Ingredient / prep recipe materialization / production compose / auto reset / OGP整備の詳細履歴は `docs/handoff/archive/release-prep.md` に移動済み。
 
 ## What Was Done
@@ -41,6 +42,7 @@ AWS公開デモURL共有時の見え方を整えた。`frontend/index.html` にt
 - `frontend/public/favicon.png` をfavicon / apple-touch-iconに設定した。
 - `frontend/public/ogp.png` をOGP / Twitter Card画像として参照するようにした。
 - READMEのPublic Demo Environmentに、Ricettaアプリ本体はnoindexで、発見導線はLINTAKE WorksページとGitHub READMEに寄せる方針を追記した。
+- READMEのPublic Demo Environment、Architecture、Current Status、Future Improvementsを公開済み状態へ更新した。
 - `docs/handoff/archive/release-prep.md` に `2026-07-28 Public demo launch polish` を追加し、長くなった公開準備ログを退避した。
 - `docs/handoff/latest.md` を次作業向けの短い現在地情報に整理した。
 
@@ -72,6 +74,7 @@ npm run lint
 npm run build
 ls -lh frontend/public/ogp.png
 grep -n "og:image\|twitter:image\|robots\|description\|title" frontend/index.html
+grep -n "Public Demo Environment\|Current Status\|Future Improvements" -A30 README.md
 git diff --check
 ```
 
@@ -81,6 +84,7 @@ Result:
 - frontend build: pass
 - `frontend/public/ogp.png` 存在確認: pass
 - `frontend/index.html` のOGP / Twitter Card / robots / description / title確認: pass
+- READMEのPublic Demo Environment / Current Status / Future Improvements確認: pass
 - whitespace check: pass
 
 Manual browser verification:
@@ -156,5 +160,5 @@ docker compose --env-file .env.prod -f docker-compose.prod.yml restart caddy
 ## Suggested Commit Message
 
 ```text
-feat(frontend): add public demo meta tags
+docs(readme): update public demo status
 ```

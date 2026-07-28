@@ -204,6 +204,8 @@ Docker Composeでのホスト公開ポートは以下です。
 
 frontendとbackendは分離し、画面表示・一時的なUI状態はfrontend、認証・権限・validation・原価計算・永続化はbackendが担当します。
 
+公開デモ環境では、AWS EC2上でproduction用Docker Composeを使い、CaddyがHTTPSとreverse proxyを担当します。詳細は [docs/deploy/aws-demo-env.md](docs/deploy/aws-demo-env.md) を参照してください。
+
 ## Backend Design Highlights
 
 ### Shop-scoped data access
@@ -372,16 +374,23 @@ shop: 〇〇食堂
 
 ### Public Demo Environment
 
-Ricetta supports a public demo mode using the same codebase.
-Demo behavior is controlled by `DEMO_MODE` and `VITE_DEMO_MODE`.
+Ricetta is deployed as a public portfolio demo.
 
-Sample data can be recreated with:
+- URL: https://ricetta.lintake.net
+- Demo accounts:
+  - `owner@example.com` / `password`
+  - `staff@example.com` / `password`
+- Demo mode: enabled
+- Demo data is reset automatically:
+  - on EC2 startup / restart
+  - daily at 04:30 JST
 
-```bash
-docker compose exec backend python manage.py seed_portfolio_data --reset
-```
+The demo environment runs on AWS EC2 with Docker Compose, PostgreSQL, Gunicorn, and Caddy HTTPS.
 
-See [docs/deploy/demo.md](docs/deploy/demo.md) for details.
+For demo behavior and deployment operation notes, see:
+
+- [Public demo deployment](docs/deploy/demo.md)
+- [AWS demo environment](docs/deploy/aws-demo-env.md)
 
 The Ricetta app itself is marked as `noindex`; portfolio and project information are intended to be discovered through the LINTAKE Works page and GitHub README.
 
@@ -512,24 +521,29 @@ Vite proxyを使うローカル環境でもOrigin checkingを通せるよう、�
 
 MVPの主要なbackend APIとfrontend画面は実装済みです。
 
-- Login / logout / Account Phase 1 + 2
-- Shop scopeとowner限定店舗編集
+- Login / logout / Account
+- Shop scopeとowner/staff権限制御
 - Recipe / Ingredient / PrepTask / Dashboard / Category / Unit
 - 原価計算とnested recipe write
 - スマホ・タブレット横向き・PCレイアウト
 - Docker Compose開発環境とGitHub Actions CI
+- AWS EC2 + Docker Composeによる公開デモ環境
+- Caddy HTTPS、demo seed/reset、自動reset運用
 
-未デプロイのローカル開発段階です。最新の作業状況と確認事項は [docs/handoff/latest.md](docs/handoff/latest.md) を参照してください。
+Ricetta is available as a public portfolio demo at https://ricetta.lintake.net.
+
+今後はLINTAKE Works詳細ページや応募用導線を整える段階です。最新の作業状況と確認事項は [docs/handoff/latest.md](docs/handoff/latest.md) を参照してください。
 
 ## Future Improvements
 
-- AWS公開デモURLの追加
+- LINTAKE Works詳細ページへの公開デモ導線追加
+- 公開デモ用スクリーンショットの更新
 - スマホ幅スクリーンショットの追加
+- frontendの自動テスト
 - Accountでのメールアドレス変更、パスワード変更
 - 複数店舗切り替え
 - staffの詳細な権限設計
 - 画像アップロード
-- frontendの自動テスト
 - サーバー状態・フォーム管理ライブラリ導入の検討
-- 本番デプロイとproduction settings
+- RDS分離やバックアップ運用の検討
 - Stripe Billing、POS、在庫連携の段階的な検討
