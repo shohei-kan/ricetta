@@ -10,15 +10,15 @@ Ricetta
 
 ## Status
 
-Backend healthcheck allows anonymous access.
+AWS demo operation checks documented.
 
 ## Summary
 
-AWS EC2公開デモでbackend healthcheckが `/api/v1/health/` にアクセスした際、DRFの既定認証により401になり、backendコンテナがunhealthy表示になる問題を修正した。health endpointだけ `AllowAny` にし、未ログイン/ログイン済みどちらでも `{"status": "ok"}` をHTTP 200で返す。Recipe / Ingredient / PrepTask / BoardMemoなど既存APIの認証・権限制御は変更していない。
+AWS公開デモ運用メモとして、`docs/deploy/aws-demo-env.md` にEC2起動後・デプロイ後・トラブル確認時のoperation checksを追記した。production composeの状態確認、Caddy/backendログ確認、EC2停止/再開運用、manual reset、backend healthcheck noteを整理した。コードとproduction composeは変更していない。
 
 ## Current Goal
 
-次はAWS EC2上で最新コードを反映し、production backendを再build/restartして、`docker compose --env-file .env.prod -f docker-compose.prod.yml ps` でbackendがhealthyになることを確認する。
+次はAWS EC2上で停止/再開後に `docs/deploy/aws-demo-env.md` のOperation checksを使い、backend/db healthy、frontend/caddy Up、Caddy証明書エラーなし、healthcheck 200を確認する。
 
 ## Current State
 
@@ -98,6 +98,7 @@ AWS EC2公開デモでbackend healthcheckが `/api/v1/health/` にアクセス�
 - health endpointが未ログイン/ログイン済みで200になるbackendテストを追加した。
 - 他の認証必須APIが未ログイン401のままであることを確認するテストを追加した。
 - `docs/deploy/aws-demo-env.md` にbackend healthcheckの説明を追記した。
+- `docs/deploy/aws-demo-env.md` にEC2起動後・デプロイ後のoperation checks、停止/再開運用、manual reset、healthcheck noteを追記した。
 
 ## Key Decisions
 
@@ -210,6 +211,7 @@ Result:
 - health endpoint修正後のproduction compose config: pass
 - health endpoint修正後のproduction compose config with `.env.prod.example`: pass
 - health endpoint修正後のwhitespace check: pass
+- AWS demo operation docs追加後のwhitespace check: pass
 
 Manual browser verification:
 
@@ -263,10 +265,9 @@ Manual browser verification:
 3. 実ブラウザでRecipe Formの材料selectに `トマトソース（仕込み）` が出ることを確認する。
 4. カポナータのRecipe Detailで、トマトソース由来Ingredientを含む原価が自然に表示されることを確認する。
 5. owner / staff両方でログインし、staffがIngredient / Recipe編集できない既存挙動が壊れていないことを確認する。
-6. AWS EC2上で最新コードを反映し、`docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build backend` などでbackendを再build/restartする。
-7. AWS EC2上で `docker compose --env-file .env.prod -f docker-compose.prod.yml ps` を実行し、backendがhealthyになることを確認する。
-8. HTTPSアクセス、DemoBanner、owner/staffログイン、カポナータのトマトソース由来Ingredient表示を確認する。
-9. 定期reset方法は手動運用開始後にcron / systemd timer / GitHub Actions + SSHから選ぶ。
+6. EC2停止/再開後は `docs/deploy/aws-demo-env.md` のOperation checksに沿ってproduction composeとログを確認する。
+7. HTTPSアクセス、DemoBanner、owner/staffログイン、カポナータのトマトソース由来Ingredient表示を確認する。
+8. 定期reset方法は手動運用開始後にcron / systemd timer / GitHub Actions + SSHから選ぶ。
 
 ## Open Questions
 
@@ -298,5 +299,5 @@ Manual browser verification:
 ## Suggested Commit Message
 
 ```text
-fix(deploy): allow unauthenticated health checks
+docs(deploy): add aws demo operation checks
 ```

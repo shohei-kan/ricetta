@@ -112,9 +112,52 @@ docker compose --env-file .env.prod -f docker-compose.prod.yml exec backend pyth
 - ここでは大幅なcompose変更はしない
 - 初回公開前に必ずmigrate後にseed/resetを実行する
 
-## Backend healthcheck
+## Operation checks
 
-production composeのbackend healthcheckは `/api/v1/health/` を使います。
+EC2起動後やデプロイ後は、以下でproduction composeの状態と主要ログを確認します。
+
+```bash
+cd /srv/ricetta
+docker compose --env-file .env.prod -f docker-compose.prod.yml ps
+docker compose --env-file .env.prod -f docker-compose.prod.yml logs --tail=80 caddy
+docker compose --env-file .env.prod -f docker-compose.prod.yml logs --tail=80 backend
+```
+
+期待する状態:
+
+- `backend` が `healthy`
+- `db` が `healthy`
+- `frontend` が `Up`
+- `caddy` が `Up`
+- Caddyログに証明書エラーがない
+- backendログで `/api/v1/health/` が `200`
+
+## Stop / restart operation
+
+普段コストを抑えるため、応募前まではEC2を停止運用します。
+
+EC2停止:
+
+- AWS Console
+- EC2
+- Instances
+- `ricetta-demo`
+- Instance state
+- Stop instance
+
+EC2再開後の確認:
+
+```bash
+ssh -i ~/.ssh/ricetta-demo-key.pem ubuntu@ricetta.lintake.net
+cd /srv/ricetta
+docker compose --env-file .env.prod -f docker-compose.prod.yml ps
+```
+
+`restart: unless-stopped` のため、EC2再起動後は各コンテナが自動起動する想定です。
+
+## Healthcheck note
+
+production composeではbackend healthcheckに `/api/v1/health/` を使います。
 
 このendpointは認証不要で、未ログインでもHTTP 200と軽量レスポンスを返します。
 
@@ -122,20 +165,12 @@ production composeのbackend healthcheckは `/api/v1/health/` を使います。
 {"status": "ok"}
 ```
 
-Docker上ではbackendコンテナのhealthy判定に使います。DB書き込みなどの重い処理は行いません。
-
-## Logs
-
-公開後のログ確認例です。
-
-```bash
-docker compose --env-file .env.prod -f docker-compose.prod.yml logs -f caddy
-docker compose --env-file .env.prod -f docker-compose.prod.yml logs -f backend
-```
+backendログで `GET /api/v1/health/` が `200` なら正常です。DB書き込みなどの重い処理は行いません。
 
 ## Manual reset command
 
 ```bash
+cd /srv/ricetta
 docker compose --env-file .env.prod -f docker-compose.prod.yml exec backend python manage.py seed_portfolio_data --reset
 ```
 
