@@ -2,7 +2,7 @@
 
 ## Date
 
-2026-07-27
+2026-07-28
 
 ## Project
 
@@ -10,15 +10,15 @@ Ricetta
 
 ## Status
 
-DEMO_MODE restriction scope clarified.
+Production Docker Compose added for AWS public demo.
 
 ## Summary
 
-DEMO_MODEで禁止する操作範囲を確認・整理した。現時点ではメール変更、パスワード変更、アカウント削除、店舗削除、外部連携、ファイルアップロード系Viewは未実装のため、既存Viewへ `deny_in_demo()` を適用する箇所はない。公開デモで触ってほしいRecipe / Ingredient / Category / Unit / PrepTask / BoardMemo操作と自分の表示名変更は、DEMO_MODEでも許可する方針をdocsに明記し、代表操作がDEMO_MODEで止まらないbackendテストを追加した。
+AWS EC2公開デモ用に、開発用 `docker-compose.yml` はそのまま残し、新しく `docker-compose.prod.yml` を追加・整理した。production構成ではbackendをgunicornで起動し、frontendは `VITE_DEMO_MODE=true` でbuildしたdistをfrontend内CaddyでSPA fallback付き静的配信する。外向きCaddyが80/443を受けて `/api/*`、`/admin*`、`/static/*` をbackendへ、それ以外をfrontendへreverse proxyする。DBは当面PostgreSQLコンテナを使う。RDS分離、ALB、ECS、CI/CDは今回未実装。
 
 ## Current Goal
 
-次はAWS公開デモ用の実env値、compose運用、HTTPS/ドメイン設定、手動reset手順を実環境に合わせて詰める。将来メール変更・パスワード変更・削除系Viewを追加する場合は、実装時に `deny_in_demo()` を適用する。
+次はAWS EC2上で `.env.prod` を実値で作成し、`docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build`、migrate、`seed_portfolio_data --reset`、HTTPS/ドメイン疎通を確認する。
 
 ## Current State
 
@@ -43,6 +43,12 @@ DEMO_MODEで禁止する操作範囲を確認・整理した。現時点では�
 - `docs/deploy/demo.md` は公開デモの仕様説明。
 - `docs/deploy/aws-demo-env.md` はAWS EC2 + Docker Compose公開時のenvと運用コマンド確認用。
 - `aws-demo-env.md` には、既存settingsで読んでいない `DJANGO_ENV` / `CORS_ALLOWED_ORIGINS` / cookie secure系envは例として追加していない。
+- `docker-compose.prod.yml` を追加済み。backend / frontend / db / caddy の4サービス構成。
+- backend production imageは `backend/Dockerfile.prod` でgunicorn起動。
+- frontend production imageは `frontend/Dockerfile.prod` でVite build後、`frontend/Caddyfile.prod` によりCaddyでdistを配信する。
+- `frontend/Caddyfile.prod` はReact Routerの直接URLアクセス・リロードで404にならないように `try_files {path} /index.html` のSPA fallbackを持つ。
+- 外向きCaddyはroot `Caddyfile` を使い、`handle` で `/api/*`、`/admin*`、`/static/*` をbackendへ、それ以外をfrontendへreverse proxyする。
+- production demo composeは `.env.prod` から `DJANGO_DEBUG` / `DEMO_MODE` / `VITE_DEMO_MODE` を読む。`.env.prod.example` は公開デモ向けに `False` / `True` / `true` のダミー値で揃えている。
 - `backend/api/demo_policy.py` には `deny_in_demo()` がある。DEMO_MODE=TrueのときDRF `PermissionDenied` を送出する。
 - 現時点で `deny_in_demo()` を適用すべき既存の危険Viewはない。
 - `auth/me` の表示名変更、`shop/me` の店舗情報更新、Recipe作成はDEMO_MODEでも許可するテストを追加済み。
@@ -77,6 +83,15 @@ DEMO_MODEで禁止する操作範囲を確認・整理した。現時点では�
 - `docs/deploy/demo.md` に、DEMO_MODEでも許可する業務操作と、将来 `deny_in_demo()` 対象にする破壊系操作を整理した。
 - `docs/deploy/aws-demo-env.md` の公開前チェックに、破壊系Viewの `deny_in_demo()` 適用確認を追加した。
 - DEMO_MODEでも表示名変更、店舗情報更新、Recipe作成が許可されるbackendテストを追加した。
+- `docker-compose.prod.yml` を追加した。
+- `backend/Dockerfile.prod` を追加し、gunicorn起動にした。
+- `frontend/Dockerfile.prod` を追加し、`VITE_DEMO_MODE` をbuild argで渡せるようにした。
+- `frontend/Caddyfile.prod` を追加し、frontend静的配信とSPA fallbackを定義した。
+- root `Caddyfile` を追加し、`handle` ベースのCaddy reverse proxyを定義した。
+- backend requirementsに `gunicorn==23.0.0` を追加した。
+- backend / frontendに `.dockerignore` を追加した。
+- `.env.prod.example` に `CADDY_SITE_ADDRESS` を追加し、未使用の `FRONTEND_ORIGIN` / `BACKEND_ORIGIN` を削除し、公開デモ用ダミー値へ揃えた。
+- `docs/deploy/aws-demo-env.md` にproduction composeの起動、migrate、reset、config確認コマンドを追記した。
 
 ## Key Decisions
 
@@ -89,6 +104,8 @@ DEMO_MODEで禁止する操作範囲を確認・整理した。現時点では�
 - owner/staff権限は変更しない。
 - 公開デモdocsでは、仕様説明は `demo.md`、実運用envメモは `aws-demo-env.md` に分ける。
 - DEMO_MODEはowner/staff権限とは別レイヤー。業務操作は公開デモで触れる状態を保ち、アカウント破壊・店舗破壊・認証情報変更系だけを将来の禁止対象にする。
+- AWS公開デモはEC2 1台 + Docker Compose + PostgreSQLコンテナ + Caddyから開始する。
+- production demo composeは `--env-file .env.prod` 付きで使い、公開デモでは `.env.prod` に `DJANGO_DEBUG=False` / `DEMO_MODE=True` / `VITE_DEMO_MODE=true` を設定する。
 
 ## Key Files
 
@@ -104,6 +121,15 @@ DEMO_MODEで禁止する操作範囲を確認・整理した。現時点では�
 - `backend/api/tests/test_shop_scope.py`
 - `backend/api/tests/test_recipes.py`
 - `backend/api/tests/test_seed_portfolio_data.py`
+- `backend/Dockerfile.prod`
+- `backend/.dockerignore`
+- `backend/requirements.txt`
+- `frontend/Dockerfile.prod`
+- `frontend/Caddyfile.prod`
+- `frontend/.dockerignore`
+- `docker-compose.prod.yml`
+- `Caddyfile`
+- `.env.prod.example`
 - `frontend/src/api/ingredients.ts`
 - `frontend/src/pages/IngredientFormPage.tsx`
 - `frontend/src/pages/IngredientListPage.tsx`
@@ -157,6 +183,22 @@ Result:
 - DEMO_MODE許可操作追加後のbackend tests: 146 pass
 - DEMO_MODE許可操作追加後のbackend check: pass
 - DEMO_MODE許可操作追加後のmakemigrations dry-run: no changes detected
+- production compose config: pass
+- production compose config with `.env.prod.example`: pass
+- production Docker images build: pass
+- production compose追加後のbackend tests: 146 pass
+- production compose追加後のfrontend lint: pass
+- production compose追加後のfrontend build: pass
+- production compose追加後のbackend check: pass
+- production compose追加後のmakemigrations dry-run: no changes detected
+- production compose整理後のconfig: pass
+- production compose整理後のconfig with `.env.prod.example`: pass
+- production compose整理後のbuild with `.env.prod.example`: pass
+- production compose整理後のbackend tests: 146 pass
+- production compose整理後のbackend check: pass
+- production compose整理後のmakemigrations dry-run: no changes detected
+- production compose整理後のfrontend lint: pass
+- production compose整理後のfrontend build: pass
 
 Manual browser verification:
 
@@ -200,7 +242,7 @@ Manual browser verification:
 - Demo reset API / reset button
 - cron / systemd timer実設定
 - AWSインスタンス作成
-- Docker Compose production構成の大幅変更
+- Docker Compose production構成のさらなる大幅変更
 - Demo-specific branch or duplicated app directories
 
 ## Next Recommended Tasks
@@ -210,9 +252,11 @@ Manual browser verification:
 3. 実ブラウザでRecipe Formの材料selectに `トマトソース（仕込み）` が出ることを確認する。
 4. カポナータのRecipe Detailで、トマトソース由来Ingredientを含む原価が自然に表示されることを確認する。
 5. owner / staff両方でログインし、staffがIngredient / Recipe編集できない既存挙動が壊れていないことを確認する。
-6. `docs/deploy/aws-demo-env.md` をもとにAWS公開デモ用の実env値と手動reset手順を実環境へ反映する。
-7. 定期reset方法は手動運用開始後にcron / systemd timer / GitHub Actions + SSHから選ぶ。
-8. 将来メール変更・パスワード変更・アカウント削除・店舗削除・upload系Viewを実装する場合は、`deny_in_demo()` を適用する。
+6. AWS EC2上で `.env.prod` をGit管理外で作成し、`CADDY_SITE_ADDRESS` / `DJANGO_ALLOWED_HOSTS` / `DJANGO_CSRF_TRUSTED_ORIGINS` を実ドメインに合わせる。
+7. AWS EC2上で `docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build` を実行する。
+8. AWS EC2上でmigrate後に `seed_portfolio_data --reset` を実行する。
+9. HTTPSアクセス、DemoBanner、owner/staffログイン、カポナータのトマトソース由来Ingredient表示を確認する。
+10. 定期reset方法は手動運用開始後にcron / systemd timer / GitHub Actions + SSHから選ぶ。
 
 ## Open Questions
 
@@ -236,10 +280,12 @@ Manual browser verification:
 - `deny_in_demo()` はResponseを返さず `PermissionDenied` をraiseする。Viewでは呼ぶだけでよい。
 - production envにはlocalhostを含めない。
 - `docs/deploy/aws-demo-env.md` のenv例はダミー値のみ。実secret / 実ドメインは書かない。
+- production composeは `--env-file .env.prod` 付きで使う。素の `docker compose -f docker-compose.prod.yml config` はローカル `.env` を読むため、値確認には向かない。
+- Caddyの公開アドレスは `CADDY_SITE_ADDRESS` で指定する。EC2公開時は `ricetta.lintake.net` などの実ドメインを設定する。
 - Docker frontendは `http://localhost:5174`。
 
 ## Suggested Commit Message
 
 ```text
-docs(demo): clarify demo mode restrictions
+feat(deploy): add production compose for aws demo
 ```

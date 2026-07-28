@@ -14,6 +14,8 @@
 - 実値ではなくダミー値のみ記載
 - secretや本物のドメインは書かない
 
+現在の公開デモ想定ドメインは `ricetta.lintake.net` です。docsでは必要に応じて実ドメインを参照してよいですが、`.env.prod.example` は `ricetta.example.com` のままにします。
+
 このメモでは、既存のDjango settings / frontend実装で参照している環境変数に合わせます。
 
 現時点では、以下のような変数は既存実装で読んでいないため、env例には含めません。
@@ -36,6 +38,7 @@ DEMO_MODE=True
 
 DJANGO_ALLOWED_HOSTS=ricetta.example.com
 DJANGO_CSRF_TRUSTED_ORIGINS=https://ricetta.example.com
+CADDY_SITE_ADDRESS=ricetta.example.com
 
 POSTGRES_DB=ricetta
 POSTGRES_USER=ricetta
@@ -53,6 +56,8 @@ POSTGRES_PORT=5432
 - `.env.prod` はGit管理しない
 - 変数名は既存settingsや `.env.prod.example` と矛盾させない
 - 既存実装で使っていない変数は、envだけに勝手に追加しない
+- `CADDY_SITE_ADDRESS` はCaddyが受ける公開ドメインを指定する
+- 実運用では `CADDY_SITE_ADDRESS=ricetta.lintake.net` のように実ドメインへ差し替える
 
 ## Database `.env.db`
 
@@ -90,21 +95,36 @@ VITE_DEMO_MODE=true
 AWSサーバー上での初回起動時に実行する想定コマンドです。
 
 ```bash
-docker compose up -d --build
-docker compose exec backend python manage.py migrate
-docker compose exec backend python manage.py seed_portfolio_data --reset
+docker compose --env-file .env.prod -f docker-compose.prod.yml config
+docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
+docker compose --env-file .env.prod -f docker-compose.prod.yml exec backend python manage.py migrate
+docker compose --env-file .env.prod -f docker-compose.prod.yml exec backend python manage.py seed_portfolio_data --reset
 ```
 
 注意:
 
-- composeファイル名がproduction用に分かれている場合は、既存構成に合わせて読み替える
+- production公開デモでは `docker-compose.prod.yml` を使う
+- backendはgunicornで起動する
+- frontendはbuild済みdistを静的配信する
+- frontendはReact Routerの直接URLアクセス・リロードに対応するため、frontend側CaddyでSPA fallbackする
+- 外向きCaddyが80/443を受け、`/api/*`、`/admin*`、`/static/*` をbackendへ、それ以外をfrontendへreverse proxyする
+- 素の `docker compose -f docker-compose.prod.yml config` はローカル `.env` を読む可能性があるため、実値確認には `--env-file .env.prod` を使う
 - ここでは大幅なcompose変更はしない
 - 初回公開前に必ずmigrate後にseed/resetを実行する
+
+## Logs
+
+公開後のログ確認例です。
+
+```bash
+docker compose --env-file .env.prod -f docker-compose.prod.yml logs -f caddy
+docker compose --env-file .env.prod -f docker-compose.prod.yml logs -f backend
+```
 
 ## Manual reset command
 
 ```bash
-docker compose exec backend python manage.py seed_portfolio_data --reset
+docker compose --env-file .env.prod -f docker-compose.prod.yml exec backend python manage.py seed_portfolio_data --reset
 ```
 
 このコマンドで行うこと:
@@ -137,6 +157,7 @@ docker compose exec backend python manage.py seed_portfolio_data --reset
 - [ ] `DJANGO_CSRF_TRUSTED_ORIGINS` はhttps公開URLのみ
 - [ ] production envにlocalhostを含めない
 - [ ] `.env.prod` / `.env.db` はGit管理しない
+- [ ] `docker compose --env-file .env.prod -f docker-compose.prod.yml config` が通る
 - [ ] HTTPSでアクセスできる
 - [ ] 実店舗データを入れていない
 - [ ] `seed_portfolio_data --reset` 実行済み
