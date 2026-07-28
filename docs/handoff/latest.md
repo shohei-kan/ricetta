@@ -10,15 +10,15 @@ Ricetta
 
 ## Status
 
-AWS demo auto reset documented.
+Public demo share metadata added.
 
 ## Summary
 
-AWS公開デモ運用メモとして、`docs/deploy/aws-demo-env.md` にEC2上で設定済みの自動reset運用を追記した。`ricetta-demo-reset.service` / `ricetta-demo-reset.timer`、EC2起動時・再起動時と毎日04:30 JSTのreset、確認コマンド、systemd経由の手動reset、無効化/再有効化、timezone確認を整理した。コードとproduction composeは変更していない。
+AWS公開デモURLを共有したときの見え方を整えるため、frontend HTMLにtitle、description、OGP、Twitter Card、noindexを追加した。OGP画像は `frontend/public/ogp.png` を `https://ricetta.lintake.net/ogp.png` として参照する。faviconは既存のRicetta PNG favicon設定を維持し、READMEにはアプリ本体をnoindexにする方針を短く追記した。
 
 ## Current Goal
 
-次はAWS EC2上で停止/再開後に `docs/deploy/aws-demo-env.md` のOperation checksとCheck auto resetを使い、コンテナ状態、healthcheck 200、自動reset timerのactive状態を確認する。
+次はAWS公開デモへfrontend変更を反映し、`https://ricetta.lintake.net/ogp.png` とfavicon、共有プレビュー、DemoBanner、owner/staffログインを実ブラウザで確認する。
 
 ## Current State
 
@@ -51,6 +51,9 @@ AWS公開デモ運用メモとして、`docs/deploy/aws-demo-env.md` にEC2上�
 - production demo composeは `.env.prod` から `DJANGO_DEBUG` / `DEMO_MODE` / `VITE_DEMO_MODE` を読む。`.env.prod.example` は公開デモ向けに `False` / `True` / `true` のダミー値で揃えている。
 - backend healthcheckは `/api/v1/health/` を使う。
 - `/api/v1/health/` は認証不要でHTTP 200と `{"status": "ok"}` を返す。
+- `frontend/index.html` には公開デモ共有用のtitle、description、OGP、Twitter Card、noindexを設定済み。
+- OGP画像は `frontend/public/ogp.png` を使い、HTMLでは `https://ricetta.lintake.net/ogp.png` を参照する。
+- faviconは `frontend/public/favicon.png` を使う。
 - `backend/api/demo_policy.py` には `deny_in_demo()` がある。DEMO_MODE=TrueのときDRF `PermissionDenied` を送出する。
 - 現時点で `deny_in_demo()` を適用すべき既存の危険Viewはない。
 - `auth/me` の表示名変更、`shop/me` の店舗情報更新、Recipe作成はDEMO_MODEでも許可するテストを追加済み。
@@ -100,6 +103,9 @@ AWS公開デモ運用メモとして、`docs/deploy/aws-demo-env.md` にEC2上�
 - `docs/deploy/aws-demo-env.md` にbackend healthcheckの説明を追記した。
 - `docs/deploy/aws-demo-env.md` にEC2起動後・デプロイ後のoperation checks、停止/再開運用、manual reset、healthcheck noteを追記した。
 - `docs/deploy/aws-demo-env.md` にEC2上で設定済みのsystemd自動reset運用を追記した。
+- `frontend/public/favicon.png` を追加し、`frontend/index.html` のfavicon / apple-touch-iconに設定した。
+- `frontend/index.html` に公開デモ共有用のtitle、description、OGP、Twitter Card、noindexを追加した。
+- READMEのPublic Demo Environmentに、Ricettaアプリ本体はnoindexで、発見導線はLINTAKE WorksページとGitHub READMEに寄せる方針を追記した。
 
 ## Key Decisions
 
@@ -134,6 +140,9 @@ AWS公開デモ運用メモとして、`docs/deploy/aws-demo-env.md` にEC2上�
 - `frontend/Dockerfile.prod`
 - `frontend/Caddyfile.prod`
 - `frontend/.dockerignore`
+- `frontend/index.html`
+- `frontend/public/favicon.png`
+- `frontend/public/ogp.png`
 - `docker-compose.prod.yml`
 - `Caddyfile`
 - `.env.prod.example`
@@ -214,6 +223,13 @@ Result:
 - health endpoint修正後のwhitespace check: pass
 - AWS demo operation docs追加後のwhitespace check: pass
 - AWS demo auto reset docs追加後のwhitespace check: pass
+- favicon設定後のfrontend build: pass
+- favicon設定後のwhitespace check: pass
+- public demo meta追加後のfrontend lint: pass
+- public demo meta追加後のfrontend build: pass
+- `frontend/public/ogp.png` 存在確認: pass
+- `frontend/index.html` のOGP / Twitter Card / robots / description / title確認: pass
+- public demo meta追加後のwhitespace check: pass
 
 Manual browser verification:
 

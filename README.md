@@ -383,6 +383,8 @@ docker compose exec backend python manage.py seed_portfolio_data --reset
 
 See [docs/deploy/demo.md](docs/deploy/demo.md) for details.
 
+The Ricetta app itself is marked as `noindex`; portfolio and project information are intended to be discovered through the LINTAKE Works page and GitHub README.
+
 ### Local frontend development
 
 backendとdatabaseをDockerで起動したまま、frontendだけホストで起動できます。
