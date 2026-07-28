@@ -7,7 +7,7 @@ from django.utils.decorators import method_decorator
 from django.utils import timezone
 from django.utils.dateparse import parse_date
 from django.views.decorators.csrf import ensure_csrf_cookie
-from rest_framework.decorators import action, api_view
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework import status, viewsets
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -42,6 +42,7 @@ def get_query_param(request: Request, key: str) -> Optional[str]:
 
 
 @api_view(['GET'])
+@permission_classes([AllowAny])
 def health_check(request):
     return Response({'status': 'ok'})
 

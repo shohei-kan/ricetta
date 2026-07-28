@@ -112,6 +112,18 @@ docker compose --env-file .env.prod -f docker-compose.prod.yml exec backend pyth
 - ここでは大幅なcompose変更はしない
 - 初回公開前に必ずmigrate後にseed/resetを実行する
 
+## Backend healthcheck
+
+production composeのbackend healthcheckは `/api/v1/health/` を使います。
+
+このendpointは認証不要で、未ログインでもHTTP 200と軽量レスポンスを返します。
+
+```json
+{"status": "ok"}
+```
+
+Docker上ではbackendコンテナのhealthy判定に使います。DB書き込みなどの重い処理は行いません。
+
 ## Logs
 
 公開後のログ確認例です。

@@ -10,15 +10,15 @@ Ricetta
 
 ## Status
 
-Production Docker Compose added for AWS public demo.
+Backend healthcheck allows anonymous access.
 
 ## Summary
 
-AWS EC2公開デモ用に、開発用 `docker-compose.yml` はそのまま残し、新しく `docker-compose.prod.yml` を追加・整理した。production構成ではbackendをgunicornで起動し、frontendは `VITE_DEMO_MODE=true` でbuildしたdistをfrontend内CaddyでSPA fallback付き静的配信する。外向きCaddyが80/443を受けて `/api/*`、`/admin*`、`/static/*` をbackendへ、それ以外をfrontendへreverse proxyする。DBは当面PostgreSQLコンテナを使う。RDS分離、ALB、ECS、CI/CDは今回未実装。
+AWS EC2公開デモでbackend healthcheckが `/api/v1/health/` にアクセスした際、DRFの既定認証により401になり、backendコンテナがunhealthy表示になる問題を修正した。health endpointだけ `AllowAny` にし、未ログイン/ログイン済みどちらでも `{"status": "ok"}` をHTTP 200で返す。Recipe / Ingredient / PrepTask / BoardMemoなど既存APIの認証・権限制御は変更していない。
 
 ## Current Goal
 
-次はAWS EC2上で `.env.prod` を実値で作成し、`docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build`、migrate、`seed_portfolio_data --reset`、HTTPS/ドメイン疎通を確認する。
+次はAWS EC2上で最新コードを反映し、production backendを再build/restartして、`docker compose --env-file .env.prod -f docker-compose.prod.yml ps` でbackendがhealthyになることを確認する。
 
 ## Current State
 
@@ -49,6 +49,8 @@ AWS EC2公開デモ用に、開発用 `docker-compose.yml` はそのまま残し
 - `frontend/Caddyfile.prod` はReact Routerの直接URLアクセス・リロードで404にならないように `try_files {path} /index.html` のSPA fallbackを持つ。
 - 外向きCaddyはroot `Caddyfile` を使い、`handle` で `/api/*`、`/admin*`、`/static/*` をbackendへ、それ以外をfrontendへreverse proxyする。
 - production demo composeは `.env.prod` から `DJANGO_DEBUG` / `DEMO_MODE` / `VITE_DEMO_MODE` を読む。`.env.prod.example` は公開デモ向けに `False` / `True` / `true` のダミー値で揃えている。
+- backend healthcheckは `/api/v1/health/` を使う。
+- `/api/v1/health/` は認証不要でHTTP 200と `{"status": "ok"}` を返す。
 - `backend/api/demo_policy.py` には `deny_in_demo()` がある。DEMO_MODE=TrueのときDRF `PermissionDenied` を送出する。
 - 現時点で `deny_in_demo()` を適用すべき既存の危険Viewはない。
 - `auth/me` の表示名変更、`shop/me` の店舗情報更新、Recipe作成はDEMO_MODEでも許可するテストを追加済み。
@@ -92,6 +94,10 @@ AWS EC2公開デモ用に、開発用 `docker-compose.yml` はそのまま残し
 - backend / frontendに `.dockerignore` を追加した。
 - `.env.prod.example` に `CADDY_SITE_ADDRESS` を追加し、未使用の `FRONTEND_ORIGIN` / `BACKEND_ORIGIN` を削除し、公開デモ用ダミー値へ揃えた。
 - `docs/deploy/aws-demo-env.md` にproduction composeの起動、migrate、reset、config確認コマンドを追記した。
+- `health_check` viewに `@permission_classes([AllowAny])` を追加した。
+- health endpointが未ログイン/ログイン済みで200になるbackendテストを追加した。
+- 他の認証必須APIが未ログイン401のままであることを確認するテストを追加した。
+- `docs/deploy/aws-demo-env.md` にbackend healthcheckの説明を追記した。
 
 ## Key Decisions
 
@@ -117,7 +123,6 @@ AWS EC2公開デモ用に、開発用 `docker-compose.yml` はそのまま残し
 - `backend/api/management/commands/seed_portfolio_data.py`
 - `backend/api/tests/base.py`
 - `backend/api/tests/test_auth.py`
-- `backend/api/tests/test_ingredients.py`
 - `backend/api/tests/test_shop_scope.py`
 - `backend/api/tests/test_recipes.py`
 - `backend/api/tests/test_seed_portfolio_data.py`
@@ -199,6 +204,12 @@ Result:
 - production compose整理後のmakemigrations dry-run: no changes detected
 - production compose整理後のfrontend lint: pass
 - production compose整理後のfrontend build: pass
+- health endpoint修正後のbackend tests: 149 pass
+- health endpoint修正後のbackend check: pass
+- health endpoint修正後のmakemigrations dry-run: no changes detected
+- health endpoint修正後のproduction compose config: pass
+- health endpoint修正後のproduction compose config with `.env.prod.example`: pass
+- health endpoint修正後のwhitespace check: pass
 
 Manual browser verification:
 
@@ -252,11 +263,10 @@ Manual browser verification:
 3. 実ブラウザでRecipe Formの材料selectに `トマトソース（仕込み）` が出ることを確認する。
 4. カポナータのRecipe Detailで、トマトソース由来Ingredientを含む原価が自然に表示されることを確認する。
 5. owner / staff両方でログインし、staffがIngredient / Recipe編集できない既存挙動が壊れていないことを確認する。
-6. AWS EC2上で `.env.prod` をGit管理外で作成し、`CADDY_SITE_ADDRESS` / `DJANGO_ALLOWED_HOSTS` / `DJANGO_CSRF_TRUSTED_ORIGINS` を実ドメインに合わせる。
-7. AWS EC2上で `docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build` を実行する。
-8. AWS EC2上でmigrate後に `seed_portfolio_data --reset` を実行する。
-9. HTTPSアクセス、DemoBanner、owner/staffログイン、カポナータのトマトソース由来Ingredient表示を確認する。
-10. 定期reset方法は手動運用開始後にcron / systemd timer / GitHub Actions + SSHから選ぶ。
+6. AWS EC2上で最新コードを反映し、`docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build backend` などでbackendを再build/restartする。
+7. AWS EC2上で `docker compose --env-file .env.prod -f docker-compose.prod.yml ps` を実行し、backendがhealthyになることを確認する。
+8. HTTPSアクセス、DemoBanner、owner/staffログイン、カポナータのトマトソース由来Ingredient表示を確認する。
+9. 定期reset方法は手動運用開始後にcron / systemd timer / GitHub Actions + SSHから選ぶ。
 
 ## Open Questions
 
@@ -281,11 +291,12 @@ Manual browser verification:
 - production envにはlocalhostを含めない。
 - `docs/deploy/aws-demo-env.md` のenv例はダミー値のみ。実secret / 実ドメインは書かない。
 - production composeは `--env-file .env.prod` 付きで使う。素の `docker compose -f docker-compose.prod.yml config` はローカル `.env` を読むため、値確認には向かない。
+- EC2側の `.env.prod` ではhealthcheck用に `DJANGO_ALLOWED_HOSTS=ricetta.lintake.net,127.0.0.1` のようにlocalhostアクセスのHostも許可している。
 - Caddyの公開アドレスは `CADDY_SITE_ADDRESS` で指定する。EC2公開時は `ricetta.lintake.net` などの実ドメインを設定する。
 - Docker frontendは `http://localhost:5174`。
 
 ## Suggested Commit Message
 
 ```text
-feat(deploy): add production compose for aws demo
+fix(deploy): allow unauthenticated health checks
 ```

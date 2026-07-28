@@ -10,6 +10,20 @@ from .base import ApiTestCase
 
 
 class AuthApiTests(ApiTestCase):
+    def test_health_check_allows_anonymous_access(self):
+        response = self.client.get(reverse("health_check"))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["status"], "ok")
+
+    def test_health_check_allows_authenticated_access(self):
+        self.login_owner()
+
+        response = self.client.get(reverse("health_check"))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["status"], "ok")
+
     def test_csrf_sets_cookie(self):
         response = self.client.get(reverse("auth_csrf"))
 
@@ -100,5 +114,10 @@ class AuthApiTests(ApiTestCase):
 
     def test_me_requires_login(self):
         response = self.client.get(reverse("auth_me"))
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_dashboard_still_requires_login(self):
+        response = self.client.get(reverse("dashboard"))
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
