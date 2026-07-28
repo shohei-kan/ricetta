@@ -10,15 +10,15 @@ Ricetta
 
 ## Status
 
-AWS demo operation checks documented.
+AWS demo auto reset documented.
 
 ## Summary
 
-AWS公開デモ運用メモとして、`docs/deploy/aws-demo-env.md` にEC2起動後・デプロイ後・トラブル確認時のoperation checksを追記した。production composeの状態確認、Caddy/backendログ確認、EC2停止/再開運用、manual reset、backend healthcheck noteを整理した。コードとproduction composeは変更していない。
+AWS公開デモ運用メモとして、`docs/deploy/aws-demo-env.md` にEC2上で設定済みの自動reset運用を追記した。`ricetta-demo-reset.service` / `ricetta-demo-reset.timer`、EC2起動時・再起動時と毎日04:30 JSTのreset、確認コマンド、systemd経由の手動reset、無効化/再有効化、timezone確認を整理した。コードとproduction composeは変更していない。
 
 ## Current Goal
 
-次はAWS EC2上で停止/再開後に `docs/deploy/aws-demo-env.md` のOperation checksを使い、backend/db healthy、frontend/caddy Up、Caddy証明書エラーなし、healthcheck 200を確認する。
+次はAWS EC2上で停止/再開後に `docs/deploy/aws-demo-env.md` のOperation checksとCheck auto resetを使い、コンテナ状態、healthcheck 200、自動reset timerのactive状態を確認する。
 
 ## Current State
 
@@ -99,6 +99,7 @@ AWS公開デモ運用メモとして、`docs/deploy/aws-demo-env.md` にEC2起�
 - 他の認証必須APIが未ログイン401のままであることを確認するテストを追加した。
 - `docs/deploy/aws-demo-env.md` にbackend healthcheckの説明を追記した。
 - `docs/deploy/aws-demo-env.md` にEC2起動後・デプロイ後のoperation checks、停止/再開運用、manual reset、healthcheck noteを追記した。
+- `docs/deploy/aws-demo-env.md` にEC2上で設定済みのsystemd自動reset運用を追記した。
 
 ## Key Decisions
 
@@ -212,6 +213,7 @@ Result:
 - health endpoint修正後のproduction compose config with `.env.prod.example`: pass
 - health endpoint修正後のwhitespace check: pass
 - AWS demo operation docs追加後のwhitespace check: pass
+- AWS demo auto reset docs追加後のwhitespace check: pass
 
 Manual browser verification:
 
@@ -266,8 +268,8 @@ Manual browser verification:
 4. カポナータのRecipe Detailで、トマトソース由来Ingredientを含む原価が自然に表示されることを確認する。
 5. owner / staff両方でログインし、staffがIngredient / Recipe編集できない既存挙動が壊れていないことを確認する。
 6. EC2停止/再開後は `docs/deploy/aws-demo-env.md` のOperation checksに沿ってproduction composeとログを確認する。
-7. HTTPSアクセス、DemoBanner、owner/staffログイン、カポナータのトマトソース由来Ingredient表示を確認する。
-8. 定期reset方法は手動運用開始後にcron / systemd timer / GitHub Actions + SSHから選ぶ。
+7. `systemctl status ricetta-demo-reset.timer` と `journalctl -u ricetta-demo-reset.service -n 80 --no-pager` で自動reset運用を確認する。
+8. HTTPSアクセス、DemoBanner、owner/staffログイン、カポナータのトマトソース由来Ingredient表示を確認する。
 
 ## Open Questions
 
@@ -299,5 +301,5 @@ Manual browser verification:
 ## Suggested Commit Message
 
 ```text
-docs(deploy): add aws demo operation checks
+docs(deploy): document aws demo auto reset
 ```

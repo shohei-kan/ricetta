@@ -211,15 +211,173 @@ docker compose --env-file .env.prod -f docker-compose.prod.yml exec backend pyth
 - [ ] owner / staffでログイン確認済み
 - [ ] DEMO_MODEで禁止する破壊系Viewが未実装、または `deny_in_demo()` 適用済み
 
-## Reset automation future task
+## Demo auto reset
 
-定期resetは今後の課題です。
+公開デモでは、デモデータを自動resetします。
 
-候補:
+resetには `seed_portfolio_data --reset` を使います。
 
-- cron
-- systemd timer
-- GitHub Actions + SSH
-- 手動resetから開始
+現在EC2に設定している内容:
 
-現時点では、手動resetで開始します。
+- reset script: `/usr/local/bin/ricetta-demo-reset.sh`
+- systemd service: `ricetta-demo-reset.service`
+- systemd timer: `ricetta-demo-reset.timer`
+- server timezone: `Asia/Tokyo`
+
+自動resetのタイミング:
+
+- EC2起動時 / 再起動時
+- 毎日 04:30 JST
+
+resetで起きること:
+
+- 公開デモデータを初期状態に戻す
+- `owner@example.com` / `staff@example.com` のpasswordを `password` に戻す
+- デモ中に入力されたデータはresetで消える
+
+timer確認結果の例:
+
+```text
+Wed 2026-07-29 04:30:00 JST ... ricetta-demo-reset.timer ricetta-demo-reset.service
+```
+
+手動実行成功時のログ例:
+
+```text
+[ricetta-demo-reset] starting at ...
+[ricetta-demo-reset] waiting for backend...
+[ricetta-demo-reset] backend is ready
+Seeded portfolio demo data. Accounts: owner@example.com / password, staff@example.com / password
+[ricetta-demo-reset] completed at ...
+```
+
+### Current reset script
+
+現在EC2に設定しているスクリプト例です。
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+APP_DIR="/srv/ricetta"
+COMPOSE="docker compose --env-file .env.prod -f docker-compose.prod.yml"
+
+cd "$APP_DIR"
+
+echo "[ricetta-demo-reset] starting at $(date -Is)"
+
+$COMPOSE up -d
+
+echo "[ricetta-demo-reset] waiting for backend..."
+
+for i in $(seq 1 30); do
+  if $COMPOSE exec -T backend python manage.py check >/dev/null 2>&1; then
+    echo "[ricetta-demo-reset] backend is ready"
+    break
+  fi
+
+  if [ "$i" -eq 30 ]; then
+    echo "[ricetta-demo-reset] backend did not become ready" >&2
+    exit 1
+  fi
+
+  sleep 5
+done
+
+$COMPOSE exec -T backend python manage.py seed_portfolio_data --reset
+
+echo "[ricetta-demo-reset] completed at $(date -Is)"
+```
+
+### Current systemd service
+
+現在EC2に設定しているsystemd service例です。
+
+```ini
+[Unit]
+Description=Reset Ricetta demo data
+Wants=network-online.target docker.service
+After=network-online.target docker.service
+
+[Service]
+Type=oneshot
+User=ubuntu
+WorkingDirectory=/srv/ricetta
+ExecStart=/usr/local/bin/ricetta-demo-reset.sh
+TimeoutStartSec=300
+
+[Install]
+WantedBy=multi-user.target
+```
+
+### Current systemd timer
+
+現在EC2に設定しているsystemd timer例です。
+
+```ini
+[Unit]
+Description=Run Ricetta demo reset daily
+
+[Timer]
+OnCalendar=*-*-* 04:30:00
+Persistent=true
+Unit=ricetta-demo-reset.service
+
+[Install]
+WantedBy=timers.target
+```
+
+### Check auto reset
+
+自動reset設定の確認コマンドです。
+
+```bash
+systemctl is-enabled ricetta-demo-reset.service
+systemctl is-enabled ricetta-demo-reset.timer
+systemctl status ricetta-demo-reset.timer
+systemctl list-timers --all | grep ricetta
+journalctl -u ricetta-demo-reset.service -n 80 --no-pager
+```
+
+期待する状態:
+
+- service: `enabled`
+- timer: `enabled`
+- timer: `active (waiting)`
+- next trigger: `04:30 JST`
+- journalに `Seeded portfolio demo data` が出る
+
+### Manual reset via systemd
+
+手動でsystemd経由のresetを実行したい場合:
+
+```bash
+sudo systemctl start ricetta-demo-reset.service
+journalctl -u ricetta-demo-reset.service -n 80 --no-pager
+```
+
+### Disable auto reset
+
+自動resetを止める場合:
+
+```bash
+sudo systemctl disable --now ricetta-demo-reset.timer
+sudo systemctl disable ricetta-demo-reset.service
+```
+
+再有効化する場合:
+
+```bash
+sudo systemctl enable ricetta-demo-reset.service
+sudo systemctl enable --now ricetta-demo-reset.timer
+```
+
+### Timezone note
+
+timezone確認:
+
+```bash
+timedatectl
+```
+
+現在の公開デモEC2は `Asia/Tokyo` に設定済みです。
