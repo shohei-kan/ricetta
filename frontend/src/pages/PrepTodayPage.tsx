@@ -441,7 +441,7 @@ function BoardMemoSection({
             仕込み以外の、今日のホワイトボードメモです。
           </p>
         </div>
-        <form className="flex flex-col gap-2 sm:flex-row md:min-w-[360px]" onSubmit={onSubmit}>
+        <form className="flex flex-col gap-2 sm:flex-row md:min-w-90" onSubmit={onSubmit}>
           <label className="sr-only" htmlFor="board-memo-text">
             メモを追加
           </label>
