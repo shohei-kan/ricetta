@@ -1,6 +1,5 @@
 name: Bug
 description: 不具合や想定外の動作を報告
-title: ""
 labels:
   - bug
 

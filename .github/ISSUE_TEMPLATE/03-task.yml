@@ -1,6 +1,5 @@
 name: Task
 description: ドキュメント、テスト、リファクタリング、運用作業など
-title: ""
 labels:
   - chore
 
