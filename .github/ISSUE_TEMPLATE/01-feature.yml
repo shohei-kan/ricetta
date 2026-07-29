@@ -1,65 +1,74 @@
-name: 機能追加
-description: 新しい機能や既存機能の改善を提案します
-title: "feat: "
+name: Feature
+description: 新しい機能や既存機能の改善
+title: ""
 labels:
-  - enhancement
+  - feature
+
 body:
   - type: markdown
     attributes:
       value: |
-        Ricettaの機能追加・改善内容を整理してください。
+        新しい機能や既存機能の改善内容を整理してください。
 
   - type: textarea
-    id: purpose
+    id: goal
     attributes:
-      label: 目的
-      description: この機能によって、誰のどんな課題を解決するのか記載してください。
-      placeholder: 例：仕込み担当者が、当日の作業状況を把握しやすくする。
+      label: Goal
+      description: この機能によって、誰のどんな課題を解決するか記載してください。
+      placeholder: |
+        例：
+        仕込み担当者が、当日の作業状況を把握しやすくする。
     validations:
       required: true
 
   - type: textarea
     id: background
     attributes:
-      label: 背景
-      description: この対応が必要になった経緯を記載してください。
+      label: Background
+      description: この対応が必要になった背景を記載してください。
     validations:
       required: true
 
   - type: textarea
-    id: details
+    id: tasks
     attributes:
-      label: 対応内容
-      description: 実装または変更する内容を記載してください。
+      label: Tasks
+      description: 実装または変更する内容をチェックリスト形式で記載してください。
       placeholder: |
-        - 未着手の仕込みを上段に表示する
-        - 完了した仕込みを下段へ移動する
+        - [ ] 未着手の仕込みを上段に表示する
+        - [ ] 完了した仕込みを下段へ移動する
+        - [ ] レスポンシブ表示を確認する
     validations:
       required: true
 
   - type: textarea
     id: acceptance
     attributes:
-      label: 完了条件
-      description: 何を確認できればIssueを完了にできるか記載してください。
+      label: Acceptance Criteria
+      description: Issueを完了と判断できる条件を記載してください。
       placeholder: |
         - [ ] 未着手と完了済みを区別できる
-        - [ ] スマホとPCで表示を確認できる
+        - [ ] スマホ・タブレット・PCで正常に表示される
     validations:
       required: true
 
   - type: textarea
     id: verification
     attributes:
-      label: 確認方法
+      label: Verification
       description: 実装後の動作確認方法を記載してください。
+      placeholder: |
+        1. ownerでログインする
+        2. 今日の仕込み画面を開く
+        3. 仕込みを完了に変更する
+        4. 完了済みの領域へ移動することを確認する
     validations:
       required: false
 
   - type: textarea
     id: notes
     attributes:
-      label: 補足
-      description: 参考資料、画面案、関連Issueなどがあれば記載してください。
+      label: Notes
+      description: 関連Issue、参考資料、画面イメージなどがあれば記載してください。
     validations:
       required: false

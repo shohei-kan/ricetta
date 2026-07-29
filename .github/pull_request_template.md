@@ -1,20 +1,31 @@
-## 概要
+## Summary
 
-このPRで何を変更したか、簡潔に記載します。
+このPRで何を変更したか、簡潔に記載してください。
 
-## 変更内容
+## Changes
 
 - 
 - 
 - 
 
-## 関連Issue
+## Related Issue
 
 Closes #
 
-## 確認内容
+<!--
+このPRでIssueを完了する場合は「Closes #123」と記載してください。
+関連付けのみでIssueを閉じない場合は「Related to #123」と記載してください。
+親Epicがある場合は、子Issueとは別に関連付けできます。
 
-該当する項目を確認してください。
+例：
+Closes #12
+Related to #10
+-->
+
+## Verification
+
+実施した項目にチェックを入れてください。  
+該当しない項目は未チェックのままで構いません。
 
 - [ ] 対象機能をローカル環境で確認した
 - [ ] 既存機能に影響がないことを確認した
@@ -23,16 +34,20 @@ Closes #
 - [ ] frontendのbuildを実行した
 - [ ] 必要なドキュメントを更新した
 
-## 確認コマンド
+## Commands
+
+実行した確認コマンドを記載してください。
 
 ```bash
-# 実行したコマンドを記載
+# 例
+# docker compose exec backend python manage.py test
+# docker compose exec frontend npm run lint
+# docker compose exec frontend npm run build
 ```
-
-## スクリーンショット
+## Screenshots
 
 UI変更がある場合に、変更前・変更後の画像を添付します。
 
-## 補足
+## Notes
 
 レビュー時に確認してほしい点や、今回対応しない内容を記載します。
