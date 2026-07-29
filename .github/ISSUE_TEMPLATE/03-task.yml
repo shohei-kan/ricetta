@@ -1,58 +1,70 @@
-name: 作業タスク
-description: インフラ、テスト、調査、文書化などの作業を管理します
-title: "chore: "
+name: Task
+description: ドキュメント、テスト、リファクタリング、運用作業など
+title: ""
 labels:
-  - task
+  - chore
+
 body:
   - type: markdown
     attributes:
       value: |
-        実装以外も含む、具体的な作業内容を整理してください。
+        機能追加や不具合修正に該当しない作業内容を整理してください。
 
   - type: textarea
-    id: purpose
+    id: summary
     attributes:
-      label: 目的
-      description: なぜこの作業を行うのか記載してください。
+      label: Summary
+      description: 実施する作業を簡潔に記載してください。
+      placeholder: |
+        例：
+        READMEに公開デモの推奨操作フローを追加する。
     validations:
       required: true
 
   - type: textarea
-    id: details
+    id: background
     attributes:
-      label: 対応内容
-      description: 実施する作業を記載してください。
+      label: Background
+      description: この作業が必要になった背景を記載してください。
+    validations:
+      required: true
+
+  - type: textarea
+    id: tasks
+    attributes:
+      label: Tasks
+      description: 実施する作業をチェックリスト形式で記載してください。
       placeholder: |
-        - バックアップスクリプトを作成する
-        - 定期実行を設定する
-        - 復元手順を文書化する
+        - [ ] 推奨操作フローを整理する
+        - [ ] READMEに手順を追加する
+        - [ ] リンクとアカウント情報を確認する
     validations:
       required: true
 
   - type: textarea
     id: acceptance
     attributes:
-      label: 完了条件
-      description: 作業完了と判断する条件を記載してください。
+      label: Acceptance Criteria
+      description: Issueを完了と判断できる条件を記載してください。
       placeholder: |
-        - [ ] バックアップファイルが作成される
-        - [ ] 復元テストに成功する
-        - [ ] 手順書が更新されている
+        - [ ] READMEから公開デモへ移動できる
+        - [ ] 初めて見る人が確認順を理解できる
+        - [ ] 表記内容が現在のデモと一致している
     validations:
       required: true
 
   - type: textarea
     id: verification
     attributes:
-      label: 確認方法
-      description: 結果を確認する方法やコマンドを記載してください。
+      label: Verification
+      description: 作業完了後の確認方法を記載してください。
     validations:
       required: false
 
   - type: textarea
     id: notes
     attributes:
-      label: 補足
-      description: 関連資料、検討事項、関連Issueなどがあれば記載してください。
+      label: Notes
+      description: 関連Issue、参考資料、補足事項などがあれば記載してください。
     validations:
       required: false

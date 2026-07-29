@@ -1,78 +1,85 @@
-name: 不具合報告
-description: 動作不良や想定外の挙動を報告します
-title: "fix: "
+name: Bug
+description: 不具合や想定外の動作を報告
+title: ""
 labels:
   - bug
+
 body:
   - type: markdown
     attributes:
       value: |
-        不具合を再現・確認できる情報を記載してください。
+        発生している不具合と再現方法を整理してください。
 
   - type: textarea
-    id: problem
+    id: summary
     attributes:
-      label: 発生内容
-      description: どの画面で、何が起きたか記載してください。
+      label: Summary
+      description: 発生している不具合を簡潔に記載してください。
+      placeholder: |
+        例：
+        スマートフォン表示でボトムナビゲーションが画面外にはみ出す。
     validations:
       required: true
 
   - type: textarea
-    id: reproduction
+    id: steps
     attributes:
-      label: 再現手順
-      description: 不具合が発生するまでの操作を順番に記載してください。
+      label: Steps to Reproduce
+      description: 不具合を再現する手順を記載してください。
       placeholder: |
         1. ownerでログインする
-        2. レシピ詳細を開く
-        3. 編集ボタンを押す
-        4. 保存するとエラーになる
+        2. レシピ詳細画面を開く
+        3. 画面幅を375pxにする
+        4. 画面下部を確認する
     validations:
       required: true
 
   - type: textarea
     id: expected
     attributes:
-      label: 期待する動作
-      description: 本来どのように動作してほしいか記載してください。
+      label: Expected Behavior
+      description: 本来期待している動作を記載してください。
     validations:
       required: true
 
   - type: textarea
     id: actual
     attributes:
-      label: 実際の動作
-      description: 実際に起きた現象やエラーメッセージを記載してください。
-    validations:
-      required: true
-
-  - type: dropdown
-    id: environment
-    attributes:
-      label: 発生環境
-      options:
-        - ローカル開発環境
-        - AWS公開デモ
-        - Wyse本番環境
-        - その他
+      label: Actual Behavior
+      description: 実際に発生している動作を記載してください。
     validations:
       required: true
 
   - type: textarea
-    id: acceptance
+    id: environment
     attributes:
-      label: 完了条件
-      description: 修正完了と判断する条件を記載してください。
+      label: Environment
+      description: 不具合が発生した環境を記載してください。
       placeholder: |
-        - [ ] 同じ手順で不具合が発生しない
-        - [ ] 関連する既存機能に影響がない
+        - Environment: Public demo / Local
+        - Device: iPhone 12 mini
+        - OS: iOS
+        - Browser: Safari
+        - App version: v0.1.0
     validations:
-      required: true
+      required: false
+
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification
+      description: 修正後に確認する内容を記載してください。
+      placeholder: |
+        - [ ] 同じ手順で不具合が再現しない
+        - [ ] 他の画面幅でも表示が崩れない
+        - [ ] 既存機能に影響がない
+    validations:
+      required: false
 
   - type: textarea
     id: notes
     attributes:
-      label: 補足
+      label: Notes
       description: スクリーンショット、ログ、関連Issueなどがあれば記載してください。
     validations:
       required: false
