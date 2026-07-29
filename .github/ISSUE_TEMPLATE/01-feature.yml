@@ -1,0 +1,65 @@
+name: 機能追加
+description: 新しい機能や既存機能の改善を提案します
+title: "feat: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Ricettaの機能追加・改善内容を整理してください。
+
+  - type: textarea
+    id: purpose
+    attributes:
+      label: 目的
+      description: この機能によって、誰のどんな課題を解決するのか記載してください。
+      placeholder: 例：仕込み担当者が、当日の作業状況を把握しやすくする。
+    validations:
+      required: true
+
+  - type: textarea
+    id: background
+    attributes:
+      label: 背景
+      description: この対応が必要になった経緯を記載してください。
+    validations:
+      required: true
+
+  - type: textarea
+    id: details
+    attributes:
+      label: 対応内容
+      description: 実装または変更する内容を記載してください。
+      placeholder: |
+        - 未着手の仕込みを上段に表示する
+        - 完了した仕込みを下段へ移動する
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 完了条件
+      description: 何を確認できればIssueを完了にできるか記載してください。
+      placeholder: |
+        - [ ] 未着手と完了済みを区別できる
+        - [ ] スマホとPCで表示を確認できる
+    validations:
+      required: true
+
+  - type: textarea
+    id: verification
+    attributes:
+      label: 確認方法
+      description: 実装後の動作確認方法を記載してください。
+    validations:
+      required: false
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: 補足
+      description: 参考資料、画面案、関連Issueなどがあれば記載してください。
+    validations:
+      required: false
