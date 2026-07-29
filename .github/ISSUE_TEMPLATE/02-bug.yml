@@ -1,0 +1,78 @@
+name: 不具合報告
+description: 動作不良や想定外の挙動を報告します
+title: "fix: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        不具合を再現・確認できる情報を記載してください。
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: 発生内容
+      description: どの画面で、何が起きたか記載してください。
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: 再現手順
+      description: 不具合が発生するまでの操作を順番に記載してください。
+      placeholder: |
+        1. ownerでログインする
+        2. レシピ詳細を開く
+        3. 編集ボタンを押す
+        4. 保存するとエラーになる
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期待する動作
+      description: 本来どのように動作してほしいか記載してください。
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: 実際の動作
+      description: 実際に起きた現象やエラーメッセージを記載してください。
+    validations:
+      required: true
+
+  - type: dropdown
+    id: environment
+    attributes:
+      label: 発生環境
+      options:
+        - ローカル開発環境
+        - AWS公開デモ
+        - Wyse本番環境
+        - その他
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 完了条件
+      description: 修正完了と判断する条件を記載してください。
+      placeholder: |
+        - [ ] 同じ手順で不具合が発生しない
+        - [ ] 関連する既存機能に影響がない
+    validations:
+      required: true
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: 補足
+      description: スクリーンショット、ログ、関連Issueなどがあれば記載してください。
+    validations:
+      required: false
