@@ -374,25 +374,39 @@ shop: 〇〇食堂
 
 ### Public Demo Environment
 
-Ricetta is deployed as a public portfolio demo.
+Ricettaは、ポートフォリオ用の公開デモとしてデプロイしています。
 
 - URL: https://ricetta.lintake.net
-- Demo accounts:
+- デモアカウント:
   - `owner@example.com` / `password`
   - `staff@example.com` / `password`
-- Demo mode: enabled
-- Demo data is reset automatically:
-  - on EC2 startup / restart
-  - daily at 04:30 JST
+- デモモード: 有効
+- デモデータは以下のタイミングで自動的に初期化されます:
+  - EC2の起動・再起動時
+  - 毎日04:30 JST
 
-The demo environment runs on AWS EC2 with Docker Compose, PostgreSQL, Gunicorn, and Caddy HTTPS.
+デモ環境はAWS EC2上で稼働し、Docker Compose、PostgreSQL、Gunicorn、Caddy HTTPSで構成しています。
 
-For demo behavior and deployment operation notes, see:
+#### Demo Walkthrough (5–10 minutes)
+
+最初にownerアカウントで全体の業務フローを確認し、その後staffアカウントへ切り替えて、日々の操作権限の違いを比較します。
+
+1. **Dashboard** — `owner@example.com` でログインし、今日の仕込み状況、次の作業、各データの件数を確認します。
+2. **Prep Today** — `仕込み` を開き、タスクを `未着手`、`作業中`、`完了` の間で更新します。厨房のホワイトボードを置き換える、軽量な作業管理画面です。
+3. **Recipe List** — `レシピ` を開いて `カポナータ` を選び、厨房で使うレシピをどのように整理し、探せるかを確認します。
+4. **Recipe Detail** — 分量、材料、手順、メモと、分離して表示される原価情報を確認します。仕込みレシピの `トマトソース` が、別のレシピの材料として再利用されている点も見どころです。
+5. **Ingredient List** — `材料` を開き、仕入価格、使用単位、単位換算がレシピ原価の計算につながる流れを確認します。
+6. **Settings / Account** — `設定` で店舗固有のカテゴリと単位を確認し、`アカウント` で現在の店舗、権限、プロフィール、店舗情報を確認します。
+7. **Staff Comparison** — ログアウト後、`staff@example.com` でログインし直します。レシピと材料の閲覧、仕込みステータスとボードメモの操作はできますが、レシピ、材料、カテゴリ、単位、店舗情報の管理操作は制限されます。
+
+**owner** はレシピ、材料、原価設定、店舗マスタを管理し、**staff** は共有された情報を参照して日々の仕込み作業を進めます。厨房での操作をシンプルに保ちながら、バックエンドで店舗スコープと権限を制御している点を確認できます。
+
+デモ環境の動作とデプロイ運用については、以下を参照してください。
 
 - [Public demo deployment](docs/deploy/demo.md)
 - [AWS demo environment](docs/deploy/aws-demo-env.md)
 
-The Ricetta app itself is marked as `noindex`; portfolio and project information are intended to be discovered through the LINTAKE Works page and GitHub README.
+Ricettaアプリ自体は `noindex` とし、ポートフォリオとプロジェクト情報への導線はLINTAKE WorksページとGitHub READMEに集約しています。
 
 ### Local frontend development
 
