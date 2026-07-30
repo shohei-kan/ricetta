@@ -9,6 +9,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { ricettaLogoSimple } from '../assets'
+import { useBottomNavVisibility } from '../hooks/useBottomNavVisibility'
 import { DemoBanner } from './demo/DemoBanner'
 
 export type RoutePath = '/dashboard' | '/prep' | '/recipes' | '/ingredients' | '/settings' | '/account'
@@ -39,6 +40,7 @@ const mobileBottomNavPaths = new Set([
 
 export function AppLayout({ children, currentPath, pathname, navigate }: AppLayoutProps) {
   const showMobileBottomNav = mobileBottomNavPaths.has(pathname)
+  const isBottomNavVisible = useBottomNavVisibility(pathname)
 
   return (
     <div className="min-h-screen bg-[#f7f3ec] text-[#2a241f] md:flex">
@@ -81,7 +83,11 @@ export function AppLayout({ children, currentPath, pathname, navigate }: AppLayo
         </button>
       </aside>
 
-      <main className={`min-h-screen min-w-0 flex-1 bg-[#f7f3ec] md:pb-0 ${showMobileBottomNav ? 'pb-20' : ''}`}>
+      <main
+        className={`min-h-screen min-w-0 flex-1 bg-[#f7f3ec] md:pb-0 ${
+          showMobileBottomNav ? 'pb-[calc(4.5rem+env(safe-area-inset-bottom))]' : ''
+        }`}
+      >
         <DemoBanner />
         <header className="border-b border-[#ded2c2] bg-[#fffdf9] px-5 py-4 md:hidden">
           <div className="flex items-center justify-between">
@@ -106,23 +112,36 @@ export function AppLayout({ children, currentPath, pathname, navigate }: AppLayo
       </main>
 
       {showMobileBottomNav && (
-        <nav className="fixed bottom-0 left-0 right-0 z-20 grid grid-cols-5 gap-1 border-t border-[#ded2c2] bg-[#fffdf9] px-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] pt-2 shadow-[0_-10px_30px_rgba(84,58,35,0.08)] md:hidden">
-          {navItems.map(({ icon: Icon, label, path }) => (
-            <button
-              aria-label={label}
-              className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl border px-1 py-2 font-bold transition ${
-                currentPath === path
-                  ? 'border-[#d9a98e] bg-[#f1e7dc] text-[#c76738]'
-                  : 'border-transparent text-[#5f554b]'
-              }`}
-              key={path}
-              onClick={() => navigate(path)}
-              type="button"
-            >
-              <Icon aria-hidden="true" size={22} strokeWidth={1.8} />
-              <span className="text-[11px] leading-none">{label}</span>
-            </button>
-          ))}
+        <nav
+          aria-hidden={!isBottomNavVisible}
+          aria-label="主要ナビゲーション"
+          className={`fixed inset-x-0 bottom-0 z-20 md:hidden ${
+            isBottomNavVisible ? '' : 'pointer-events-none'
+          }`}
+        >
+          <div
+            className={`grid grid-cols-5 gap-1 border-t border-slate-200/60 bg-white/80 px-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] pt-2 shadow-[0_-10px_30px_rgba(84,58,35,0.08)] backdrop-blur-md transition-[transform,opacity] duration-200 ease-out motion-reduce:transition-none ${
+              isBottomNavVisible ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'
+            }`}
+          >
+            {navItems.map(({ icon: Icon, label, path }) => (
+              <button
+                aria-label={label}
+                className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl border px-1 py-2 font-bold transition ${
+                  currentPath === path
+                    ? 'border-[#d9a98e] bg-[#f1e7dc] text-[#c76738]'
+                    : 'border-transparent text-[#5f554b]'
+                }`}
+                key={path}
+                onClick={() => navigate(path)}
+                tabIndex={isBottomNavVisible ? 0 : -1}
+                type="button"
+              >
+                <Icon aria-hidden="true" size={22} strokeWidth={1.8} />
+                <span className="text-[11px] leading-none">{label}</span>
+              </button>
+            ))}
+          </div>
         </nav>
       )}
     </div>

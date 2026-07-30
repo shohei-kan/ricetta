@@ -2,7 +2,7 @@
 
 ## Date
 
-2026-07-28
+2026-07-30
 
 ## Project
 
@@ -10,59 +10,51 @@ Ricetta
 
 ## Status
 
-README reflects the published public demo state.
+GitHub Issue #5 のモバイルボトムナビ改善を実装済み。lint / build は成功し、実機Safariでの表示確認中。767px / 768px の境界確認は完了。
 
 ## Summary
 
-READMEをAWS公開デモ完了後の状態に合わせて更新した。Public Demo Environmentに実URL、owner/staffデモアカウント、自動reset、AWS EC2 + Docker Compose + PostgreSQL + Gunicorn + Caddy HTTPS構成を明記し、Current Statusから未デプロイ表現を削除した。公開デモURL共有用のmeta / OGP / noindex整備も反映済み。
+`md` 未満の画面で、下スクロール時にボトムナビを隠し、上スクロール時とページ上部では再表示するようにした。24px のしきい値で小さなスクロール揺れを無視し、route変更時は表示状態へリセットする。背景は `bg-white/60` と `backdrop-blur-md` で軽くし、既存の表示対象パスとデスクトップサイドバーは維持している。
 
 ## Current Goal
 
-次はAWS公開デモへfrontend変更を反映し、`https://ricetta.lintake.net/ogp.png`、favicon、共有プレビュー、DemoBanner、owner/staffログインを実ブラウザで確認する。
+Issue #5 の実ブラウザ確認を行い、問題がなければ `feat(frontend): hide bottom navigation on scroll` でコミットする。
 
 ## Current State
 
-- 公開URLは `https://ricetta.lintake.net`。
-- production構成は `docker-compose.prod.yml` を使う。
-- productionは backend / frontend / db / caddy の4サービス構成。
-- backendはDjango + gunicorn。
-- frontendはVite build済みdistをCaddyで配信する。
-- 外向きCaddyはHTTPS / reverse proxyを担当する。
-- backend healthcheckは `/api/v1/health/` を使い、未認証でも200を返す。
-- demo data resetは `seed_portfolio_data --reset` を使う。
-- EC2上では `ricetta-demo-reset.service` / `ricetta-demo-reset.timer` により、EC2起動時・再起動時と毎日04:30 JSTに自動resetされる。
-- `docs/deploy/demo.md` は公開デモの仕様説明。
-- `docs/deploy/aws-demo-env.md` はAWS EC2 + Docker Compose公開時のenvと運用コマンド確認用。
-- READMEは公開済みportfolio demoの状態に更新済み。
-- Recipe / Ingredient / prep recipe materialization / production compose / auto reset / OGP整備の詳細履歴は `docs/handoff/archive/release-prep.md` に移動済み。
+- 作業ブランチ: `feature/issue-5-hide-bottom-nav-on-scroll`
+- モバイル境界: Tailwind `md` 未満（767px以下）
+- `md` 以上: 既存の固定サイドバー
+- ボトムナビ対象: Dashboard / Prep Today / Recipe List / Ingredient List / Settings / Account
+- 詳細・作成・編集画面の既存表示条件は変更していない
 
 ## What Was Done
 
-- `frontend/index.html` に公開デモ共有用のmeta情報を追加した。
-- `frontend/public/favicon.png` をfavicon / apple-touch-iconに設定した。
-- `frontend/public/ogp.png` をOGP / Twitter Card画像として参照するようにした。
-- READMEのPublic Demo Environmentに、Ricettaアプリ本体はnoindexで、発見導線はLINTAKE WorksページとGitHub READMEに寄せる方針を追記した。
-- READMEのPublic Demo Environment、Architecture、Current Status、Future Improvementsを公開済み状態へ更新した。
-- `docs/handoff/archive/release-prep.md` に `2026-07-28 Public demo launch polish` を追加し、長くなった公開準備ログを退避した。
-- `docs/handoff/latest.md` を次作業向けの短い現在地情報に整理した。
+- `useBottomNavVisibility` hookを追加した。
+- 24pxの移動しきい値とページ上部24pxの常時表示領域を設定した。
+- passive scroll listenerとcleanupを実装した。
+- route変更とbreakpoint変更時に表示状態をリセットするようにした。
+- `translateY` / opacityによる200msの表示切替を追加した。
+- reduced motion、非表示時のpointer events・tab focus除外に対応した。
+- main下余白をsafe-area込みにした。
+- ボトムナビ背景を半透明白＋backdrop blurへ変更し、境界線を軽くした。
+- Safari対策としてviewport固定の外枠とアニメーションする内側を分離した。
+- main下余白をナビ高72px＋safe-areaに合わせた。
+- UIガイドラインへスクロール時の挙動を追記した。
 
 ## Key Decisions
 
-- Ricettaアプリ本体は `noindex, nofollow` とし、検索・発見導線はLINTAKE WorksページとGitHub READMEに寄せる。
-- OGP画像は `frontend/public/ogp.png` を使い、HTMLでは絶対URL `https://ricetta.lintake.net/ogp.png` を指定する。
-- Handoffの詳細履歴は `latest.md` に溜めず、作業テーマごとにarchiveへ追記する。
-- 今回の公開準備履歴は `docs/handoff/archive/release-prep.md` に集約する。
+- スクロール制御は既存breakpointに合わせて767px以下だけで有効にする。
+- 小さな揺れを避けるため、直近の方向転換位置から24px移動した時だけ状態を切り替える。
+- `fixed inset-x-0 bottom-0` は外側navだけが担当し、transformは内側要素だけに適用する。
+- 既存のボトムナビ表示対象パスはIssue #5の範囲外として維持する。
 
 ## Key Files
 
-- `frontend/index.html`
-- `frontend/public/favicon.png`
-- `frontend/public/ogp.png`
-- `README.md`
+- `frontend/src/components/AppLayout.tsx`
+- `frontend/src/hooks/useBottomNavVisibility.ts`
+- `docs/product/ui-guidelines.md`
 - `docs/handoff/latest.md`
-- `docs/handoff/archive/release-prep.md`
-- `docs/deploy/demo.md`
-- `docs/deploy/aws-demo-env.md`
 
 ## Verification
 
@@ -72,93 +64,59 @@ READMEをAWS公開デモ完了後の状態に合わせて更新した。Public D
 cd frontend
 npm run lint
 npm run build
-ls -lh frontend/public/ogp.png
-grep -n "og:image\|twitter:image\|robots\|description\|title" frontend/index.html
-grep -n "Public Demo Environment\|Current Status\|Future Improvements" -A30 README.md
 git diff --check
 ```
 
-Result:
+結果:
 
 - frontend lint: pass
 - frontend build: pass
-- `frontend/public/ogp.png` 存在確認: pass
-- `frontend/index.html` のOGP / Twitter Card / robots / description / title確認: pass
-- READMEのPublic Demo Environment / Current Status / Future Improvements確認: pass
 - whitespace check: pass
 
 Manual browser verification:
 
-- 未実施。次にAWS公開デモへ反映後、実ブラウザと共有プレビューを確認する。
+- iPhone Safariで一部確認済み。
+- 767px以下でボトムナビ表示、768px以上でサイドバー表示になる境界確認は完了。
+- 下端スクロール時の余白問題を確認し、viewport固定の外枠とアニメーション内側要素の分離で修正済み。
+- 主要画面の最終確認のみ残っている。
 
 ## Current Product Scope
 
 - Login / logout and Shop scope
-- owner / staff role control for MVP operations
 - Recipe / Ingredient / Prep Today / Dashboard / Settings / Account
-- Recipe type distinction between prep recipes and menu recipes
-- Prep recipes as reusable ingredients through `ingredient_type=prep_recipe`
-- Active Prep Today board and direct PrepTask creation
-- BoardMemo as lightweight whiteboard memo under Prep Today columns
-- Smartphone, tablet landscape, and PC layouts
-- Demo mode via environment variables
-- Safe portfolio demo seed reset
-- Production demo deployment on EC2 + Docker Compose + Caddy HTTPS
-- Public demo share metadata
+- Smartphone bottom navigation
+- Tablet landscape / PC fixed sidebar
+- Mobile bottom navigation hide-on-scroll
 
 ## Out of Scope for MVP
 
 - Stripe / Checkout / Billing portal
 - POS integration
 - Automatic inventory deduction
-- Advanced ordering
 - Multi-shop management UI
-- Advanced role management beyond owner / staff
+- Advanced role management
 - Shop device mode
-- Yield loss / waste rate / cooked weight
-- Complex unit conversion table
-- Automatic Ingredient creation button from prep Recipe
-- Full deep cycle validation before save
-- Demo reset API / reset button
-- AWS構成のECS / ALB / RDS分離
-- Demo-specific branch or duplicated app directories
 
 ## Next Recommended Tasks
 
-1. EC2でfrontend imageを再buildし、Caddyをrestartしてmeta / favicon / OGP変更を反映する。
-2. `https://ricetta.lintake.net/ogp.png` が200で表示されることを確認する。
-3. faviconがブラウザタブに表示されることを確認する。
-4. Slack / Notion / GitHub README等で共有プレビューを確認する。OGPキャッシュで即時反映されない場合がある点に注意する。
-5. DemoBanner、owner/staffログイン、カポナータのトマトソース由来Ingredient表示を確認する。
-6. EC2停止/再開後は `docs/deploy/aws-demo-env.md` のOperation checksとCheck auto resetに沿ってproduction composeと自動reset timerを確認する。
+1. 375px前後で主要画面の初期表示、下スクロール、上スクロール、最上部復帰を確認する。
+2. 767pxで同じ挙動とsafe-area下余白を確認する。
+3. 768px以上でサイドバーが維持され、ボトムナビが表示されないことを確認する。
+4. 非表示時にTabフォーカスがボトムナビへ移らないことを確認する。
+5. 問題がなければIssue #5用コミットを作成する。
 
 ## Open Questions
 
-- OGP共有プレビューのキャッシュ更新をどのサービスで確認するか。
-- LINTAKE Worksページ側にもRicetta公開デモURLとGitHub README導線をどう掲載するか。
+- 実機Safariで `env(safe-area-inset-bottom)` を含む最下部余白を最終確認する。
 
 ## Notes for Next Agent
 
-- `frontend/public/ogp.png` は未追跡ファイルとして追加されている可能性がある。コミット時に含める。
-- `frontend/public/favicon.png` は既にRicettaアイコンとして使う。
-- frontend meta変更をAWSへ反映するにはfrontend imageの再buildが必要。
-- 反映例:
-
-```bash
-ssh ricetta
-cd /srv/ricetta
-git pull
-docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build frontend
-docker compose --env-file .env.prod -f docker-compose.prod.yml restart caddy
-```
-
-- production composeは `--env-file .env.prod` 付きで使う。
-- EC2側の実secret / `.env.prod` の値はdocsやリポジトリに書かない。
-- 詳しい公開準備履歴は `docs/handoff/archive/release-prep.md` の `2026-07-28 Public demo launch polish` を参照する。
-- Docker frontendのローカル開発URLは `http://localhost:5174`。
+- ブラウザ自動確認はアプリ側エラーではなく、ブラウザ制御環境の初期化エラーで未実施。
+- `npm run dev -- --host 127.0.0.1` は起動できた。
+- 既存の画面別ナビ表示条件は `mobileBottomNavPaths` に残している。
 
 ## Suggested Commit Message
 
 ```text
-docs(readme): update public demo status
+feat(frontend): hide bottom navigation on scroll
 ```
