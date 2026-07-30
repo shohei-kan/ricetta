@@ -531,7 +531,6 @@ class Command(BaseCommand):
                 "base_yield_unit": units["食分"],
                 "selling_price": "600",
                 "notes": (
-                    "Recipe DetailとCost Summary確認用の主役レシピ。"
                     "温製でも冷製でも提供でき、翌日の方が味がなじむ。"
                 ),
                 "allergen_notes": "特定原材料なし。提供時の添え物に注意。",
