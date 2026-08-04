@@ -188,32 +188,80 @@ systemctl status ricetta-demo-reset.timer
 
 ## Manual PostgreSQL Backup Policy
 
-手動PostgreSQLバックアップは、後続Issue `Add manual PostgreSQL backup command` で検証します。
+Ricetta公開デモ環境では、EC2上で `pg_dump` を実行してPostgreSQLの手動バックアップを取得できる。
 
-このドキュメント作成時点では、実行済みの最終手順としては扱いません。
+この手順は、S3保存や自動バックアップの前段階として、手動でDB dumpを取得・確認するためのもの。
 
-基本方針:
+### Manual backup command
 
-* EC2上で `pg_dump` を使ってPostgreSQL dumpを取得する
-* backup保存先は `/srv/backups/ricetta/postgres/` とする
-* ファイル名に日時を含める
-* dumpファイルが0 byteでないことを確認する
-* 手順は検証後にこのドキュメントへ追記する
+EC2へSSH接続し、Ricettaのproduction directoryへ移動する。
 
-想定保存先:
-
-```text
-/srv/backups/ricetta/postgres/
+```bash
+ssh ricetta
+cd /srv/ricetta
 ```
 
-後続Issueで確認すること:
+バックアップ保存先ディレクトリを作成する。
 
-* `pg_dump` の実行コマンド
-* `.env.prod` の安全な読み込み方法
-* dumpファイル名
-* dumpファイルサイズ確認
-* 失敗時の確認ポイント
+```bash
+sudo mkdir -p /srv/backups/ricetta/postgres
+sudo chown -R ubuntu:ubuntu /srv/backups/ricetta
+```
 
+`.env.prod` の値を読み込む。
+
+```bash
+set -a
+source .env.prod
+set +a
+```
+
+バックアップファイル名を作成し、`pg_dump` を実行する。
+
+```bash
+BACKUP_FILE="/srv/backups/ricetta/postgres/ricetta_$(date +%Y%m%d_%H%M%S).sql"
+
+docker compose --env-file .env.prod -f docker-compose.prod.yml exec -T db \
+  pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB" \
+  > "$BACKUP_FILE"
+```
+
+作成されたdumpファイルを確認する。
+
+```bash
+echo "$BACKUP_FILE"
+ls -lh "$BACKUP_FILE"
+head -n 20 "$BACKUP_FILE"
+tail -n 20 "$BACKUP_FILE"
+```
+
+### Verification points
+
+以下を確認する。
+
+- dumpファイルが `/srv/backups/ricetta/postgres/` に作成されている
+- ファイル名に日時が含まれている
+- ファイルサイズが0 byteではない
+- `head` で `PostgreSQL database dump` が確認できる
+- `tail` で `PostgreSQL database dump complete` が確認できる
+
+検証時の例:
+
+```text
+/srv/backups/ricetta/postgres/ricetta_20260804_222845.sql
+-rw-rw-r-- 1 ubuntu ubuntu 65K Aug  4 22:28 /srv/backups/ricetta/postgres/ricetta_20260804_222845.sql
+-- PostgreSQL database dump
+-- PostgreSQL database dump complete
+```
+
+### Notes
+
+この手順では、S3アップロードや定期実行は行わない。
+
+S3保存は `Set up PostgreSQL backup to S3`、自動化は `Automate PostgreSQL backup` で扱う。
+
+`.env.prod` の実値はGit管理しない。  
+必要なsecretはBitwardenで管理する。
 ## S3 Backup Policy
 
 S3へのバックアップ保存は、後続Issue `Set up PostgreSQL backup to S3` で対応します。
