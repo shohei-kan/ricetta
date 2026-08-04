@@ -262,37 +262,84 @@ S3保存は `Set up PostgreSQL backup to S3`、自動化は `Automate PostgreSQL
 
 `.env.prod` の実値はGit管理しない。  
 必要なsecretはBitwardenで管理する。
+
 ## S3 Backup Policy
 
-S3へのバックアップ保存は、後続Issue `Set up PostgreSQL backup to S3` で対応します。
+PostgreSQL dumpファイルは、EC2外のオフサイト保存先としてS3へ保存する。
 
-基本方針:
+### S3 bucket
 
-* EC2とは別の保存先としてS3を使う
-* まずは手動アップロードを確認する
-* その後、自動化Issueでスクリプト化する
-* IAM権限は最小権限にする
-* 対象bucket / prefix以外へのアクセスを許可しない
+```text
+lintake-backups
+```
 
-予定prefix:
+### Prefix
 
 ```text
 ricetta/demo/postgres/
 ```
 
-prefix設計の考え方:
+保存先の例:
 
 ```text
-<app>/<environment>/<resource>/
+s3://lintake-backups/ricetta/demo/postgres/ricetta_20260804_222845.sql
 ```
 
-例:
+### IAM policy
+
+EC2からS3へアクセスするために、EC2へIAM Roleを付与する。
+
+アクセスキーをEC2上の `.env.prod` や設定ファイルへ直接保存しない。
+
+IAM権限は最小権限とし、対象bucket / prefixに限定する。
+
+対象:
 
 ```text
-ricetta/demo/postgres/
-splitmate/home/postgres/
-greenlog/demo/postgres/
+s3://lintake-backups/ricetta/demo/postgres/
 ```
+
+許可する操作:
+
+- `s3:ListBucket`
+- `s3:PutObject`
+- `s3:GetObject`
+
+このIssueでは、手動アップロード確認までを対象とする。  
+バックアップの自動化は `Automate PostgreSQL backup` で扱う。
+
+### Manual S3 upload
+
+EC2上で、作成済みのPostgreSQL dumpファイルをS3へ手動アップロードする。
+
+```bash
+aws s3 cp \
+  /srv/backups/ricetta/postgres/<backup-file>.sql \
+  s3://lintake-backups/ricetta/demo/postgres/
+```
+
+アップロード後、S3上のファイルを確認する。
+
+```bash
+aws s3 ls s3://lintake-backups/ricetta/demo/postgres/
+```
+
+### Verification result
+
+以下のように、S3上でバックアップファイルを確認できた。
+
+```text
+2026-08-04 23:21:53      66388 ricetta_20260804_222845.sql
+```
+
+確認項目:
+
+- S3上にbackupファイルが存在する
+- prefixが `ricetta/demo/postgres/` になっている
+- ファイル名に日時が含まれている
+- ファイルサイズが0 byteではない
+- EC2に直接AWS access keyを保存していない
+- IAM Role経由でS3へアクセスしている
 
 ## Restore Policy
 
