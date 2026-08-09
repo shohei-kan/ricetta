@@ -1,6 +1,6 @@
 # AWS Demo Environment Variables
 
-公開デモの基本方針やデモアカウント、DemoBanner、seed/resetの詳細は [docs/deploy/demo.md](./demo.md) を参照してください。
+公開デモの基本方針やデモアカウント、DemoBanner、seed/resetの詳細は [Public demo environment](./demo.md) を参照してください。
 
 このファイルは、AWS公開時のenv設定と運用コマンドに絞った実務メモです。
 
