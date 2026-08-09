@@ -23,8 +23,11 @@ API、データモデルなど、実装に近い設計をまとめます。
 
 公開デモやデプロイ運用に関するメモをまとめます。
 
-- [Public demo environment](./deploy/demo.md)
-- [AWS demo env checklist](./deploy/aws-demo-env.md)
+- [Public demo environment](./deploy/demo/demo.md)
+- [AWS demo env checklist](./deploy/demo/aws-demo-env.md)
+- [Backup and restore](./deploy/backup/backup-and-restore.md)
+- [PostgreSQL backup](./deploy/backup/postgres-backup.md)
+- [PostgreSQL restore](./deploy/backup/postgres-restore.md)
 
 ## Decisions
 

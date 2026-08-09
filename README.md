@@ -204,7 +204,7 @@ Docker Composeでのホスト公開ポートは以下です。
 
 frontendとbackendは分離し、画面表示・一時的なUI状態はfrontend、認証・権限・validation・原価計算・永続化はbackendが担当します。
 
-公開デモ環境では、AWS EC2上でproduction用Docker Composeを使い、CaddyがHTTPSとreverse proxyを担当します。詳細は [docs/deploy/aws-demo-env.md](docs/deploy/aws-demo-env.md) を参照してください。
+公開デモ環境では、AWS EC2上でproduction用Docker Composeを使い、CaddyがHTTPSとreverse proxyを担当します。詳細は [AWS demo environment](docs/deploy/demo/aws-demo-env.md) を参照してください。
 
 ## Backend Design Highlights
 
@@ -403,8 +403,8 @@ Ricettaは、ポートフォリオ用の公開デモとしてデプロイして�
 
 デモ環境の動作とデプロイ運用については、以下を参照してください。
 
-- [Public demo deployment](docs/deploy/demo.md)
-- [AWS demo environment](docs/deploy/aws-demo-env.md)
+- [Public demo deployment](docs/deploy/demo/demo.md)
+- [AWS demo environment](docs/deploy/demo/aws-demo-env.md)
 
 Ricettaアプリ自体は `noindex` とし、ポートフォリオとプロジェクト情報への導線はLINTAKE WorksページとGitHub READMEに集約しています。
 
@@ -519,7 +519,7 @@ Vite proxyを使うローカル環境でもOrigin checkingを通せるよう、�
 ## Documentation
 
 - [Docs index](docs/README.md)
-- [Public demo deployment](docs/deploy/demo.md)
+- [Public demo deployment](docs/deploy/demo/demo.md)
 - [MVP requirements](docs/product/mvp-requirements.md)
 - [MVP roadmap](docs/product/mvp-roadmap.md)
 - [Screen specifications](docs/product/screens.md)

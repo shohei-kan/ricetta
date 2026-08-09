@@ -94,7 +94,7 @@ AWS公開デモ環境に向けて、デモ運用方針、env example、公開前
 
 ### Summary
 
-- `docs/deploy/demo.md` を追加した。
+- `docs/deploy/demo/demo.md` を追加した。
 - READMEにPublic Demo Environmentの短い案内を追加した。
 - `docs/README.md` にDeployセクションを追加した。
 - `.env.prod.example` を追加し、production向けのダミー値と公開デモ用コメントを用意した。
@@ -104,7 +104,7 @@ AWS公開デモ環境に向けて、デモ運用方針、env example、公開前
 
 ### Key Files
 
-- `docs/deploy/demo.md`
+- `docs/deploy/demo/demo.md`
 - `.env.prod.example`
 - `README.md`
 - `docs/README.md`
@@ -114,7 +114,7 @@ AWS公開デモ環境に向けて、デモ運用方針、env example、公開前
 ### Verification
 
 - 旧docsパスの新規参照なし
-- READMEと `docs/deploy/demo.md` のデモ方針に矛盾なし
+- READMEと `docs/deploy/demo/demo.md` のデモ方針に矛盾なし
 - env exampleに実secret / 実ドメインなし
 - Backend check: pass
 - Backend migration dry-run: no changes detected
@@ -226,13 +226,13 @@ AWS公開デモ向けに、ログイン画面へdemo用ログイン情報とowne
 - ownerはレシピ・材料・カテゴリ・単位・店舗情報の編集、仕込み・メモ操作ができることを明記した。
 - staffはレシピ・材料・カテゴリ・単位の閲覧、仕込み・メモ操作ができることを明記した。
 - staffはレシピ・材料・カテゴリ・単位・店舗情報の編集はできないことを明記した。
-- `docs/deploy/demo.md` に公開デモ用ログイン情報、初期入力、カード選択、自動ログインしない方針、権限概要を追記した。
+- `docs/deploy/demo/demo.md` に公開デモ用ログイン情報、初期入力、カード選択、自動ログインしない方針、権限概要を追記した。
 
 ### Key Files
 
 - `frontend/src/pages/LoginPage.tsx`
 - `frontend/src/config/demo.ts`
-- `docs/deploy/demo.md`
+- `docs/deploy/demo/demo.md`
 - `docs/handoff/latest.md`
 
 ### Verification
@@ -262,10 +262,10 @@ AWS公開デモ公開前後の仕上げとして、仕込み用Recipeの材料�
 - パスタRecipeは公開デモseedから削除した。
 - ピクルスは公開デモseedでは `menu / 10食分` の販売商品Recipeとして扱う。
 - Recipe Formの材料 / 作り方 `＋ 追加` ボタンを1行表示にし、材料削除×のホバー領域とSelectFieldの上下スクロール・上下開きを調整した。
-- `docs/deploy/aws-demo-env.md` を追加し、AWS EC2 + Docker Compose公開時のenv、起動、migrate、seed/reset、operation checksを整理した。
+- `docs/deploy/demo/aws-demo-env.md` を追加し、AWS EC2 + Docker Compose公開時のenv、起動、migrate、seed/reset、operation checksを整理した。
 - `docker-compose.prod.yml`、production用backend/frontend Dockerfile、Caddyfileを追加し、EC2 1台 + PostgreSQLコンテナ + Gunicorn + Caddy HTTPS構成を用意した。
 - backend healthcheckは `/api/v1/health/` を使い、認証不要で `{"status": "ok"}` を返す。
-- `docs/deploy/aws-demo-env.md` にEC2上で設定済みの `ricetta-demo-reset.service` / `ricetta-demo-reset.timer` 自動reset運用を追記した。
+- `docs/deploy/demo/aws-demo-env.md` にEC2上で設定済みの `ricetta-demo-reset.service` / `ricetta-demo-reset.timer` 自動reset運用を追記した。
 - resetはEC2起動時 / 再起動時と毎日04:30 JSTに実行される。
 - `frontend/public/favicon.png` を追加し、favicon / apple-touch-iconに設定した。
 - `frontend/public/ogp.png` を配置し、`frontend/index.html` にtitle、description、OGP、Twitter Card、`noindex, nofollow` を追加した。
@@ -293,8 +293,8 @@ AWS公開デモ公開前後の仕上げとして、仕込み用Recipeの材料�
 - `frontend/Caddyfile.prod`
 - `Caddyfile`
 - `.env.prod.example`
-- `docs/deploy/demo.md`
-- `docs/deploy/aws-demo-env.md`
+- `docs/deploy/demo/demo.md`
+- `docs/deploy/demo/aws-demo-env.md`
 - `README.md`
 
 ### Verification
@@ -330,7 +330,7 @@ AWS公開デモ公開前後の仕上げとして、仕込み用Recipeの材料�
 - Recipeを直接RecipeIngredientから参照するのではなく、Ingredientを介して仕込み用Recipeを材料化する。
 - `ingredient_type=prep_recipe` のIngredientは、source recipeの1単位あたり原価から材料原価を計算する。
 - MVPの単位変換は `kg/g` と `L/ml` の小さなhelperで対応し、Unitモデルに変換係数は追加しない。
-- 公開デモdocsでは、仕様説明は `docs/deploy/demo.md`、実運用envメモは `docs/deploy/aws-demo-env.md` に分ける。
+- 公開デモdocsでは、仕様説明は `docs/deploy/demo/demo.md`、実運用envメモは `docs/deploy/demo/aws-demo-env.md` に分ける。
 - DEMO_MODEはowner/staff権限とは別レイヤー。業務操作は公開デモで触れる状態を保ち、アカウント破壊・店舗破壊・認証情報変更系だけを将来の禁止対象にする。
 - AWS公開デモはEC2 1台 + Docker Compose + PostgreSQLコンテナ + Caddyから開始する。
 - Ricettaアプリ本体は `noindex, nofollow` とし、発見導線はLINTAKE WorksページとGitHub READMEに寄せる。
@@ -338,4 +338,4 @@ AWS公開デモ公開前後の仕上げとして、仕込み用Recipeの材料�
 ### Next
 
 - AWS公開デモへfrontend変更を反映し、`ogp.png`、favicon、共有プレビュー、DemoBanner、owner/staffログインを確認する。
-- EC2停止/再開後に `docs/deploy/aws-demo-env.md` のOperation checksとCheck auto resetでproduction composeと自動reset timerを確認する。
+- EC2停止/再開後に `docs/deploy/demo/aws-demo-env.md` のOperation checksとCheck auto resetでproduction composeと自動reset timerを確認する。
