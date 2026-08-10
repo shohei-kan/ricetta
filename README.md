@@ -559,5 +559,5 @@ Ricetta is available as a public portfolio demo at https://ricetta.lintake.net.
 - staffの詳細な権限設計
 - 画像アップロード
 - サーバー状態・フォーム管理ライブラリ導入の検討
-- RDS分離やバックアップ運用の検討
+- RDS分離、S3 Lifecycle、定期restore drillの検討
 - Stripe Billing、POS、在庫連携の段階的な検討

@@ -12,6 +12,7 @@
 
 - [PostgreSQL Backup](./postgres-backup.md)
 - [PostgreSQL Restore](./postgres-restore.md)
+- [PostgreSQL Backup Monitoring](./postgres-monitoring.md)
 
 ## Scope
 
@@ -70,6 +71,17 @@ Ricetta公開デモの現在の構成は以下です。
 - Remote backup: AWS S3
 
 バックアップを04:10、demo resetを04:30に実行することで、reset前のDB状態をS3へ保存します。
+
+### Backup monitoring
+
+- Monitor service: `ricetta-backup-monitor.service`
+- Monitor timer: `ricetta-backup-monitor.timer`
+- Schedule: daily 05:00 JST
+- Alert service: `ricetta-backup-alert@.service`
+- Notification: Slack `#infra-alerts` via `LINTAKE Monitor`
+- Secret file: `/etc/ricetta/backup-monitor.env`
+
+backup失敗時とmonitor異常時は、systemd `OnFailure` から原因別のSlack通知を送信します。Webhook URLはsecretとしてGit管理しません。詳細は [PostgreSQL Backup Monitoring](./postgres-monitoring.md) を参照します。
 
 ## Recovery Policy
 
@@ -222,12 +234,19 @@ EC2を再構築する場合は、以下を確認します。
 - [ ] Enable PostgreSQL backup timer
 - [ ] Confirm PostgreSQL backup timer is `active (waiting)`
 - [ ] Confirm backup can upload to S3
+- [ ] Restore `/etc/ricetta/backup-monitor.env` without exposing its secret value
+- [ ] Recreate `ricetta-backup-monitor.service`
+- [ ] Recreate `ricetta-backup-monitor.timer`
+- [ ] Recreate `ricetta-backup-alert@.service`
+- [ ] Recreate backup monitor / alert / notify scripts under `/usr/local/bin/`
+- [ ] Enable backup monitor timer
+- [ ] Confirm backup monitor timer is `active (waiting)` and scheduled for 05:00 JST
 - [ ] Confirm `/api/v1/health/`
 - [ ] Confirm owner login
 - [ ] Confirm staff login
 - [ ] Confirm main demo pages
 
-バックアップの詳細は [PostgreSQL Backup](./postgres-backup.md)、復元確認は [PostgreSQL Restore](./postgres-restore.md) を参照します。
+バックアップの詳細は [PostgreSQL Backup](./postgres-backup.md)、復元確認は [PostgreSQL Restore](./postgres-restore.md)、監視と通知は [PostgreSQL Backup Monitoring](./postgres-monitoring.md) を参照します。
 
 ## Out of Scope
 
@@ -235,8 +254,6 @@ EC2を再構築する場合は、以下を確認します。
 
 - 公開中の `ricetta` DBへの直接restore
 - restoreの定期自動テスト
-- Slack等へのバックアップ失敗通知
-- バックアップ監視の自動通知
 - S3 Lifecycleによる長期世代管理
 - RDS移行
 - マルチリージョンバックアップ
@@ -254,19 +271,21 @@ EC2を再構築する場合は、以下を確認します。
 - [ ] `.env.prod` をGit管理しない方針が明記されている
 - [ ] `.env.prod.example` をGit管理する方針が明記されている
 - [ ] backup / restoreの詳細手順が責務別ファイルへ分離されている
+- [ ] backup monitoring / Slack通知が専用ドキュメントへ分離されている
+- [ ] Slack Webhook URLの実値が含まれていない
+- [ ] backup / monitorのexit codeが実装と一致している
 - [ ] PostgreSQL backupの保存先が明記されている
 - [ ] EC2再構築時の確認項目がある
 - [ ] `git diff --check` が通る
 
 ## Future Improvements
 
-後続Issueで以下を進めます。
+後続Issueで以下を検討します。
 
-- Add backup monitoring
 - S3 Lifecycleによるバックアップ保持ルールの整備
 - 定期的なrestore drillの検討
-- Slack等への失敗通知
-- バックアップ異常検知
+- Slack通知処理の共通化
+- EC2 / disk / container監視の追加
 - EC2再構築手順の自動化
 
 将来的には、この方針を以下にも展開します。

@@ -2,6 +2,7 @@
 Description=Backup Ricetta PostgreSQL database to S3
 Wants=network-online.target docker.service
 After=network-online.target docker.service
+OnFailure=ricetta-backup-alert@ricetta-postgres-backup.service
 
 [Service]
 Type=oneshot

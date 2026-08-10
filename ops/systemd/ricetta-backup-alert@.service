@@ -1,0 +1,7 @@
+[Unit]
+Description=Send Slack alert for Ricetta backup issue (%i)
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/ricetta/backup-monitor.env
+ExecStart=/usr/local/bin/ricetta-backup-alert.sh %i

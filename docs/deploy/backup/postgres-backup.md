@@ -6,6 +6,8 @@
 
 バックアップ全体の方針やsecret管理、EC2再構築については [Backup and Restore](./backup-and-restore.md) を参照します。
 
+このドキュメントはバックアップ取得と保存を扱います。失敗検知、S3上の最新backup確認、systemd `OnFailure`、Slack通知は [PostgreSQL Backup Monitoring](./postgres-monitoring.md) を参照します。
+
 ## Current Configuration
 
 - App path: `/srv/ricetta`
@@ -334,6 +336,7 @@ systemctl list-timers --all | grep ricetta
 ```text
 04:10 ricetta-postgres-backup.timer
 04:30 ricetta-demo-reset.timer
+05:00 ricetta-backup-monitor.timer
 ```
 
 ## Log Check
@@ -367,6 +370,8 @@ journalctl -u ricetta-postgres-backup.service -n 80 --no-pager
 - systemd timerが `active (waiting)` になっている
 - 次回実行時刻が04:10 JSTになっている
 - demo reset timerより先にbackup timerが実行される
+
+失敗時の通知と、05:00 JSTに実行する独立monitorの検証結果は [PostgreSQL Backup Monitoring](./postgres-monitoring.md) に分離しています。
 
 ## Troubleshooting
 
