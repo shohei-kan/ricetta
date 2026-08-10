@@ -2,7 +2,7 @@
 
 ## Date
 
-2026-07-30
+2026-08-11
 
 ## Project
 
@@ -10,113 +10,113 @@ Ricetta
 
 ## Status
 
-GitHub Issue #5 のモバイルボトムナビ改善を実装済み。lint / build は成功し、実機Safariでの表示確認中。767px / 768px の境界確認は完了。
+GitHub Issue #12「Add backup monitoring」の実装・EC2検証は完了済み。ローカルrepoでdocsとopsの整合性を整理済み。
 
 ## Summary
 
-`md` 未満の画面で、下スクロール時にボトムナビを隠し、上スクロール時とページ上部では再表示するようにした。24px のしきい値で小さなスクロール揺れを無視し、route変更時は表示状態へリセットする。背景は `bg-white/60` と `backdrop-blur-md` で軽くし、既存の表示対象パスとデスクトップサイドバーは維持している。
+PostgreSQL backup失敗とS3上のbackup異常をsystemd `OnFailure` で検知し、Slackへ原因別通知する構成をdocsに反映した。backup / restore / monitoringの責務を分離し、完了済みの監視・通知をOut of ScopeとFuture Improvementsから削除した。
 
 ## Current Goal
 
-Issue #5 の実ブラウザ確認を行い、問題がなければ `feat(frontend): hide bottom navigation on scroll` でコミットする。
+Issue #12の変更をレビューし、commit / pushできる状態にする。
 
 ## Current State
 
-- 作業ブランチ: `feature/issue-5-hide-bottom-nav-on-scroll`
-- モバイル境界: Tailwind `md` 未満（767px以下）
-- `md` 以上: 既存の固定サイドバー
-- ボトムナビ対象: Dashboard / Prep Today / Recipe List / Ingredient List / Settings / Account
-- 詳細・作成・編集画面の既存表示条件は変更していない
+- Branch: `ops/issue-12-backup-monitoring`
+- PostgreSQL backup: daily 04:10 JST
+- Demo reset: daily 04:30 JST
+- Backup monitor: daily 05:00 JST
+- Monitor max age: 21600 seconds (6 hours)
+- Slack: `LINTAKE Monitor` / `#infra-alerts`
+- Webhook secret file: `/etc/ricetta/backup-monitor.env` (Git管理外)
 
 ## What Was Done
 
-- `useBottomNavVisibility` hookを追加した。
-- 24pxの移動しきい値とページ上部24pxの常時表示領域を設定した。
-- passive scroll listenerとcleanupを実装した。
-- route変更とbreakpoint変更時に表示状態をリセットするようにした。
-- `translateY` / opacityによる200msの表示切替を追加した。
-- reduced motion、非表示時のpointer events・tab focus除外に対応した。
-- main下余白をsafe-area込みにした。
-- ボトムナビ背景を半透明白＋backdrop blurへ変更し、境界線を軽くした。
-- Safari対策としてviewport固定の外枠とアニメーションする内側を分離した。
-- main下余白をナビ高72px＋safe-areaに合わせた。
-- UIガイドラインへスクロール時の挙動を追記した。
+- backup exit code 21–25、monitor exit code 31–34を原因別通知と照合した。
+- backup / monitor serviceの `OnFailure` とalert serviceの参照を確認した。
+- `backup-and-restore.md`、`postgres-backup.md`、Docs indexからmonitoring docsへの導線を追加した。
+- 完了済みのbackup monitoring / Slack通知 / 異常検知を将来項目から削除した。
+- READMEの将来項目をS3 Lifecycleとrestore drillに具体化した。
+- 旧deploy docs path、Markdownリンク、secret候補、`.env.prod` 非変更を確認した。
 
 ## Key Decisions
 
-- スクロール制御は既存breakpointに合わせて767px以下だけで有効にする。
-- 小さな揺れを避けるため、直近の方向転換位置から24px移動した時だけ状態を切り替える。
-- `fixed inset-x-0 bottom-0` は外側navだけが担当し、transformは内側要素だけに適用する。
-- 既存のボトムナビ表示対象パスはIssue #5の範囲外として維持する。
+- backup取得は `postgres-backup.md`、restoreは `postgres-restore.md`、監視・通知は `postgres-monitoring.md` に分離する。
+- 正常時は通知せず、対応が必要な異常時だけSlack通知する。
+- Webhook URLはGitやdocsに記録せず、EC2のroot-only secret fileから読み込む。
+- Slack通知の共通化、他アプリ展開、S3 Lifecycle、restore drill、host/container監視、IaCは将来課題とする。
 
 ## Key Files
 
-- `frontend/src/components/AppLayout.tsx`
-- `frontend/src/hooks/useBottomNavVisibility.ts`
-- `docs/product/ui-guidelines.md`
-- `docs/handoff/latest.md`
+- `ops/scripts/ricetta-postgres-backup.sh`
+- `ops/scripts/ricetta-backup-monitor.sh`
+- `ops/scripts/ricetta-backup-alert.sh`
+- `ops/scripts/ricetta-backup-notify.sh`
+- `ops/systemd/ricetta-postgres-backup.service`
+- `ops/systemd/ricetta-postgres-backup.timer`
+- `ops/systemd/ricetta-backup-monitor.service`
+- `ops/systemd/ricetta-backup-monitor.timer`
+- `ops/systemd/ricetta-backup-alert@.service`
+- `docs/deploy/backup/backup-and-restore.md`
+- `docs/deploy/backup/postgres-backup.md`
+- `docs/deploy/backup/postgres-restore.md`
+- `docs/deploy/backup/postgres-monitoring.md`
 
 ## Verification
 
-実行済み:
+ローカルで実行済み:
 
 ```bash
-cd frontend
-npm run lint
-npm run build
+bash -n ops/scripts/ricetta-postgres-backup.sh
+bash -n ops/scripts/ricetta-backup-monitor.sh
+bash -n ops/scripts/ricetta-backup-alert.sh
+bash -n ops/scripts/ricetta-backup-notify.sh
 git diff --check
 ```
 
-結果:
+- shell syntax: pass
+- old deploy path grep: pass
+- Markdown relative link check: pass
+- potential secret literal / Webhook assignment check: pass
+- `.env.prod` unchanged: pass
+- timer / service / exit codeの実装とdocsの照合: pass
 
-- frontend lint: pass
-- frontend build: pass
-- whitespace check: pass
-
-Manual browser verification:
-
-- iPhone Safariで一部確認済み。
-- 767px以下でボトムナビ表示、768px以上でサイドバー表示になる境界確認は完了。
-- 下端スクロール時の余白問題を確認し、viewport固定の外枠とアニメーション内側要素の分離で修正済み。
-- 主要画面の最終確認のみ残っている。
+EC2検証はユーザー実施済みの結果をdocsへ反映。このタスクでSSHやAWS変更は実行していない。
 
 ## Current Product Scope
 
-- Login / logout and Shop scope
-- Recipe / Ingredient / Prep Today / Dashboard / Settings / Account
-- Smartphone bottom navigation
-- Tablet landscape / PC fixed sidebar
-- Mobile bottom navigation hide-on-scroll
+- Ricetta public demo on AWS EC2
+- PostgreSQL daily backup, gzip, S3 upload, local retention
+- Backup health monitoring and failure-only Slack notification
+- Temporary databaseを使ったsafe restore verification
 
 ## Out of Scope for MVP
 
-- Stripe / Checkout / Billing portal
-- POS integration
-- Automatic inventory deduction
-- Multi-shop management UI
-- Advanced role management
-- Shop device mode
+- Public `ricetta` DBへの直接restore
+- S3 Lifecycleによる長期世代管理
+- RDS / multi-region / high availability
+- EC2 / disk / containerの総合監視
+- AWS環境の完全自動再構築
 
 ## Next Recommended Tasks
 
-1. 375px前後で主要画面の初期表示、下スクロール、上スクロール、最上部復帰を確認する。
-2. 767pxで同じ挙動とsafe-area下余白を確認する。
-3. 768px以上でサイドバーが維持され、ボトムナビが表示されないことを確認する。
-4. 非表示時にTabフォーカスがボトムナビへ移らないことを確認する。
-5. 問題がなければIssue #5用コミットを作成する。
+1. 差分レビュー後、Issue #12のcommitを作成する。
+2. 後続IssueでS3 Lifecycleと定期restore drillを検討する。
+3. 必要に応じてSlack通知処理を他アプリと共通化する。
 
 ## Open Questions
 
-- 実機Safariで `env(safe-area-inset-bottom)` を含む最下部余白を最終確認する。
+- systemd unitの自動静的検証をCIに追加するか。
+- S3 Lifecycleとrestore drillをどの後続Issueで扱うか。
 
 ## Notes for Next Agent
 
-- ブラウザ自動確認はアプリ側エラーではなく、ブラウザ制御環境の初期化エラーで未実施。
-- `npm run dev -- --host 127.0.0.1` は起動できた。
-- 既存の画面別ナビ表示条件は `mobileBottomNavPaths` に残している。
+- Webhook URLの実値をGit、docs、Issue、PR、ログへ記録しない。
+- `MAX_AGE_SECONDS=21600` は通常運用値。failure test時の一時値を残さない。
+- `systemd-analyze` はローカルmacOSにないため未実施。EC2上のunit動作は検証済み。
 
 ## Suggested Commit Message
 
 ```text
-feat(frontend): hide bottom navigation on scroll
+feat(ops): add backup monitoring
 ```

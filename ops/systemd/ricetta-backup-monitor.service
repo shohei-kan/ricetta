@@ -1,0 +1,11 @@
+[Unit]
+Description=Monitor Ricetta PostgreSQL backup health
+Wants=network-online.target
+After=network-online.target
+OnFailure=ricetta-backup-alert@ricetta-backup-monitor.service
+
+[Service]
+Type=oneshot
+User=ubuntu
+ExecStart=/usr/local/bin/ricetta-backup-monitor.sh
+TimeoutStartSec=60

@@ -1,0 +1,10 @@
+[Unit]
+Description=Run Ricetta PostgreSQL backup daily
+
+[Timer]
+OnCalendar=*-*-* 04:10:00
+Persistent=true
+Unit=ricetta-postgres-backup.service
+
+[Install]
+WantedBy=timers.target
