@@ -3,9 +3,9 @@ services:
     image: postgres:15
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-ricetta}
-      POSTGRES_USER: ${POSTGRES_USER:-ricetta}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-replace-me}
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is required}
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
     volumes:
       - postgres_prod_data:/var/lib/postgresql/data
     healthcheck:
@@ -20,14 +20,14 @@ services:
       dockerfile: Dockerfile.prod
     restart: unless-stopped
     environment:
-      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-replace-me-with-production-secret}
-      DJANGO_DEBUG: ${DJANGO_DEBUG:-False}
-      DEMO_MODE: ${DEMO_MODE:-True}
-      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-ricetta.example.com}
-      DJANGO_CSRF_TRUSTED_ORIGINS: ${DJANGO_CSRF_TRUSTED_ORIGINS:-https://ricetta.example.com}
-      POSTGRES_DB: ${POSTGRES_DB:-ricetta}
-      POSTGRES_USER: ${POSTGRES_USER:-ricetta}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-replace-me}
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?DJANGO_SECRET_KEY is required}
+      DJANGO_DEBUG: ${DJANGO_DEBUG:?DJANGO_DEBUG is required}
+      DEMO_MODE: ${DEMO_MODE:?DEMO_MODE is required}
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:?DJANGO_ALLOWED_HOSTS is required}
+      DJANGO_CSRF_TRUSTED_ORIGINS: ${DJANGO_CSRF_TRUSTED_ORIGINS:?DJANGO_CSRF_TRUSTED_ORIGINS is required}
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is required}
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
       POSTGRES_HOST: db
       POSTGRES_PORT: 5432
     depends_on:
@@ -41,7 +41,7 @@ services:
           "CMD",
           "python",
           "-c",
-          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health/', timeout=5)",
+          "import urllib.request; request = urllib.request.Request('http://127.0.0.1:8000/api/v1/health/', headers={'X-Forwarded-Proto': 'https'}); urllib.request.urlopen(request, timeout=5)",
         ]
       interval: 30s
       timeout: 10s
@@ -52,7 +52,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile.prod
       args:
-        VITE_DEMO_MODE: ${VITE_DEMO_MODE:-true}
+        VITE_DEMO_MODE: ${VITE_DEMO_MODE:?VITE_DEMO_MODE is required}
     restart: unless-stopped
     expose:
       - "80"
@@ -61,7 +61,7 @@ services:
     image: caddy:2.8-alpine
     restart: unless-stopped
     environment:
-      CADDY_SITE_ADDRESS: ${CADDY_SITE_ADDRESS:-:80}
+      CADDY_SITE_ADDRESS: ${CADDY_SITE_ADDRESS:?CADDY_SITE_ADDRESS is required}
     ports:
       - "80:80"
       - "443:443"

@@ -25,7 +25,7 @@
 - `SESSION_COOKIE_SECURE`
 - `CSRF_COOKIE_SECURE`
 
-必要になったら、settings実装と `.env.prod.example` を揃えてから追加します。
+これらはenv変数ではなく、`DJANGO_DEBUG=False` のときDjango settingsが自動的に有効化します。
 
 ## Backend `.env.prod`
 
@@ -59,6 +59,9 @@ VITE_DEMO_MODE=true
 - `CADDY_SITE_ADDRESS` はCaddyが受ける公開ドメインを指定する
 - 実運用では `CADDY_SITE_ADDRESS=ricetta.lintake.net` のように実ドメインへ差し替える
 - `POSTGRES_HOST` と `POSTGRES_PORT` はproduction Composeが `db` / `5432` を固定指定するため、`.env.prod` には記載しない
+- production Composeは上記10変数のいずれかが未設定ならconfig段階で失敗する
+- Djangoも `DJANGO_DEBUG=False` のとき必須値の空文字、開発用値、明らかなplaceholderを拒否する
+- `.env.prod.example` のplaceholderは項目を示すためのものであり、Djangoのproduction起動には使えない
 
 ## Database `.env.db`
 
@@ -108,7 +111,8 @@ docker compose --env-file .env.prod -f docker-compose.prod.yml exec backend pyth
 - backendはgunicornで起動する
 - frontendはbuild済みdistを静的配信する
 - frontendはReact Routerの直接URLアクセス・リロードに対応するため、frontend側CaddyでSPA fallbackする
-- 外向きCaddyが80/443を受け、`/api/*`、`/admin*`、`/static/*` をbackendへ、それ以外をfrontendへreverse proxyする
+- 外向きCaddyが80/443を受け、`/api/*` と `/static/*` をbackendへ、それ以外をfrontendへreverse proxyする
+- `/admin` と `/admin/*` は公開デモ運用で使わないため、Caddyが404を返して外部公開しない
 - 素の `docker compose -f docker-compose.prod.yml config` はローカル `.env` を読む可能性があるため、実値確認には `--env-file .env.prod` を使う
 - ここでは大幅なcompose変更はしない
 - 初回公開前に必ずmigrate後にseed/resetを実行する
@@ -132,6 +136,54 @@ docker compose --env-file .env.prod -f docker-compose.prod.yml logs --tail=80 ba
 - `caddy` が `Up`
 - Caddyログに証明書エラーがない
 - backendログで `/api/v1/health/` が `200`
+
+## Production Security Settings
+
+`DJANGO_DEBUG=False` では、以下を有効にします。
+
+- `SESSION_COOKIE_SECURE=True`
+- `CSRF_COOKIE_SECURE=True`
+- `SECURE_SSL_REDIRECT=True`
+- `SECURE_PROXY_SSL_HEADER=("HTTP_X_FORWARDED_PROTO", "https")`
+- `SECURE_HSTS_SECONDS=3600`
+- `SECURE_HSTS_INCLUDE_SUBDOMAINS=False`
+- `SECURE_HSTS_PRELOAD=False`
+
+Caddyの標準動作でbackendへ `X-Forwarded-Proto` が渡り、Djangoが元のHTTPS requestをsecure requestとして認識できる構成にします。Docker内部のbackend health checkはCaddyを通らないHTTP接続のため、headerを明示してSSL redirectを避け、`/api/v1/health/` の200を確認します。
+
+HSTSは誤設定時の影響を限定するため、まず1時間から開始します。`includeSubDomains` と `preload` は他のsubdomainや長期的なbrowser登録へ影響するため有効化しません。
+
+DRFはSession Authenticationだけを使い、Basic Authenticationは受け付けません。unsafe methodは引き続きCSRF tokenを必要とします。login APIはCaddy 1段を信頼するIP単位の `5/minute` throttleを使い、認証失敗はuser状態にかかわらずgeneric errorを返します。
+
+### Deploy verification
+
+```bash
+cd /srv/ricetta
+docker compose --env-file .env.prod -f docker-compose.prod.yml config --quiet
+docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
+docker compose --env-file .env.prod -f docker-compose.prod.yml exec backend python manage.py check
+docker compose --env-file .env.prod -f docker-compose.prod.yml exec backend python manage.py check --deploy
+docker compose --env-file .env.prod -f docker-compose.prod.yml ps
+curl -I https://ricetta.lintake.net/api/v1/health/
+curl -I https://ricetta.lintake.net/admin/
+```
+
+確認項目:
+
+- backend / dbがhealthy
+- health endpointがHTTPSで200
+- `/admin` が404
+- Session loginとlogoutが成功
+- Secure属性付きSession / CSRF cookieが発行される
+- owner / staff権限差が維持される
+- HTTPアクセスがHTTPSへredirectされる
+- responseの `Strict-Transport-Security` が `max-age=3600`
+
+### Rollback
+
+問題がある場合は、直前のコミットへコードを戻してproduction imageを再buildします。`.env.prod` を開発用値やplaceholderに戻して起動を回避してはいけません。
+
+Secure Cookie有効化後はHTTP経由でsessionを使えないため、rollback確認もHTTPSで行います。HSTSはbrowserに最大1時間保持されるため、コードを戻しても直ちにHTTP接続の検証に切り替えられない点に注意します。
 
 ## Stop / restart operation
 
@@ -207,6 +259,10 @@ docker compose --env-file .env.prod -f docker-compose.prod.yml exec backend pyth
 - [ ] `.env.prod` / `.env.db` はGit管理しない
 - [ ] `docker compose --env-file .env.prod -f docker-compose.prod.yml config` が通る
 - [ ] HTTPSでアクセスできる
+- [ ] `/admin` が404を返す
+- [ ] `/api/v1/health/` がHTTPSで200を返す
+- [ ] Session / CSRF cookieにSecure属性が付く
+- [ ] HSTSが `max-age=3600`、includeSubDomains / preloadなしで返る
 - [ ] 実店舗データを入れていない
 - [ ] `seed_portfolio_data --reset` 実行済み
 - [ ] owner / staffでログイン確認済み

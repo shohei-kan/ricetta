@@ -26,6 +26,10 @@ class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(trim_whitespace=False)
 
+    default_error_messages = {
+        "invalid_credentials": "メールアドレスまたはパスワードが正しくありません。",
+    }
+
     def validate(self, attrs):
         email = attrs["email"].strip().lower()
         password = attrs["password"]
@@ -36,10 +40,8 @@ class LoginSerializer(serializers.Serializer):
         )
         if user is None:
             raise serializers.ValidationError(
-                {"detail": "メールアドレスまたはパスワードが正しくありません。"}
+                {"detail": self.error_messages["invalid_credentials"]}
             )
-        if not user.is_active:
-            raise serializers.ValidationError({"detail": "このユーザーは無効です。"})
 
         attrs["user"] = user
         return attrs

@@ -1,8 +1,12 @@
 # pyright: reportAttributeAccessIssue=false
 
+import base64
+
+from django.core.cache import cache
 from django.test import override_settings
 from django.urls import reverse
 from rest_framework import status
+from rest_framework.test import APIClient
 
 from api.models import Membership
 
@@ -10,6 +14,10 @@ from .base import ApiTestCase
 
 
 class AuthApiTests(ApiTestCase):
+    def setUp(self):
+        super().setUp()
+        cache.clear()
+
     def test_health_check_allows_anonymous_access(self):
         response = self.client.get(reverse("health_check"))
 
@@ -43,6 +51,73 @@ class AuthApiTests(ApiTestCase):
         self.assertEqual(response.data["user"]["name"], "山田 太郎")
         self.assertEqual(response.data["shop"]["id"], self.shop.id)
         self.assertEqual(response.data["membership"]["role"], "owner")
+
+    def test_staff_login_succeeds(self):
+        self.create_staff_membership()
+
+        response = self.client.post(
+            reverse("auth_login"),
+            {"email": "staff@example.com", "password": "password"},
+            format="json",
+            REMOTE_ADDR="192.0.2.10",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["membership"]["role"], "staff")
+
+    def test_login_failures_return_the_same_generic_response(self):
+        inactive = self.create_user("inactive@example.com", "password")
+        inactive.is_active = False
+        inactive.save(update_fields=["is_active"])
+        attempts = [
+            {"email": "missing@example.com", "password": "password"},
+            {"email": "owner@example.com", "password": "wrong-password"},
+            {"email": "inactive@example.com", "password": "password"},
+        ]
+
+        responses = [
+            self.client.post(
+                reverse("auth_login"),
+                payload,
+                format="json",
+                REMOTE_ADDR="192.0.2.11",
+            )
+            for payload in attempts
+        ]
+
+        for response in responses:
+            self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(responses[0].data, responses[1].data)
+        self.assertEqual(responses[1].data, responses[2].data)
+
+    def test_login_is_throttled_after_five_attempts_per_ip(self):
+        for _attempt in range(5):
+            response = self.client.post(
+                reverse("auth_login"),
+                {"email": "missing@example.com", "password": "wrong-password"},
+                format="json",
+                REMOTE_ADDR="192.0.2.12",
+            )
+            self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        throttled = self.client.post(
+            reverse("auth_login"),
+            {"email": "missing@example.com", "password": "wrong-password"},
+            format="json",
+            REMOTE_ADDR="192.0.2.12",
+        )
+
+        self.assertEqual(throttled.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
+
+    def test_basic_authentication_is_not_accepted(self):
+        credentials = base64.b64encode(b"owner@example.com:password").decode("ascii")
+
+        response = self.client.get(
+            reverse("auth_me"),
+            HTTP_AUTHORIZATION=f"Basic {credentials}",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_me_after_login(self):
         self.login_owner()
@@ -121,3 +196,36 @@ class AuthApiTests(ApiTestCase):
         response = self.client.get(reverse("dashboard"))
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_session_authenticated_unsafe_request_still_requires_csrf(self):
+        csrf_client = APIClient(enforce_csrf_checks=True)
+        csrf_client.force_login(self.owner)
+
+        without_token = csrf_client.patch(
+            reverse("auth_me"),
+            {"display_name": "CSRFなし"},
+            format="json",
+        )
+        self.assertEqual(without_token.status_code, status.HTTP_403_FORBIDDEN)
+
+        csrf_client.get(reverse("auth_csrf"))
+        csrf_token = csrf_client.cookies["csrftoken"].value
+        with_token = csrf_client.patch(
+            reverse("auth_me"),
+            {"display_name": "CSRFあり"},
+            format="json",
+            HTTP_X_CSRFTOKEN=csrf_token,
+        )
+        self.assertEqual(with_token.status_code, status.HTTP_200_OK)
+
+    @override_settings(
+        SECURE_SSL_REDIRECT=True,
+        SECURE_PROXY_SSL_HEADER=("HTTP_X_FORWARDED_PROTO", "https"),
+    )
+    def test_health_check_accepts_internal_http_with_forwarded_https_header(self):
+        response = self.client.get(
+            reverse("health_check"),
+            HTTP_X_FORWARDED_PROTO="https",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)

@@ -120,13 +120,11 @@ sudo chmod 600 /etc/ricetta/backup-monitor.env
 - Django superuserは運用しない。現在のsuperuser数は0人
 - GitHub Actionsは使い捨てのテスト用値だけを使い、production secretを参照しない
 
-## Issue #25 Handoff
+## Production Security Hardening
 
-以下はIssue #59で変更せず、Issue #25「Production security hardening」で扱います。
+Issue #25で、Djangoのproduction settingsとproduction Composeは必須値がない場合にfail closedとなる構成へ変更しました。開発用fallbackは `DJANGO_DEBUG=True` の開発環境に限定します。
 
-- Django settingsの開発用fallback
-- `docker-compose.prod.yml` の `replace-me` fallback
-- `seed_portfolio_data` の公開デモ用既定パスワード
+`seed_portfolio_data` のowner / staff passwordは公開デモ画面とREADMEで公開し、定期resetで元に戻すための非secret値です。追加のproduction secretに移さず、運用secretと分けて扱います。
 
 ## Verification Checklist
 

@@ -88,6 +88,8 @@ Django Session AuthでPOST / PATCH / DELETEを行う前に、CSRF cookieを取�
 
 ログインする。
 
+DRFのlogin専用scopeで、未認証クライアントをIP単位に `5/minute` へ制限する。Caddy 1段を信頼する構成として `NUM_PROXIES=1` を設定し、超過時は `429 Too Many Requests` を返す。この制限はlogin APIだけに適用し、他のAPIには波及させない。
+
 ### Request
 
 ```json
@@ -124,6 +126,10 @@ Django Session AuthでPOST / PATCH / DELETEを行う前に、CSRF cookieを取�
   "detail": "メールアドレスまたはパスワードが正しくありません。"
 }
 ```
+
+存在しないemail、password不一致、無効userは、いずれも同じ `400 Bad Request` とgeneric errorを返す。userの存在や状態をレスポンスから推測できる差を作らない。
+
+throttleは現在の単一EC2・Django標準キャッシュ構成に依存するため、プロセス再起動や複数instance間での厳密な共有レート制限ではない。現行公開デモの過剰利用を抑制するための最小構成とする。
 
 ---
 
