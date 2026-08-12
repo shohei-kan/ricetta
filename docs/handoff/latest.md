@@ -2,7 +2,7 @@
 
 ## Date
 
-2026-08-11
+2026-08-12
 
 ## Project
 
@@ -10,113 +10,92 @@ Ricetta
 
 ## Status
 
-GitHub Issue #12「Add backup monitoring」の実装・EC2検証は完了済み。ローカルrepoでdocsとopsの整合性を整理済み。
+GitHub Issue #59「Establish Bitwarden-based secret management」のドキュメント整備とenv example整合は完了済み。commit / pushは未実施。
 
 ## Summary
 
-PostgreSQL backup失敗とS3上のbackup異常をsystemd `OnFailure` で検知し、Slackへ原因別通知する構成をdocsに反映した。backup / restore / monitoringの責務を分離し、完了済みの監視・通知をOut of ScopeとFuture Improvementsから削除した。
+Ricetta運用secretの正本をBitwardenとし、production env、backup monitor Webhook、EC2 SSH鍵、AWS IAM Roleの用途・保管先・配置・更新・復旧方法を1つのデプロイ文書に整理した。`.env.prod.example` からCompose内で固定するDB host / portを削除し、実運用の10変数と整合させた。
 
 ## Current Goal
 
-Issue #12の変更をレビューし、commit / pushできる状態にする。
+Issue #59の差分をレビューし、commitできる状態にする。
 
 ## Current State
 
-- Branch: `ops/issue-12-backup-monitoring`
-- PostgreSQL backup: daily 04:10 JST
-- Demo reset: daily 04:30 JST
-- Backup monitor: daily 05:00 JST
-- Monitor max age: 21600 seconds (6 hours)
-- Slack: `LINTAKE Monitor` / `#infra-alerts`
-- Webhook secret file: `/etc/ricetta/backup-monitor.env` (Git管理外)
+- Branch: `docs/issue-59-secret-management`
+- Production env item: `Ricetta Production Environment`
+- Backup monitor item: `Ricetta Backup Monitor Secrets`
+- EC2 SSH item: `Ricetta AWS EC2 SSH`
+- AWS access: EC2 IAM Role `ricetta-demo-backup-role`
+- `.env.prod`: Git管理外、`600 ubuntu:ubuntu`
+- `/etc/ricetta/backup-monitor.env`: Git管理外、`600 root:root`
 
 ## What Was Done
 
-- backup exit code 21–25、monitor exit code 31–34を原因別通知と照合した。
-- backup / monitor serviceの `OnFailure` とalert serviceの参照を確認した。
-- `backup-and-restore.md`、`postgres-backup.md`、Docs indexからmonitoring docsへの導線を追加した。
-- 完了済みのbackup monitoring / Slack通知 / 異常検知を将来項目から削除した。
-- READMEの将来項目をS3 Lifecycleとrestore drillに具体化した。
-- 旧deploy docs path、Markdownリンク、secret候補、`.env.prod` 非変更を確認した。
+- `docs/deploy/secret-management.md` をsecret運用の正本ドキュメントとして追加した。
+- Docs indexからSecret Managementへの導線を追加した。
+- backup docsの古いBitwarden項目名と重複説明を、Secret Managementへの参照に置き換えた。
+- `.env.prod.example` とAWS demo env文書から `POSTGRES_HOST` / `POSTGRES_PORT` を削除した。
+- EC2復旧手順、BitwardenとEC2の同時更新、IAM Role利用、secret記録禁止を明文化した。
+- Issue #25で扱うsecurity hardening項目を分離した。
 
 ## Key Decisions
 
-- backup取得は `postgres-backup.md`、restoreは `postgres-restore.md`、監視・通知は `postgres-monitoring.md` に分離する。
-- 正常時は通知せず、対応が必要な異常時だけSlack通知する。
-- Webhook URLはGitやdocsに記録せず、EC2のroot-only secret fileから読み込む。
-- Slack通知の共通化、他アプリ展開、S3 Lifecycle、restore drill、host/container監視、IaCは将来課題とする。
+- secret実値の正本はBitwardenとし、GitHubには変数名・example値・手順だけを置く。
+- 新EC2ではBitwardenからsecretを再構成し、旧EC2のsecretファイルをコピーしない。
+- AWS接続はIAM Roleとし、固定access keyは作成しない。
+- owner / staffの公開デモアカウントとCIの使い捨て値は運用secretと分ける。
 
 ## Key Files
 
-- `ops/scripts/ricetta-postgres-backup.sh`
-- `ops/scripts/ricetta-backup-monitor.sh`
-- `ops/scripts/ricetta-backup-alert.sh`
-- `ops/scripts/ricetta-backup-notify.sh`
-- `ops/systemd/ricetta-postgres-backup.service`
-- `ops/systemd/ricetta-postgres-backup.timer`
-- `ops/systemd/ricetta-backup-monitor.service`
-- `ops/systemd/ricetta-backup-monitor.timer`
-- `ops/systemd/ricetta-backup-alert@.service`
+- `.env.prod.example`
+- `docs/README.md`
+- `docs/deploy/secret-management.md`
+- `docs/deploy/demo/aws-demo-env.md`
 - `docs/deploy/backup/backup-and-restore.md`
-- `docs/deploy/backup/postgres-backup.md`
-- `docs/deploy/backup/postgres-restore.md`
 - `docs/deploy/backup/postgres-monitoring.md`
 
 ## Verification
 
-ローカルで実行済み:
+- `.env.prod.example` 10変数とproduction Composeの外部参照変数: match
+- `docker compose --env-file .env.prod.example -f docker-compose.prod.yml config --quiet`: pass
+- Markdown relative links: pass
+- secret-like literals in diff: none
+- `.env.prod` Git tracking / worktree change: none
+- `git diff --check`: pass
 
-```bash
-bash -n ops/scripts/ricetta-postgres-backup.sh
-bash -n ops/scripts/ricetta-backup-monitor.sh
-bash -n ops/scripts/ricetta-backup-alert.sh
-bash -n ops/scripts/ricetta-backup-notify.sh
-git diff --check
-```
-
-- shell syntax: pass
-- old deploy path grep: pass
-- Markdown relative link check: pass
-- potential secret literal / Webhook assignment check: pass
-- `.env.prod` unchanged: pass
-- timer / service / exit codeの実装とdocsの照合: pass
-
-EC2検証はユーザー実施済みの結果をdocsへ反映。このタスクでSSHやAWS変更は実行していない。
+EC2、AWS、Bitwarden、本番secretの変更は実施していない。
 
 ## Current Product Scope
 
-- Ricetta public demo on AWS EC2
-- PostgreSQL daily backup, gzip, S3 upload, local retention
-- Backup health monitoring and failure-only Slack notification
-- Temporary databaseを使ったsafe restore verification
+- AWS EC2 public demo
+- Bitwarden-based production secret management
+- IAM Role-based S3 access
+- Backup monitoring with Slack notification
 
 ## Out of Scope for MVP
 
-- Public `ricetta` DBへの直接restore
-- S3 Lifecycleによる長期世代管理
-- RDS / multi-region / high availability
-- EC2 / disk / containerの総合監視
-- AWS環境の完全自動再構築
+- Production security fallback hardening tracked by Issue #25
+- AWS fixed access keys
+- Secret automation through Terraform / Ansible
 
 ## Next Recommended Tasks
 
-1. 差分レビュー後、Issue #12のcommitを作成する。
-2. 後続IssueでS3 Lifecycleと定期restore drillを検討する。
-3. 必要に応じてSlack通知処理を他アプリと共通化する。
+1. Issue #59の差分をレビューしてcommitする。
+2. Issue #25でproduction fallbackとdemo account passwordのhardeningを扱う。
 
 ## Open Questions
 
-- systemd unitの自動静的検証をCIに追加するか。
-- S3 Lifecycleとrestore drillをどの後続Issueで扱うか。
+- Bitwarden項目更新の定期的な照合手順を追加するか。
 
 ## Notes for Next Agent
 
-- Webhook URLの実値をGit、docs、Issue、PR、ログへ記録しない。
-- `MAX_AGE_SECONDS=21600` は通常運用値。failure test時の一時値を残さない。
-- `systemd-analyze` はローカルmacOSにないため未実施。EC2上のunit動作は検証済み。
+- `.env.prod` を作成・変更・Git追加しない。
+- secret検査で実値を出力しない。
+- Issue #59でDjango settings、Composeの `replace-me` fallback、seed既定パスワードは変更していない。
 
 ## Suggested Commit Message
 
 ```text
-feat(ops): add backup monitoring
+docs(ops): establish Bitwarden secret management
 ```
