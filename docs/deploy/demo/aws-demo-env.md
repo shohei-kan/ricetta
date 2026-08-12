@@ -43,8 +43,8 @@ CADDY_SITE_ADDRESS=ricetta.example.com
 POSTGRES_DB=ricetta
 POSTGRES_USER=ricetta
 POSTGRES_PASSWORD=replace-me
-POSTGRES_HOST=db
-POSTGRES_PORT=5432
+
+VITE_DEMO_MODE=true
 ```
 
 注意:
@@ -58,6 +58,7 @@ POSTGRES_PORT=5432
 - 既存実装で使っていない変数は、envだけに勝手に追加しない
 - `CADDY_SITE_ADDRESS` はCaddyが受ける公開ドメインを指定する
 - 実運用では `CADDY_SITE_ADDRESS=ricetta.lintake.net` のように実ドメインへ差し替える
+- `POSTGRES_HOST` と `POSTGRES_PORT` はproduction Composeが `db` / `5432` を固定指定するため、`.env.prod` には記載しない
 
 ## Database `.env.db`
 

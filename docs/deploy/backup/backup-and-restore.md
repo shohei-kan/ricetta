@@ -119,37 +119,7 @@ PostgreSQL restoreの検証済み手順は [PostgreSQL Restore](./postgres-resto
 
 ## Secrets and Configuration
 
-`.env.prod` はGit管理しません。
-
-Gitで管理するのは `.env.prod.example` のみとし、必要な変数名と役割だけを記載します。
-
-実際のsecret値はBitwardenで管理します。
-
-Secret management policy:
-
-- 秘密の中身はBitwarden
-- 金庫の場所と使い方はGitHub docs
-- 最後の復旧キーは紙
-
-Bitwardenで管理する想定アイテム:
-
-- `Ricetta AWS Demo .env.prod`
-- `Ricetta AWS EC2 SSH`
-- `Ricetta Backup S3 IAM`
-
-以下にはsecretの実値を書きません。
-
-- GitHub Issues
-- Pull Requests
-- README
-- docs
-- Notion
-- チャットログ
-- スクリーンショット
-
-`.env.prod` をEC2上で変更した場合は、Bitwardenの `Ricetta AWS Demo .env.prod` も同時に更新します。
-
-Bitwardenのマスターパスワードと2FAリカバリーコードは、紙などのオフライン手段でも保管します。
+secret実値の正本はBitwardenとし、`.env.prod` とbackup monitor用envはGit管理しません。Bitwarden項目名、EC2上の配置、更新・復旧手順は [Secret Management](../secret-management.md) を参照します。
 
 ### Required environment variables
 
@@ -267,7 +237,7 @@ EC2を再構築する場合は、以下を確認します。
 
 - [ ] secretの実値が含まれていない
 - [ ] seed resetとdatabase backupの役割が分かれている
-- [ ] Bitwardenのアイテム名が記載されている
+- [ ] Bitwardenのアイテム名と復旧手順はSecret Management文書から確認できる
 - [ ] `.env.prod` をGit管理しない方針が明記されている
 - [ ] `.env.prod.example` をGit管理する方針が明記されている
 - [ ] backup / restoreの詳細手順が責務別ファイルへ分離されている

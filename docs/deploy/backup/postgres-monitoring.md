@@ -158,7 +158,7 @@ SLACK_WEBHOOK_URL=<secret>
 
 Webhook URLの実値はドキュメント、GitHub Issue、Pull Request、README、チャット、スクリーンショットへ記載しません。
 
-secret管理はBitwardenへ移行する方針とします。
+Webhook URLの正本はBitwardenの `Ricetta Backup Monitor Secrets` で管理します。更新と復旧の手順は [Secret Management](../secret-management.md) を参照します。
 
 ### Secret file permissions
 
