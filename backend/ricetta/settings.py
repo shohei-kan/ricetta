@@ -13,6 +13,8 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 import os
 from pathlib import Path
 
+from django.core.exceptions import ImproperlyConfigured
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -28,27 +30,68 @@ def env_bool(name, default=False):
     return env(name, str(default)).lower() in ('1', 'true', 'yes', 'on')
 
 
+def production_env(name):
+    value = os.getenv(name, '').strip()
+    lowered = value.lower()
+    placeholder_markers = (
+        'change-me',
+        'django-insecure',
+        'example.com',
+        'replace-me',
+    )
+    if not value:
+        raise ImproperlyConfigured(f'{name} is required when DJANGO_DEBUG is false.')
+    if any(marker in lowered for marker in placeholder_markers):
+        raise ImproperlyConfigured(
+            f'{name} must not use a development or placeholder value when DJANGO_DEBUG is false.'
+        )
+    return value
+
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = env('DJANGO_SECRET_KEY', 'django-insecure-dev-only-change-me')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env_bool('DJANGO_DEBUG', True)
 
 DEMO_MODE = env_bool('DEMO_MODE', False)
 
-ALLOWED_HOSTS = [host.strip() for host in env('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',') if host.strip()]
-
-CSRF_TRUSTED_ORIGINS = [
-    origin.strip()
-    for origin in env(
+if DEBUG:
+    SECRET_KEY = env('DJANGO_SECRET_KEY', 'django-insecure-dev-only-change-me')
+    allowed_hosts_value = env('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1')
+    csrf_trusted_origins_value = env(
         'DJANGO_CSRF_TRUSTED_ORIGINS',
         'http://localhost:5173,http://localhost:5174',
-    ).split(',')
+    )
+else:
+    SECRET_KEY = production_env('DJANGO_SECRET_KEY')
+    if len(SECRET_KEY) < 50:
+        raise ImproperlyConfigured(
+            'DJANGO_SECRET_KEY must be at least 50 characters when DJANGO_DEBUG is false.'
+        )
+    allowed_hosts_value = production_env('DJANGO_ALLOWED_HOSTS')
+    csrf_trusted_origins_value = production_env('DJANGO_CSRF_TRUSTED_ORIGINS')
+
+ALLOWED_HOSTS = [
+    host.strip() for host in allowed_hosts_value.split(',') if host.strip()
+]
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in csrf_trusted_origins_value.split(',')
     if origin.strip()
 ]
+
+if not DEBUG:
+    if '*' in ALLOWED_HOSTS or any(
+        host in {'localhost', '127.0.0.1', '::1'} for host in ALLOWED_HOSTS
+    ):
+        raise ImproperlyConfigured(
+            'DJANGO_ALLOWED_HOSTS must contain only explicit production hosts.'
+        )
+    if any(not origin.startswith('https://') for origin in CSRF_TRUSTED_ORIGINS):
+        raise ImproperlyConfigured(
+            'DJANGO_CSRF_TRUSTED_ORIGINS must contain only HTTPS origins in production.'
+        )
 
 
 # Application definition
@@ -65,13 +108,16 @@ INSTALLED_APPS = [
 ]
 
 REST_FRAMEWORK = {
+    'NUM_PROXIES': 1,
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.BasicAuthentication',
-        'rest_framework.authentication.SessionAuthentication',
+        'api.authentication.SessionAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
+    'DEFAULT_THROTTLE_RATES': {
+        'login': '5/minute',
+    },
 }
 
 MIDDLEWARE = [
@@ -108,18 +154,7 @@ WSGI_APPLICATION = 'ricetta.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-if env('POSTGRES_HOST'):
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': env('POSTGRES_DB', 'ricetta'),
-            'USER': env('POSTGRES_USER', 'ricetta'),
-            'PASSWORD': env('POSTGRES_PASSWORD', 'ricetta'),
-            'HOST': env('POSTGRES_HOST', 'db'),
-            'PORT': env('POSTGRES_PORT', '5432'),
-        }
-    }
-elif DEBUG:
+if DEBUG and not env('POSTGRES_HOST'):
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
@@ -127,7 +162,42 @@ elif DEBUG:
         }
     }
 else:
-    raise RuntimeError('POSTGRES_HOST is required when DJANGO_DEBUG is false.')
+    if DEBUG:
+        postgres_name = env('POSTGRES_DB', 'ricetta')
+        postgres_user = env('POSTGRES_USER', 'ricetta')
+        postgres_password = env('POSTGRES_PASSWORD', 'ricetta')
+        postgres_host = env('POSTGRES_HOST', 'db')
+        postgres_port = env('POSTGRES_PORT', '5432')
+    else:
+        postgres_name = production_env('POSTGRES_DB')
+        postgres_user = production_env('POSTGRES_USER')
+        postgres_password = production_env('POSTGRES_PASSWORD')
+        postgres_host = production_env('POSTGRES_HOST')
+        postgres_port = production_env('POSTGRES_PORT')
+        if not postgres_port.isdigit():
+            raise ImproperlyConfigured(
+                'POSTGRES_PORT must be numeric when DJANGO_DEBUG is false.'
+            )
+
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': postgres_name,
+            'USER': postgres_user,
+            'PASSWORD': postgres_password,
+            'HOST': postgres_host,
+            'PORT': postgres_port,
+        }
+    }
+
+
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
+SECURE_SSL_REDIRECT = not DEBUG
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_HSTS_SECONDS = 0 if DEBUG else 3600
+SECURE_HSTS_INCLUDE_SUBDOMAINS = False
+SECURE_HSTS_PRELOAD = False
 
 
 # Password validation
