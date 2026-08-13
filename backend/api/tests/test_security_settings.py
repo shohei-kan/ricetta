@@ -143,7 +143,10 @@ class ProductionSettingsTests(SimpleTestCase):
         self.assertIn("handle /static/*", caddyfile)
         self.assertNotIn("header_up X-Forwarded-Proto", caddyfile)
 
-    def test_production_health_check_supplies_forwarded_https_header(self):
+    def test_production_health_check_uses_first_allowed_host_and_https(self):
         compose = (PROJECT_DIR / "docker-compose.prod.yml").read_text()
 
+        self.assertIn("os.environ['DJANGO_ALLOWED_HOSTS']", compose)
+        self.assertIn(".split(',')[0].strip()", compose)
+        self.assertIn("'Host': host", compose)
         self.assertIn("'X-Forwarded-Proto': 'https'", compose)
