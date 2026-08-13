@@ -2,7 +2,7 @@
 
 ## Date
 
-2026-08-12
+2026-08-13
 
 ## Project
 
@@ -10,42 +10,40 @@ Ricetta
 
 ## Status
 
-GitHub Issue #25「Production security hardening」の実装・ローカル検証は完了。commit / pushは未実施。
+Issue #25のproduction backend health check hotfixを実装・ローカル検証済み。commit / pushは未実施。
 
 ## Summary
 
-production設定をfail closedにし、HTTPS security settings、Session Authentication限定、login throttle、genericな認証失敗、Caddyでの `/admin` 非公開化を追加した。公開デモ用owner / staff passwordは運用secretではないため現状を維持した。
+内部health checkが接続先の `127.0.0.1` をHostとして送り、公開hostだけを許可するDjangoから400になる問題を修正した。`DJANGO_ALLOWED_HOSTS` の先頭hostをHost headerに使い、HTTPS転送headerとproduction security設定は維持した。
 
 ## Current Goal
 
-Issue #25の差分をレビューし、本番反映手順に沿って安全にデプロイする。
+health check hotfixの差分をレビューし、本番反映手順に沿って再デプロイする。
 
 ## Current State
 
-- Branch: `security/issue-25-production-hardening`
+- Branch: `fix/production-backend-health-host`
 - production Compose: 外部参照する10変数を必須化
 - production Django: 必須設定の欠落・空文字・placeholderを拒否
 - DRF authentication: Sessionのみ
 - login throttle: Caddy 1段を前提にIP単位で `5/minute`
 - public `/admin`: Caddyで404
 - HSTS: 3600秒、includeSubDomains / preloadは無効
+- backend health check: `DJANGO_ALLOWED_HOSTS` の先頭hostと `X-Forwarded-Proto: https` を送信
 
 ## What Was Done
 
-- `DJANGO_DEBUG=False` でsecret、host、CSRF origin、DB接続設定をfail closedにした。
-- Secure Cookie、SSL redirect、proxy SSL header、段階的HSTSを設定した。
-- Docker内部health checkへforwarded HTTPS headerを付けた。
-- Basic Authenticationを外し、Session Authenticationと既存401 responseを維持した。
-- login専用throttleとgenericな認証失敗responseを追加した。
-- Caddyで `/admin` 以下を404にし、API・static・SPA routingを維持した。
-- auth、CSRF、権限、production settings、Caddy、health checkのtestを追加した。
-- deployとAPI docsへ設定理由、確認、rollback、制約を追記した。
+- `docker-compose.prod.yml` のbackend health checkで `DJANGO_ALLOWED_HOSTS` を環境変数から取得するようにした。
+- カンマ区切りの先頭hostをtrimしてHost headerへ設定した。
+- `X-Forwarded-Proto: https` を維持した。
+- production health checkのHost選択と両headerを固定する回帰テストを追加した。
 
 ## Key Decisions
 
 - 開発用fallbackは `DJANGO_DEBUG=True` に限り、本番相当環境では使用しない。
 - HSTSは影響を限定するため3600秒から開始し、subdomainとpreloadには広げない。
 - Caddyの標準転送と内部health checkの明示headerにより、DjangoがHTTPS requestとして認識できるようにする。
+- 内部接続先は `127.0.0.1` のまま、HTTP Hostだけを許可済みproduction hostに合わせる。
 - 公開デモpasswordはREADMEで公開され、定期resetにも使う非secretのため変更しない。
 
 ## Key Files
@@ -64,14 +62,8 @@ Issue #25の差分をレビューし、本番反映手順に沿って安全に�
 ## Verification
 
 - Backend tests: 161 passed
-- `python manage.py check`: pass
-- production-like `python manage.py check --deploy`: pass with expected W005 / W021 only
-- Frontend `npm run lint`: pass
-- Frontend `npm run build`: pass
-- Production image build: pass
+- Production security / health check tests: 6 passed
 - Compose config with `.env.prod.example`: pass
-- Compose config without required env: expected failure
-- Caddy config validation: valid、warningなし
 - `git diff --check`: pass
 
 EC2、AWS、Bitwarden、`.env.prod`、production secretは変更していない。
@@ -93,8 +85,8 @@ EC2、AWS、Bitwarden、`.env.prod`、production secretは変更していない�
 ## Next Recommended Tasks
 
 1. 差分をレビューしてcommitする。
-2. Bitwardenを正本とする既存 `.env.prod` の必須10変数を確認する。
-3. deploy docsの手順でbuild、migration、health、login、role、admin、security headerを確認する。
+2. productionへ再デプロイし、backendコンテナがhealthyになることを確認する。
+3. 外部HTTPS health endpointが引き続き200になることを確認する。
 
 ## Open Questions
 
@@ -110,5 +102,5 @@ EC2、AWS、Bitwarden、`.env.prod`、production secretは変更していない�
 ## Suggested Commit Message
 
 ```text
-fix(security): harden production configuration
+fix(deploy): use allowed host for backend health check
 ```
