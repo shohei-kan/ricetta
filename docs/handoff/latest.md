@@ -10,103 +10,88 @@ Ricetta
 
 ## Status
 
-Issue #25のCaddy `/admin` routing order hotfixを実装・ローカル検証済み。commit / pushは未実施。
+GitHub Issue #27「Make recipe nested writes transactional」を実装・ローカル検証済み。commit / pushは未実施。
 
 ## Summary
 
-Caddyのdirective sortingにより独立した `respond @admin 404` がcatch-all `handle` より後へ配置され、`/admin` がfrontendへ流れる問題を修正した。admin matcherを専用の `handle @admin` に割り当て、他のhandleと相互排他的にした。
+Recipe作成・更新時のRecipe本体、RecipeIngredient、RecipeStepのnested write全体をtransactionで保護した。途中のDB処理で例外が発生しても、親だけの保存や既存nested dataの削除が残らないことを回帰テストで確認した。
 
 ## Current Goal
 
-Caddy admin routing hotfixの差分をレビューし、本番反映手順に沿って再デプロイする。
+Issue #27の差分をレビューし、CI確認後に取り込む。
 
 ## Current State
 
-- Branch: `fix/caddy-admin-route-order`
-- production Compose: 外部参照する10変数を必須化
-- production Django: 必須設定の欠落・空文字・placeholderを拒否
-- DRF authentication: Sessionのみ
-- login throttle: Caddy 1段を前提にIP単位で `5/minute`
-- public `/admin`: Caddyの先頭 `handle @admin` で404
-- HSTS: 3600秒、includeSubDomains / preloadは無効
-- backend health check: `DJANGO_ALLOWED_HOSTS` の先頭hostと `X-Forwarded-Proto: https` を送信
+- Branch: `fix/issue-27-recipe-transactions`
+- Recipe create / update: serializerメソッド全体を `transaction.atomic()` で保護
+- Nested update: `ingredients` / `steps` 指定時の全件置換方式を維持
+- Shop scope: Category / Ingredient / Unitの既存scoped field validationを維持
+- Permissions: ownerのみ作成・更新可、staffは403の既存仕様を維持
+- Model / migration / API response shape: 変更なし
 
 ## What Was Done
 
-- `docker-compose.prod.yml` のbackend health checkで `DJANGO_ALLOWED_HOSTS` を環境変数から取得するようにした。
-- カンマ区切りの先頭hostをtrimしてHost headerへ設定した。
-- `X-Forwarded-Proto: https` を維持した。
-- production health checkのHost選択と両headerを固定する回帰テストを追加した。
-- `respond @admin 404` を `handle @admin { respond 404 }` へ変更し、Caddyのdirective sorting後もcatch-allより先に評価されるようにした。
-- admin遮断が専用handle内にあることを固定する回帰テストへ更新した。
+- RecipeSerializerのcreate全体をtransaction化した。
+- RecipeSerializerのupdate全体をtransaction化した。
+- createで親と材料の保存後に手順作成が失敗した場合のrollback testを追加した。
+- updateで親更新、旧nested削除、新材料作成後に手順作成が失敗した場合のrollback testを追加した。
+- 存在しないCategory / Ingredient / Unit IDの拒否テストを追加した。
+- API designへnested writeのtransaction方針を追記した。
 
 ## Key Decisions
 
-- 開発用fallbackは `DJANGO_DEBUG=True` に限り、本番相当環境では使用しない。
-- HSTSは影響を限定するため3600秒から開始し、subdomainとpreloadには広げない。
-- Caddyの標準転送と内部health checkの明示headerにより、DjangoがHTTPS requestとして認識できるようにする。
-- 内部接続先は `127.0.0.1` のまま、HTTP Hostだけを許可済みproduction hostに合わせる。
-- `/admin` と `/admin/*` は専用handleで遮断し、`/administrator` はfrontend routingへ渡す。
-- 公開デモpasswordはREADMEで公開され、定期resetにも使う非secretのため変更しない。
+- transaction境界はRecipeSerializerの各create / updateメソッド全体とする。
+- 既存の事前validation、全件置換方式、エラー形式、owner / staff権限は変更しない。
+- rollback testはmockしたRecipeStep作成で実行時例外を発生させ、それ以前のDB write / deleteが実際に行われたことを失敗直前に確認する。
 
 ## Key Files
 
-- `backend/ricetta/settings.py`
-- `backend/api/authentication.py`
 - `backend/api/serializers.py`
-- `backend/api/views.py`
-- `backend/api/tests/test_auth.py`
-- `backend/api/tests/test_security_settings.py`
-- `docker-compose.prod.yml`
-- `Caddyfile`
-- `docs/deploy/demo/aws-demo-env.md`
+- `backend/api/tests/test_recipes.py`
 - `docs/technical/api-design.md`
+- `docs/handoff/latest.md`
 
 ## Verification
 
-- Backend tests: 161 passed
-- Production security / health check tests: 6 passed
-- Compose config with `.env.prod.example`: pass
-- Caddy config validation: valid
-- Actual Caddy routing: `/admin`, `/admin/`, `/admin/login/` = 404; `/administrator` = 200
-- Actual Caddy routing: API, static, frontend stub routes = 200
+- Recipe tests: 40 passed
+- Backend tests: 165 passed
+- `python manage.py check`: pass
+- `python manage.py makemigrations --check --dry-run`: no changes detected
 - `git diff --check`: pass
 
-EC2、AWS、Bitwarden、`.env.prod`、production secretは変更していない。
+`.env.prod`、production secret、GitHub、本番環境は変更していない。
 
 ## Current Product Scope
 
-- AWS EC2 public demo
-- Session Authentication + CSRF
-- Bitwarden-based production secret management
-- Caddy HTTPS reverse proxy
+- Recipe nested create / update
+- Shop-scoped Category / Ingredient / Unit references
+- Owner-only Recipe writes
 
 ## Out of Scope for MVP
 
-- Distributed rate limiting across processes / instances
-- HSTS preload / includeSubDomains
-- Public Django admin
-- New external security services or dependencies
+- Nested write UI変更
+- Nested rowsの差分更新
+- 深いRecipe循環参照の完全なグラフ検証
+- Model / migration変更
 
 ## Next Recommended Tasks
 
-1. 差分をレビューしてcommitする。
-2. productionへ再デプロイし、`/admin` 系3パスが404、`/administrator` がfrontend responseになることを確認する。
-3. backendコンテナのhealth、外部HTTPS health endpoint、frontend routingを再確認する。
+1. 差分とrollback testのfailure injection箇所をレビューする。
+2. CIでbackend testsを確認する。
+3. ownerでRecipe create / updateのfrontend smoke testを行う。
 
 ## Open Questions
 
-- trafficや構成拡張時に共有cacheを使うrate limitingへ移行するか。
-- 3600秒の運用確認後にHSTS期間を段階的に延長するか。
+- なし。
 
 ## Notes for Next Agent
 
-- `.env.prod` やsecret実値をGit、Issue、PR、docs、ログへ出さない。
-- `check --deploy` のW005 / W021は意図したHSTS方針によるもの。
-- rollback後もbrowserが最大1時間HSTSを保持する点に注意する。
+- Recipeのnested updateは引き続き、送信されたcollectionだけを全件置換する。
+- shop scope拒否はDB transactionに入る前のserializer field validationで行う。
+- transaction testはvalidation errorではなく、RecipeStep write時の実行時例外を利用している。
 
 ## Suggested Commit Message
 
 ```text
-fix(security): enforce Caddy admin route ordering
+fix(api): make recipe nested writes transactional
 ```

@@ -1,10 +1,13 @@
 # pyright: reportAttributeAccessIssue=false
 
+from copy import deepcopy
+from unittest.mock import patch
+
 from django.test import override_settings
 from django.urls import reverse
 from rest_framework import status
 
-from api.models import Ingredient, PrepTask, Recipe, RecipeIngredient, Unit
+from api.models import Ingredient, PrepTask, Recipe, RecipeIngredient, RecipeStep, Unit
 
 from .base import ApiTestCase
 
@@ -68,6 +71,29 @@ class RecipeApiTests(ApiTestCase):
         self.assertEqual(response.data["ingredients"][0]["ingredient"]["name"], "玉ねぎ")
         self.assertNotIn("cost", response.data["ingredients"][0])
         self.assertIn("cost_summary", response.data)
+
+    def test_create_rolls_back_parent_and_ingredients_when_step_write_fails(self):
+        self.login_owner()
+        payload = self.recipe_payload()
+
+        def fail_after_parent_and_ingredient_writes(*args, **kwargs):
+            recipe = Recipe.objects.get(shop=self.shop, name=payload["name"])
+            self.assertEqual(recipe.ingredients.count(), 1)
+            raise RuntimeError("simulated nested step write failure")
+
+        with patch(
+            "api.serializers.RecipeStep.objects.create",
+            side_effect=fail_after_parent_and_ingredient_writes,
+        ):
+            with self.assertRaisesMessage(
+                RuntimeError,
+                "simulated nested step write failure",
+            ):
+                self.client.post(reverse("recipe-list"), payload, format="json")
+
+        self.assertFalse(Recipe.objects.filter(shop=self.shop, name=payload["name"]).exists())
+        self.assertFalse(RecipeIngredient.objects.filter(recipe__shop=self.shop).exists())
+        self.assertFalse(RecipeStep.objects.filter(recipe__shop=self.shop).exists())
 
     @override_settings(DEMO_MODE=True)
     def test_demo_mode_allows_owner_recipe_create(self):
@@ -218,6 +244,49 @@ class RecipeApiTests(ApiTestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("unit_id", response.data["ingredients"][0])
+
+    def test_nonexistent_category_and_ingredient_ids_are_rejected(self):
+        self.login_owner()
+        valid_payload = self.recipe_payload()
+        category_payload = deepcopy(valid_payload)
+        category_payload["category_id"] = 999999
+        ingredient_payload = deepcopy(valid_payload)
+        ingredient_payload["name"] = "別レシピ"
+        ingredient_payload["ingredients"][0]["ingredient_id"] = 999999
+
+        category_response = self.client.post(
+            reverse("recipe-list"),
+            category_payload,
+            format="json",
+        )
+        ingredient_response = self.client.post(
+            reverse("recipe-list"),
+            ingredient_payload,
+            format="json",
+        )
+
+        self.assertEqual(category_response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("category_id", category_response.data)
+        self.assertEqual(ingredient_response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("ingredient_id", ingredient_response.data["ingredients"][0])
+
+    def test_nonexistent_nested_unit_id_is_rejected_without_updating_recipe(self):
+        self.login_owner()
+        recipe = self.create_recipe(name="更新前レシピ")
+        payload = self.recipe_payload()
+        payload["name"] = "更新後レシピ"
+        payload["ingredients"][0]["unit_id"] = 999999
+
+        response = self.client.patch(
+            reverse("recipe-detail", args=[recipe.id]),
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("unit_id", response.data["ingredients"][0])
+        recipe.refresh_from_db()
+        self.assertEqual(recipe.name, "更新前レシピ")
 
     def test_recipe_ingredient_quantity_must_be_positive(self):
         self.login_owner()
@@ -769,3 +838,90 @@ class RecipeApiTests(ApiTestCase):
         self.assertEqual(recipe.ingredients.count(), 1)
         self.assertEqual(recipe.steps.count(), 2)
         self.assertEqual(response.data["ingredients"][0]["ingredient"]["name"], "卵")
+
+    def test_update_rolls_back_parent_and_nested_replacement_when_step_write_fails(self):
+        self.login_owner()
+        original_unit = self.create_standard_unit("g", Unit.UnitType.WEIGHT)
+        original_ingredient = self.create_ingredient(
+            name="玉ねぎ",
+            cost_mode=Ingredient.CostMode.NONE,
+            usage_unit=original_unit,
+        )
+        recipe = self.create_recipe(name="更新前レシピ")
+        original_link = RecipeIngredient.objects.create(
+            recipe=recipe,
+            ingredient=original_ingredient,
+            quantity="100",
+            unit=original_unit,
+            sort_order=1,
+            memo="更新前材料",
+        )
+        original_step = RecipeStep.objects.create(
+            recipe=recipe,
+            step_number=1,
+            instruction="更新前手順",
+            memo="元のメモ",
+        )
+        replacement_unit = self.create_standard_unit("個", Unit.UnitType.COUNT)
+        replacement_ingredient = self.create_ingredient(
+            name="卵",
+            cost_mode=Ingredient.CostMode.NONE,
+            usage_unit=replacement_unit,
+        )
+        payload = {
+            "name": "更新後レシピ",
+            "ingredients": [
+                {
+                    "ingredient_id": replacement_ingredient.id,
+                    "quantity": "2",
+                    "unit_id": replacement_unit.id,
+                    "sort_order": 1,
+                    "memo": "更新後材料",
+                }
+            ],
+            "steps": [
+                {
+                    "step_number": 1,
+                    "instruction": "更新後手順",
+                    "image": None,
+                    "memo": "",
+                }
+            ],
+        }
+
+        def fail_after_parent_and_nested_replacement(*args, **kwargs):
+            recipe.refresh_from_db()
+            self.assertEqual(recipe.name, "更新後レシピ")
+            self.assertFalse(RecipeIngredient.objects.filter(id=original_link.id).exists())
+            self.assertEqual(recipe.ingredients.get().ingredient, replacement_ingredient)
+            self.assertFalse(RecipeStep.objects.filter(id=original_step.id).exists())
+            raise RuntimeError("simulated nested step replacement failure")
+
+        with patch(
+            "api.serializers.RecipeStep.objects.create",
+            side_effect=fail_after_parent_and_nested_replacement,
+        ):
+            with self.assertRaisesMessage(
+                RuntimeError,
+                "simulated nested step replacement failure",
+            ):
+                self.client.patch(
+                    reverse("recipe-detail", args=[recipe.id]),
+                    payload,
+                    format="json",
+                )
+
+        recipe.refresh_from_db()
+        self.assertEqual(recipe.name, "更新前レシピ")
+        self.assertEqual(
+            list(recipe.ingredients.values_list("id", flat=True)),
+            [original_link.id],
+        )
+        self.assertEqual(recipe.ingredients.get().ingredient, original_ingredient)
+        self.assertEqual(recipe.ingredients.get().memo, "更新前材料")
+        self.assertEqual(
+            list(recipe.steps.values_list("id", flat=True)),
+            [original_step.id],
+        )
+        self.assertEqual(recipe.steps.get().instruction, "更新前手順")
+        self.assertEqual(recipe.steps.get().memo, "元のメモ")
