@@ -1,4 +1,5 @@
 from django.contrib.auth import authenticate, get_user_model
+from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
 from rest_framework import serializers
@@ -634,28 +635,30 @@ class RecipeSerializer(serializers.ModelSerializer):
         return value
 
     def create(self, validated_data):
-        ingredients_data = validated_data.pop("ingredients", [])
-        steps_data = validated_data.pop("steps", [])
-        recipe = Recipe.objects.create(**validated_data)
-        self._validate_ingredient_links(recipe, ingredients_data)
-        self._replace_ingredients(recipe, ingredients_data)
-        self._replace_steps(recipe, steps_data)
-        return recipe
+        with transaction.atomic():
+            ingredients_data = validated_data.pop("ingredients", [])
+            steps_data = validated_data.pop("steps", [])
+            recipe = Recipe.objects.create(**validated_data)
+            self._validate_ingredient_links(recipe, ingredients_data)
+            self._replace_ingredients(recipe, ingredients_data)
+            self._replace_steps(recipe, steps_data)
+            return recipe
 
     def update(self, instance, validated_data):
-        ingredients_data = validated_data.pop("ingredients", None)
-        steps_data = validated_data.pop("steps", None)
-        for field, value in validated_data.items():
-            setattr(instance, field, value)
-        instance.save()
-        if ingredients_data is not None:
-            self._validate_ingredient_links(instance, ingredients_data)
-            instance.ingredients.all().delete()
-            self._replace_ingredients(instance, ingredients_data)
-        if steps_data is not None:
-            instance.steps.all().delete()
-            self._replace_steps(instance, steps_data)
-        return instance
+        with transaction.atomic():
+            ingredients_data = validated_data.pop("ingredients", None)
+            steps_data = validated_data.pop("steps", None)
+            for field, value in validated_data.items():
+                setattr(instance, field, value)
+            instance.save()
+            if ingredients_data is not None:
+                self._validate_ingredient_links(instance, ingredients_data)
+                instance.ingredients.all().delete()
+                self._replace_ingredients(instance, ingredients_data)
+            if steps_data is not None:
+                instance.steps.all().delete()
+                self._replace_steps(instance, steps_data)
+            return instance
 
     def _validate_ingredient_links(self, recipe, ingredients_data):
         for ingredient_data in ingredients_data:

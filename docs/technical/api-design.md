@@ -497,6 +497,8 @@ POSTと同じ構造を基本にする。
 
 MVPでは、`ingredients` または `steps` が送られた場合、既存のRecipeIngredient / RecipeStepを一度削除して送信内容で作り直します。
 
+Recipeの作成・更新とRecipeIngredient / RecipeStepのnested writeは、それぞれリクエスト単位のtransactionで実行します。途中のDB処理で失敗した場合、親Recipeの保存や既存nested dataの削除を含めて変更前の状態へrollbackします。
+
 ---
 
 ## DELETE /api/v1/recipes/{id}/
