@@ -24,6 +24,8 @@
 | EC2 SSH private key | Ricetta EC2へのSSH認証 | `Ricetta AWS EC2 SSH` | Bitwarden SSH Agent経由で使用 | local SSH client / `ssh ricetta` | Bitwarden内で管理 |
 | AWS access | S3 backup / restoreなどのAWS API操作 | 固定secretなし | EC2 IAM Role `ricetta-demo-backup-role` | AWS CLI、backup / monitor scripts | IAM policyで最小権限 |
 
+CloudWatch Agentも同じEC2 IAM Roleを利用しますが、追加権限はnamespaceを`CWAgent`へ限定した`cloudwatch:PutMetricData`だけとします。CloudWatch Alarm、SNS、Dashboardの管理権限や、CloudWatch Logs / X-Ray権限はEC2 Roleへ付与しません。AgentはIMDSv2からInstanceIdとRole credentialを取得し、固定AWS access keyは使用しません。詳細は[EC2 Resource Monitoring](./monitoring/ec2-resource-monitoring.md)を参照してください。
+
 `/home/ubuntu/.aws` と `/root/.aws` に固定credentialsは配置しません。
 
 ## Production Environment Variables

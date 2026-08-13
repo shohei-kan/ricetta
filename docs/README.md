@@ -30,6 +30,7 @@ API、データモデルなど、実装に近い設計をまとめます。
 - [PostgreSQL backup](./deploy/backup/postgres-backup.md)
 - [PostgreSQL restore](./deploy/backup/postgres-restore.md)
 - [PostgreSQL backup monitoring](./deploy/backup/postgres-monitoring.md)
+- [EC2 resource monitoring](./deploy/monitoring/ec2-resource-monitoring.md)
 
 ## Decisions
 
