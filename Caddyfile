@@ -2,7 +2,9 @@
 	encode zstd gzip
 
 	@admin path /admin /admin/*
-	respond @admin 404
+	handle @admin {
+		respond 404
+	}
 
 	handle /api/* {
 		reverse_proxy backend:8000
