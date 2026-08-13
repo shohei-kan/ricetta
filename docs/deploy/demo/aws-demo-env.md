@@ -231,8 +231,11 @@ docker compose --env-file .env.prod -f docker-compose.prod.yml exec backend pyth
 
 - デモデータを初期状態に戻す
 - `owner@example.com` / `staff@example.com` のpasswordを `password` に戻す
-- 固定Shop名 `〇〇食堂` を対象にする
+- 内部識別子 `demo_key=portfolio-demo` のShopを対象にする
+- 店舗表示名を既定の `〇〇食堂` に戻す
 - 実店舗データを入れない前提で使う
+
+初回migration後、既存demo Shopに `demo_key` がない場合は、`owner@example.com` のMembershipが厳密に1件かつactiveなowner roleのときだけ自動移行します。0件、複数件、role不一致、inactive、または既存demo keyとMembership先の不一致ではfail closedで停止するため、ShopやMembershipの状態を確認してから再実行してください。systemd service / timerの実行コマンド自体は変更ありません。
 
 ## Demo account smoke test
 

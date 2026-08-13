@@ -1,7 +1,8 @@
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
+from django.db import transaction
 from django.utils import timezone
 
 from api.models import (
@@ -20,6 +21,7 @@ from api.models import (
 
 class Command(BaseCommand):
     help = "Seed portfolio/demo data for screenshots and public demo environments."
+    demo_key = "portfolio-demo"
 
     def add_arguments(self, parser):
         parser.add_argument("--owner-email", default="owner@example.com")
@@ -32,9 +34,11 @@ class Command(BaseCommand):
             help="Reset only the fixed demo Shop data before seeding.",
         )
 
+    @transaction.atomic
     def handle(self, *args, **options):
-        if options["reset"]:
-            self._reset_demo_shop(options["shop_name"])
+        demo_shop = self._resolve_demo_shop(options["owner_email"])
+        if options["reset"] and demo_shop is not None:
+            self._reset_demo_shop(demo_shop)
 
         units = self._seed_units()
         owner = self._seed_user(
@@ -51,8 +55,7 @@ class Command(BaseCommand):
         )
         shop = self._seed_shop(
             options["shop_name"],
-            owner,
-            reuse_current_membership=not options["reset"],
+            demo_shop,
         )
 
         self._seed_membership(owner, shop, Membership.Role.OWNER, "山田 太郎")
@@ -81,16 +84,59 @@ class Command(BaseCommand):
             )
         )
 
-    def _reset_demo_shop(self, shop_name):
-        demo_shop = Shop.objects.filter(name=shop_name).order_by("id").first()
-        if demo_shop is None:
-            return
+    def _resolve_demo_shop(self, owner_email):
+        demo_shop = Shop.objects.filter(demo_key=self.demo_key).first()
+        User = get_user_model()
+        normalized_email = owner_email.strip().lower()
+        owner = User.objects.filter(username=normalized_email).first()
+
+        if demo_shop is not None:
+            if owner is None:
+                return demo_shop
+            owner_membership = self._get_demo_owner_membership(owner)
+            if owner_membership.shop != demo_shop:
+                raise CommandError(
+                    "Cannot use the portfolio demo Shop: demo_key and the known "
+                    "demo owner's active owner Membership point to different Shops."
+                )
+            return demo_shop
+
+        if owner is None:
+            return None
+
+        owner_membership = self._get_demo_owner_membership(owner)
+        demo_shop = owner_membership.shop
+        demo_shop.demo_key = self.demo_key
+        demo_shop.save(update_fields=["demo_key", "updated_at"])
+        return demo_shop
+
+    def _get_demo_owner_membership(self, owner):
+        memberships = list(
+            Membership.objects.select_related("shop")
+            .filter(user=owner)
+            .order_by("id")
+        )
+        if len(memberships) != 1:
+            raise CommandError(
+                "Cannot identify the portfolio demo Shop: the known demo owner "
+                f"has {len(memberships)} Membership candidates; expected exactly 1."
+            )
+
+        membership = memberships[0]
+        if membership.role != Membership.Role.OWNER or not membership.is_active:
+            raise CommandError(
+                "Cannot identify the portfolio demo Shop: the known demo owner's "
+                "only Membership must be active with role=owner."
+            )
+        return membership
+
+    def _reset_demo_shop(self, demo_shop):
 
         # AWS公開デモの定期リセット用途。
-        # reset対象は固定名で特定したデモShopに限定し、全Shop削除は絶対にしない。
-        # 実データやデモ対象外Shopを巻き込まないため、Userは削除せず再利用する。
+        # reset対象は内部識別子で特定したデモShopに限定し、全Shop削除は絶対にしない。
+        # 実データやデモ対象外Shopを巻き込まないため、User、Membership、Shopは維持する。
         # 削除対象: PrepTask, BoardMemo, RecipeStep, RecipeIngredient, Ingredient,
-        # Recipe, Category, shop-specific Unit, Membership, Shop.
+        # Recipe, Category, shop-specific Unit.
         PrepTask.objects.filter(shop=demo_shop).delete()
         BoardMemo.objects.filter(shop=demo_shop).delete()
         RecipeStep.objects.filter(recipe__shop=demo_shop).delete()
@@ -99,8 +145,6 @@ class Command(BaseCommand):
         Recipe.objects.filter(shop=demo_shop).delete()
         Category.objects.filter(shop=demo_shop).delete()
         Unit.objects.filter(shop=demo_shop).delete()
-        Membership.objects.filter(shop=demo_shop).delete()
-        demo_shop.delete()
 
     def _seed_units(self):
         unit_specs = [
@@ -139,21 +183,9 @@ class Command(BaseCommand):
         unit.save()
         return unit
 
-    def _seed_shop(self, shop_name, owner, reuse_current_membership=True):
-        current_membership = None
-        if reuse_current_membership:
-            current_membership = (
-                Membership.objects.select_related("shop")
-                .filter(user=owner, is_active=True)
-                .order_by("id")
-                .first()
-            )
-        if current_membership is not None:
-            shop = current_membership.shop
-        else:
-            shop = Shop.objects.filter(name=shop_name).order_by("id").first()
-            if shop is None:
-                shop = Shop()
+    def _seed_shop(self, shop_name, shop):
+        if shop is None:
+            shop = Shop(demo_key=self.demo_key)
 
         shop.name = shop_name
         shop.business_type = "小さな食堂・惣菜店"
