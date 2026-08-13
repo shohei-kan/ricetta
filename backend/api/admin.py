@@ -16,6 +16,7 @@ from .models import (
 
 @admin.register(Shop)
 class ShopAdmin(admin.ModelAdmin):
+    fields = ["name", "business_type", "memo"]
     list_display = ["id", "name", "business_type", "created_at", "updated_at"]
     search_fields = ["name", "business_type"]
 

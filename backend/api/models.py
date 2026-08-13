@@ -16,6 +16,13 @@ class Shop(TimeStampedModel):
     name = models.CharField(max_length=120)
     business_type = models.CharField(max_length=80, blank=True)
     memo = models.TextField(blank=True)
+    demo_key = models.CharField(
+        max_length=80,
+        unique=True,
+        blank=True,
+        null=True,
+        editable=False,
+    )
 
     class Meta:
         ordering = ["id"]

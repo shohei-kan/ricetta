@@ -63,8 +63,11 @@ MVPおよび将来拡張で扱う主要エンティティは以下です。
 | name | string | 店舗名 |
 | business_type | string | 業態 |
 | memo | text | メモ |
+| demo_key | nullable unique string | 公開デモShopだけに使う内部識別子。通常Shopはnull。APIやフォームには公開しない |
 | created_at | datetime | 作成日時 |
 | updated_at | datetime | 更新日時 |
+
+`demo_key=portfolio-demo` は公開デモのreset対象を安定して特定するために使用します。店舗名は変更可能な表示名であり、内部識別には使用しません。`demo_key` は `editable=false` とし、通常のModelForm、Shop API、frontendからは変更できません。
 
 ### 将来拡張
 

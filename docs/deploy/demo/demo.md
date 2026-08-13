@@ -106,16 +106,20 @@ docker compose exec backend python manage.py seed_portfolio_data --reset
 
 ## resetの安全方針
 
-`seed_portfolio_data --reset` は、固定Shop名 `〇〇食堂` で特定したデモShopだけをreset対象にします。
+`seed_portfolio_data --reset` は、APIへ公開しない内部識別子 `demo_key=portfolio-demo` で特定したデモShopだけをreset対象にします。店舗名は変更可能な表示名であり、reset時に既定の `〇〇食堂` へ戻します。
+
+既存環境で `demo_key` が未設定の場合は、既知のdemo owner `owner@example.com` のMembershipから候補Shopを特定します。Membershipが厳密に1件かつactiveなowner roleの場合だけ `demo_key` を付与し、0件、複数件、staff role、inactiveなどの曖昧・矛盾した状態では、新しいShopを作らずエラーで停止します。既にdemo keyがある場合も、既知ownerが存在すれば同じShopへのactive owner Membershipであることを削除前に確認します。完全な新規DBでdemo ownerがまだ存在しない場合は、新しいdemo Shopを作成します。
 
 安全方針:
 
 - 実店舗データやデモ対象外Shopを削除しない
 - 全Shop削除をしない
 - 全User削除をしない
+- demo ShopとMembershipは削除せず再利用する
 - demo owner / staffユーザーは削除せず再利用する
 - `owner@example.com` / `staff@example.com` のpasswordは `password` に更新される
 - デモShopに紐づくカテゴリ、単位、材料、レシピ、レシピ材料、工程、仕込みタスク、BoardMemoを再投入する
+- Shop特定からreset、再投入までを1つのtransactionで実行し、途中失敗時は変更前へ戻す
 - BoardMemo初期値は `玉ねぎ`、`ラップ`、`フライヤー油交換`
 - 既存BoardMemoをseedで再利用する場合、未チェック状態に戻す
 
