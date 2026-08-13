@@ -10,24 +10,24 @@ Ricetta
 
 ## Status
 
-Issue #25のproduction backend health check hotfixを実装・ローカル検証済み。commit / pushは未実施。
+Issue #25のCaddy `/admin` routing order hotfixを実装・ローカル検証済み。commit / pushは未実施。
 
 ## Summary
 
-内部health checkが接続先の `127.0.0.1` をHostとして送り、公開hostだけを許可するDjangoから400になる問題を修正した。`DJANGO_ALLOWED_HOSTS` の先頭hostをHost headerに使い、HTTPS転送headerとproduction security設定は維持した。
+Caddyのdirective sortingにより独立した `respond @admin 404` がcatch-all `handle` より後へ配置され、`/admin` がfrontendへ流れる問題を修正した。admin matcherを専用の `handle @admin` に割り当て、他のhandleと相互排他的にした。
 
 ## Current Goal
 
-health check hotfixの差分をレビューし、本番反映手順に沿って再デプロイする。
+Caddy admin routing hotfixの差分をレビューし、本番反映手順に沿って再デプロイする。
 
 ## Current State
 
-- Branch: `fix/production-backend-health-host`
+- Branch: `fix/caddy-admin-route-order`
 - production Compose: 外部参照する10変数を必須化
 - production Django: 必須設定の欠落・空文字・placeholderを拒否
 - DRF authentication: Sessionのみ
 - login throttle: Caddy 1段を前提にIP単位で `5/minute`
-- public `/admin`: Caddyで404
+- public `/admin`: Caddyの先頭 `handle @admin` で404
 - HSTS: 3600秒、includeSubDomains / preloadは無効
 - backend health check: `DJANGO_ALLOWED_HOSTS` の先頭hostと `X-Forwarded-Proto: https` を送信
 
@@ -37,6 +37,8 @@ health check hotfixの差分をレビューし、本番反映手順に沿って�
 - カンマ区切りの先頭hostをtrimしてHost headerへ設定した。
 - `X-Forwarded-Proto: https` を維持した。
 - production health checkのHost選択と両headerを固定する回帰テストを追加した。
+- `respond @admin 404` を `handle @admin { respond 404 }` へ変更し、Caddyのdirective sorting後もcatch-allより先に評価されるようにした。
+- admin遮断が専用handle内にあることを固定する回帰テストへ更新した。
 
 ## Key Decisions
 
@@ -44,6 +46,7 @@ health check hotfixの差分をレビューし、本番反映手順に沿って�
 - HSTSは影響を限定するため3600秒から開始し、subdomainとpreloadには広げない。
 - Caddyの標準転送と内部health checkの明示headerにより、DjangoがHTTPS requestとして認識できるようにする。
 - 内部接続先は `127.0.0.1` のまま、HTTP Hostだけを許可済みproduction hostに合わせる。
+- `/admin` と `/admin/*` は専用handleで遮断し、`/administrator` はfrontend routingへ渡す。
 - 公開デモpasswordはREADMEで公開され、定期resetにも使う非secretのため変更しない。
 
 ## Key Files
@@ -64,6 +67,9 @@ health check hotfixの差分をレビューし、本番反映手順に沿って�
 - Backend tests: 161 passed
 - Production security / health check tests: 6 passed
 - Compose config with `.env.prod.example`: pass
+- Caddy config validation: valid
+- Actual Caddy routing: `/admin`, `/admin/`, `/admin/login/` = 404; `/administrator` = 200
+- Actual Caddy routing: API, static, frontend stub routes = 200
 - `git diff --check`: pass
 
 EC2、AWS、Bitwarden、`.env.prod`、production secretは変更していない。
@@ -85,8 +91,8 @@ EC2、AWS、Bitwarden、`.env.prod`、production secretは変更していない�
 ## Next Recommended Tasks
 
 1. 差分をレビューしてcommitする。
-2. productionへ再デプロイし、backendコンテナがhealthyになることを確認する。
-3. 外部HTTPS health endpointが引き続き200になることを確認する。
+2. productionへ再デプロイし、`/admin` 系3パスが404、`/administrator` がfrontend responseになることを確認する。
+3. backendコンテナのhealth、外部HTTPS health endpoint、frontend routingを再確認する。
 
 ## Open Questions
 
@@ -102,5 +108,5 @@ EC2、AWS、Bitwarden、`.env.prod`、production secretは変更していない�
 ## Suggested Commit Message
 
 ```text
-fix(deploy): use allowed host for backend health check
+fix(security): enforce Caddy admin route ordering
 ```

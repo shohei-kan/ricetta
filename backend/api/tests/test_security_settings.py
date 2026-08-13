@@ -137,10 +137,15 @@ class ProductionSettingsTests(SimpleTestCase):
         caddyfile = (PROJECT_DIR / "Caddyfile").read_text()
 
         self.assertIn("@admin path /admin /admin/*", caddyfile)
-        self.assertIn("respond @admin 404", caddyfile)
+        self.assertIn("handle @admin {\n\t\trespond 404\n\t}", caddyfile)
+        self.assertNotIn("respond @admin 404", caddyfile)
         self.assertNotIn("handle /admin*", caddyfile)
         self.assertIn("handle /api/*", caddyfile)
         self.assertIn("handle /static/*", caddyfile)
+        admin_handle = caddyfile.index("handle @admin {")
+        self.assertLess(admin_handle, caddyfile.index("handle /api/*"))
+        self.assertLess(admin_handle, caddyfile.index("handle /static/*"))
+        self.assertLess(admin_handle, caddyfile.index("\n\thandle {"))
         self.assertNotIn("header_up X-Forwarded-Proto", caddyfile)
 
     def test_production_health_check_uses_first_allowed_host_and_https(self):
