@@ -1,850 +1,310 @@
 # AGENTS.md
 
+## Purpose
+
+このファイルは、Ricettaで作業するCodex / AI agent向けの開発ルールと入口を定義する。
+
+AGENTS.mdはプロダクト仕様全文の正本ではない。作業開始時にこのファイル、対象Issue、関連する正本docsを確認し、実装とドキュメントの不整合を増やさないこと。
+
 ## Project
 
-Ricetta（リチェッタ）
+Ricetta（リチェッタ）は、小規模飲食店向けのレシピ・原価・仕込み管理Webアプリ。
 
-小さな飲食店のための、レシピ台帳。
+現在のv1.0.0は機能完成ではなく、GitHub + Bitwarden + S3 Backup + Documentationを正本として、一時EC2へ手動再構築できる公開デモを完成条件とする。
 
-Ricetta is a SaaS-style web application for small restaurants, cafes, bars, delis, bakeries, and other small food businesses. It helps shops manage recipes, ingredients, food cost, and daily prep tasks that are often scattered across paper, Excel, whiteboards, and verbal instructions.
+Terraform / Ansible / GitHub Actions CDや新規プロダクト機能は、明示的なIssueがない限りv1.0.0へ追加しない。
 
-## Product Concept
+## Current Tech Stack
 
-Ricetta focuses on:
+### Frontend
 
-- Recipe records
-- Ingredient and quantity management
-- Basic food cost calculation
-- Today's prep board
-- Smartphone / tablet / PC-friendly access
+- React 19
+- TypeScript 6
+- Vite 8
+- Tailwind CSS 4
+- lucide-react
+- Fetch API
+- React標準のstate / effect
 
-The MVP should stay small and practical.
+### Backend
 
-The core user experience is:
+- Python 3.11
+- Django 5.2
+- Django REST Framework 3.16
+- PostgreSQL 15
+- Gunicorn
 
-```text
-レシピを登録する
-↓
-今日の仕込みに入れる
-↓
-必要量に応じた材料量を見る
-↓
-作業が終わったら完了にする
-```
+### Runtime / Operations
 
-## Tech Stack
+- Docker Compose
+- Caddy
+- AWS EC2
+- Amazon S3
+- Amazon CloudWatch
+- Bitwarden
+- GitHub Actions CI
 
-Frontend:
+API prefix: `/api/v1/`
 
-- React
-- Vite
-- TypeScript
-- Tailwind CSS
-- shadcn/ui
+## Not Currently Adopted
+
+以下は現時点のRicettaでは導入していない。将来候補であり、明示的なIssue・設計判断なしに追加しない。
+
 - TanStack Query
 - React Hook Form
 - Zod
+- shadcn/ui
+- Redis
+- Celery
+- Terraform
+- Ansible
+- GitHub Actions CD
+- RDS
+- Google OAuth
+- Google Sheets integration
 
-Backend:
+新しいライブラリ、サービス、インフラ構成を追加する場合は、既存実装で解決できない理由と運用コストを確認すること。
 
-- Django
-- Django REST Framework
-- PostgreSQL
+## Source of Truth
 
-Development:
+詳細仕様をAGENTS.mdへ重複させない。以下を正本として参照する。
 
-- Docker Compose
-- GitHub
-- GitHub Actions
+| 情報 | 正本 |
+| --- | --- |
+| プロジェクト概要 / Public Demo | `README.md` |
+| Documentation index | `docs/README.md` |
+| Product concept | `docs/product/concept.md` |
+| MVP requirements | `docs/product/mvp-requirements.md` |
+| 画面仕様 | `docs/product/screens.md` |
+| 共通UI原則 | `docs/product/ui-guidelines.md` |
+| API設計 | `docs/technical/api-design.md` |
+| Data model | `docs/technical/data-model.md` |
+| Deploy / Backup / Restore / Monitoring / Secrets | `docs/deploy/` |
+| 長期的な設計・技術判断 | `docs/decisions/` |
+| 今後の作業 / 課題 / Backlog | GitHub Issues |
+| Release scope | GitHub Milestones |
+| 変更内容 / 理由 / Verification | GitHub Pull Requests |
+| 公開リリース | GitHub Releases |
 
-API prefix:
+ドキュメント間に矛盾を見つけた場合、推測で複数箇所を書き換えず、実装と正本を確認して責務を一つに寄せる。
+
+## Required Development Flow
+
+原則として以下の順序で作業する。
 
 ```text
-/api/v1/
-```
-
-Payments:
-
-- Stripe Checkout / Billing is planned for the future.
-- Stripe is not part of the initial MVP.
-
-## Directory Policy
-
-Expected structure:
-
-```text
-frontend/
-backend/
-docs/
-  README.md
-  product/
-  technical/
-  deploy/
-  decisions/
-  figma/
-  handoff/
-    latest.md
-    archive/
-README.md
 AGENTS.md
-docker-compose.yml
-.env.example
+  ↓
+対象Issue
+  ↓
+関連docs / 現在の実装
+  ↓
+専用branch
+  ↓
+実装 / ドキュメント更新
+  ↓
+Verification
+  ↓
+Pull Request
+  ↓
+CI / Review
+  ↓
+merge
 ```
 
-## MVP Scope
-
-### In Scope
-
-The MVP should include:
-
-- Login / logout
-- Shop account scope
-- Recipe list
-- Recipe detail
-- Recipe create / edit
-- Ingredient create / edit
-- Ingredient cost mode
-- Basic food cost calculation
-- Today's prep list
-- Prep task status update
-- Smartphone layout
-- Tablet landscape layout
-
-### Out of Scope
-
-Do not implement these in the MVP:
-
-- Stripe payment
-- Checkout
-- Billing portal
-- POS integration
-- Multi-shop management
-- Automatic inventory deduction
-- Advanced ordering
-- AI auto-classification
-- Nutrition calculation
-- HACCP reports
-- Advanced role management
-- Shop device mode
-- Full prep inventory / expiry alerts
-
-Leave room for future expansion, but do not build these yet.
-
-## Important Product Decisions
-
-### 1. Shop Scope
-
-Ricetta is designed as a future SaaS.
-
-All main data should be scoped by `shop_id`.
-
-Important:
-
-- Do not trust `shop_id` sent from the frontend.
-- The backend must determine the shop from the logged-in user and Membership.
-- Querysets must always be filtered by the current user's shop.
-- Do not expose `shop_id` as a writable serializer field for shop-scoped models.
-- Create shop-scoped records by setting `shop` on the server side.
-- Users must not read, update, or delete another shop's data.
-
-Main shop-scoped data:
-
-- Recipe
-- Ingredient
-- PrepTask
-- Category
-- Unit, for shop-specific units
-- RecipeIngredient, through Recipe
-- PrepLog, future
-- Subscription, future
-
-When adding a new shop-scoped model, also add tests that prove cross-shop access is blocked for list/detail/update/delete and that create ignores frontend-provided shop identifiers.
-
-### 2. Navigation
-
-Smartphone:
-
-- Use bottom navigation.
-
-Tablet landscape / PC:
-
-- Use a fixed left sidebar.
-- Sidebar width should be about 120px.
-- Sidebar should always be visible.
-- Sidebar items should be text-only cards.
-
-Sidebar items:
-
-```text
-ホーム
-仕込み
-レシピ
-材料
-設定
-```
-
-### 3. Back Button
-
-Detail and edit screens should include a back button.
-
-Examples:
-
-```text
-Recipe List → Recipe Detail → 戻る → Recipe List
-Prep Today → Recipe Detail → 戻る → Prep Today
-Recipe Detail → Recipe Edit → 戻る → Recipe Detail
-```
-
-Use the back button to preserve user context.  
-Use sidebar navigation for larger screen changes.
-
-### 4. Recipe Detail Priority
-
-Recipe detail is a working screen for the kitchen.
-
-Prioritize:
-
-1. Recipe name
-2. Prep quantity
-3. Ingredients
-4. Steps
-5. Notes
-6. Cost summary
-
-Do not overload the ingredient list.
-
-### 5. Ingredient and Cost Separation
-
-Materials are work information.  
-Cost is management information.
-
-Do not show cost details inside the ingredient list on the recipe detail screen.
-
-Ingredient section should show only:
-
-- Ingredient name
-- Quantity
-- Unit
-
-Cost information should be grouped in a separate `原価情報` card.
-
-### 6. Ingredient Cost Mode
-
-Ingredients should support three cost calculation modes:
-
-```text
-none
-same_unit
-conversion
-```
-
-Meanings:
-
-- `none`: Do not include in cost calculation.
-- `same_unit`: Calculate using purchase unit directly.
-- `conversion`: Convert purchase unit to usage unit.
-
-Examples:
-
-```text
-none:
-水、塩少々、飾り
-
-same_unit:
-卵 1個 = 30円
-3個使用 → 90円
-
-conversion:
-ホールトマト 1缶 = 180円
-1缶 = 400g
-200g使用 → 90円
-```
-
-MVP supports:
-
-- Cost on / off
-- Same-unit calculation
-- One-step conversion
-- kg ⇔ g
-- L ⇔ ml
-- Custom conversion such as 缶 → g, 袋 → g, 本 → ml
-
-MVP does not support:
-
-- Yield loss
-- Waste rate
-- Cooked weight
-- Multi-step conversion
-- Inventory integration
-
-### 7. Today's Prep
-
-Today's prep replaces a kitchen whiteboard.
-
-Prep statuses:
-
-```text
-todo
-doing
-done
-```
-
-Japanese display:
-
-```text
-未着手
-作業中
-完了
-```
-
-Interactions should be tap-based.  
-Do not use drag-and-drop for MVP.
-
-Prep cards should show:
-
-- Recipe name
-- Planned quantity
-- Unit
-
-Example:
-
-```text
-トマトソース
-3バッチ
-```
-
-## UI Principles
-
-Ricetta should feel like:
-
-```text
-Notionより現場向け
-Excelより見やすい
-紙より探しやすい
-ホワイトボードより残る
-大手業務システムより軽い
-```
-
-UI tone:
-
-- Clean
-- Soft
-- Practical
-- Easy to read in a kitchen
-- Large enough for tablet use
-- Avoid over-designed interactions
-- Avoid unnecessary icons if text is clearer
-
-Use Japanese labels for user-facing UI.
-
-## Architecture Responsibility Rules
-
-Keep frontend, backend, and database responsibilities clear.
-
-Frontend is responsible for:
+- Issueにない大きな機能追加・技術導入・設計変更を勝手に行わない。
+- 1つのIssueでは、そのIssueの目的に必要な変更へスコープを絞る。
+- `main`へ直接変更せず、原則としてIssue単位のbranchを使う。
+- unrelated refactorを混ぜない。
+- PR本文には変更内容、理由、実際に行ったVerificationを記録する。
+- 実行していないテストを「実行済み」と記載しない。
+- 長期的な判断が変わる場合は `docs/decisions/` の追加・Supersededを検討する。
+
+## Critical Security Rules
+
+### Secrets
+
+- secret実値をrepositoryへcommitしない。
+- `.env` / `.env.prod` をGit管理しない。
+- secret実値をREADME、docs、Issue、PRへ記載しない。
+- production secretの正本はBitwardenとする。
+- GitHub docsにはsecret名、用途、配置場所、更新・復旧手順だけを記録する。
+- AWSサービスへのEC2アクセスはIAM Roleを優先し、固定AWS access keyを新規追加しない。
+- secretやcredentialをログ・エラーメッセージへ出力しない。
+
+### Authentication / CSRF
+
+- 現在の認証方式はDjango Session Authentication。
+- state-changing requestではCSRF保護を維持する。
+- 認証方式を明示的なIssueなしに変更しない。
+- frontendだけで認証・認可を成立させない。
+- production security設定を緩和する変更は、理由と影響を確認する。
+
+### Authorization / Shop Scope
+
+RicettaではShop Scopeを最重要のデータ境界として扱う。
+
+- frontendから送信された `shop_id` を認可判断に使用しない。
+- current ShopはログインユーザーとMembershipからbackend側で決定する。
+- shop-scoped QuerySetはcurrent Shopでfilterする。
+- shop-scoped modelの `shop_id` をwritable fieldとして公開しない。
+- create時のShopはserver側で設定する。
+- 他Shopのデータをread / update / deleteできないことを維持する。
+- 新しいshop-scoped modelやendpointを追加する場合はcross-shop accessを防ぐテストを追加する。
+
+## Architecture Responsibility
+
+### Frontend
+
+Frontendの責務:
 
 - UI rendering
 - Form interaction
-- Client-side validation for better UX
+- UXのためのclient-side validation
 - API calling
-- Loading, error, and empty states
-- Temporary screen state
+- loading / empty / error states
+- 一時的な画面state
 
-Frontend must not make final authorization decisions. Frontend must not decide or trust `shop_id`. Frontend may display cost values, but final cost calculation belongs on the backend.
+Frontendは最終的なauthorization、Shop Scope、永続的なbusiness ruleを決定しない。
 
-Backend is responsible for:
+現在はFetch APIとReact標準機能を中心に実装している。TanStack Queryやform libraryを前提に既存コードを書き換えない。
+
+### Backend
+
+Backendの責務:
 
 - Authentication
 - Authorization
-- Shop scope enforcement
+- Shop Scope enforcement
 - Data validation
 - Persistent business rules
 - Cost calculation
 - API response shape
 - Database writes
 
-Backend must treat all frontend input as untrusted. Validate data again on the server even when the frontend already validates it.
+frontend inputは常にuntrustedとして扱い、frontendでvalidation済みでもserver側で再検証する。
 
-Database is responsible for:
+nested writeなど複数の関連データを一括更新する処理では、部分更新による不整合を避けるためtransaction boundaryを維持する。
+
+### Database
+
+Databaseの責務:
 
 - Persistence
 - Relational integrity
-- Schema managed by migrations
+- Migrationで管理されるschema
 
-Use database constraints where they protect important integrity, but keep request-aware rules such as current-Shop scope in backend serializers, querysets, and services.
+重要な整合性を守れる場合はdatabase constraintを使う。ただしcurrent Shopのようなrequest-aware ruleはbackendで保証する。
 
-## API and Save Behavior Rules
+## API Rules
 
-- All MVP APIs use `/api/v1/`.
-- Business APIs require authentication.
-- Create and update endpoints should return saved data or a useful summary.
-- Validation errors should be clear enough for forms to display.
-- Do not return raw stack traces or internal implementation details to the frontend.
-- Keep API response shapes stable once frontend integration starts.
-- When an API response changes, update `docs/technical/api-design.md`.
+- Business APIは `/api/v1/` 配下とする。
+- 認証が必要なAPIでは既存のSession Authentication / permission方針を維持する。
+- validation errorはfrontendが表示できる形で返す。
+- raw stack traceや内部実装情報をresponseへ出さない。
+- cross-shop resourceは存在を隠す必要がある場合404を優先する。
+- API response shapeを変更した場合は `docs/technical/api-design.md` を更新する。
+- Data modelを変更した場合はmigrationと `docs/technical/data-model.md` の更新要否を確認する。
 
-For nested writes, such as Recipe with ingredients and steps:
+## Product / UI Rules
 
-- Choose a simple MVP strategy.
-- Document the strategy in `docs/handoff/latest.md`.
-- If the strategy affects future implementation, add or update `docs/decisions/`.
+AGENTS.mdでは個別画面仕様を固定しない。最新仕様は `docs/product/screens.md` と `docs/product/ui-guidelines.md` を参照する。
 
-## Error Handling Rules
+共通原則:
 
-Backend:
-
-- Return 400 for validation errors.
-- Return 401 for unauthenticated requests.
-- Return 403 or 404 for unauthorized access.
-- For cross-shop data access, prefer 404 when hiding the existence of the resource is safer.
-- Avoid leaking internal implementation details.
-
-Frontend:
-
-- Show a clear message when saving fails.
-- Keep form input when an API request fails.
-- Show loading, empty, and error states.
-- Do not show raw stack traces or technical errors to users.
-
-User-facing message examples:
-
-```text
-保存に失敗しました。もう一度お試しください。
-入力内容を確認してください。
-ログインが必要です。
-このデータは見つかりませんでした。
-```
-
-## Cost Calculation Rules
-
-Ricetta separates material work information from management cost information.
-
-```text
-ingredients = 作るための情報
-cost_summary = 管理情報
-```
-
-- Ingredient and recipe material lists should show work information only.
-- Do not mix cost details into ingredient rows on Recipe Detail.
-- Recipe-level cost information should be returned as `cost_summary`.
-- Cost calculation should be implemented on the backend.
-- Frontend should display cost results, not calculate final values.
-- Keep detailed accounting behavior small for MVP; document rounding or calculation tradeoffs when they affect future work.
+- 厨房で読みやすく、操作しやすいUIを優先する。
+- smartphone / tablet landscape / PCを考慮する。
+- user-facing labelは原則日本語。
+- 過剰なinteractionや装飾を避ける。
+- cost calculationの最終結果はbackendで計算する。
+- Recipeの材料情報と管理用の原価情報を不用意に混在させない。
 
 ## Documentation Rules
 
-Keep documentation current when implementation changes.
+実装変更時は、その情報の正本だけを必要に応じて更新する。
 
-Important docs:
+| Change | Update candidate |
+| --- | --- |
+| Product scope | `docs/product/mvp-requirements.md` |
+| Screen behavior | `docs/product/screens.md` |
+| Shared UI principle | `docs/product/ui-guidelines.md` |
+| API | `docs/technical/api-design.md` |
+| Data model | `docs/technical/data-model.md` |
+| Deploy / Recovery / Operations | `docs/deploy/` |
+| Durable design decision | `docs/decisions/` |
+| Project overview / entry point | `README.md` |
 
-```text
-docs/product/concept.md
-docs/product/mvp-requirements.md
-docs/product/mvp-roadmap.md
-docs/product/screens.md
-docs/product/ui-guidelines.md
-docs/technical/data-model.md
-docs/technical/api-design.md
-docs/handoff/latest.md
-docs/decisions/
-```
+`docs/handoff/latest.md` を作業ごとに更新する旧運用は採用しない。
 
-Update docs according to the type of change:
-
-| Change | Update |
-|---|---|
-| Product scope change | `docs/product/mvp-requirements.md` |
-| Implementation order change | `docs/product/mvp-roadmap.md` |
-| Screen or UI change | `docs/product/screens.md` or `docs/product/ui-guidelines.md` |
-| Data model change | `docs/technical/data-model.md` |
-| API change | `docs/technical/api-design.md` |
-| Long-term decision | `docs/decisions/` |
-| Completed task or next context | `docs/handoff/latest.md` |
-| Setup or command change | `README.md` |
-
-At the end of a Codex task, update `docs/handoff/latest.md` by default unless the task is truly tiny and does not affect the next agent's context.
-
-### README.md
-
-README is for humans.
-
-It should include:
-
-- Project overview
-- Setup instructions
-- Development commands
-- Environment variables
-- Basic architecture
-- Links to important docs
-
-### AGENTS.md
-
-AGENTS.md is for Codex / AI agents.
-
-It should include:
-
-- Project rules
-- Technical assumptions
-- Product decisions
-- MVP boundaries
-- Documentation update rules
-
-### Handoff
-
-Use:
-
-```text
-docs/handoff/latest.md
-```
-
-for the latest working context only.
-
-`latest.md` is not the full project history. It is the current handoff for the next agent: where the project is now, what matters for the next task, and what to do next.
-
-Move older handoffs into:
-
-```text
-docs/handoff/archive/
-```
-
-when a phase is completed, the next work theme starts, `latest.md` has become too long, or older details make the current state hard to see.
-
-Do not create a new archive file for every handoff. Archive files should be grouped by broad topic. If the broad topic already exists, append a new entry to that file instead of creating a new file.
-
-```text
-docs/handoff/archive/index.md
-docs/handoff/archive/planning-and-docs.md
-docs/handoff/archive/backend-foundation.md
-docs/handoff/archive/frontend-implementation.md
-docs/handoff/archive/release-prep.md
-```
-
-Create additional archive files only when a new broad topic is needed, for example:
-
-```text
-docs/handoff/archive/billing-and-subscription.md
-docs/handoff/archive/deployment.md
-```
-
-`docs/handoff/archive/index.md` is the archive table of contents. It should list archive files and their broad purpose, not every small work entry.
-
-Inside each archive file, separate entries with date and title headings:
-
-```text
-# Backend Foundation Handoff Archive
-
-## 2026-05-04 Initial scaffold
-
-Summary...
-
-## 2026-05-04 Auth and shop scope
-
-Summary...
-```
-
-`latest.md` should use this fixed structure:
-
-```text
-# Ricetta Handoff Latest
-
-## Date
-## Project
-## Status
-## Summary
-## Current Goal
-## Current State
-## What Was Done
-## Key Decisions
-## Key Files
-## Verification
-## Current Product Scope
-## Out of Scope for MVP
-## Next Recommended Tasks
-## Open Questions
-## Notes for Next Agent
-## Suggested Commit Message
-```
-
-A handoff should include:
-
-- Date
-- Project
-- Current status
-- What was done
-- Key files
-- Current decisions
-- Next recommended tasks
-- Notes / caveats
-- Suggested Commit Message
-
-Handoff content rules:
-
-- Keep `latest.md` short and current.
-- Do not accumulate the full project history in `latest.md`.
-- Do not repeat old phase details at length.
-- Prefer links or references to archive files instead of repeating old history.
-- Include only decisions and caveats that affect the next work.
-- Remove resolved open questions.
-- Record verification that was actually run.
-- If verification could not be run, say exactly why.
-- Do not use handoff files for long-term product or technical decisions.
-
-### Decisions
-
-Use:
-
-```text
-docs/decisions/
-```
-
-for important product or technical decisions.
-
-All decision docs belong under `docs/decisions/`. Do not use a root-level `decisions/` directory.
-
-Examples:
-
-```text
-0001-mvp-scope.md
-0002-shop-scope.md
-0003-cost-calculation-mode.md
-0004-tablet-navigation.md
-```
-
-Future decision candidates, when the implementation needs them:
-
-```text
-0006-auth-and-csrf-strategy.md
-0007-image-upload-scope.md
-```
-
-Do not create decision docs for every tiny change.  
-Use them when a decision affects future implementation.
-
-Use decision docs for durable choices such as MVP scope, shop scope, cost calculation mode, navigation, or documentation structure. Use handoff files for short-lived working context such as what changed in the last task, what was verified, and what the next agent should do.
+短期的な作業文脈はIssueとPRで管理し、長期的な判断はDecision docsへ残す。既存 `docs/handoff/` の整理・廃止判断はDocumentation cleanup Issueで扱う。
 
 ## Coding Guidelines
 
 ### General
 
-- Keep MVP small.
-- Prefer clear implementation over clever implementation.
-- Avoid premature abstraction.
-- Use typed interfaces where helpful.
-- Keep business logic out of UI components when possible.
-- Make shop scope explicit on the backend.
-- Do not refactor large unrelated areas.
-- Do not rename directories or change project structure without a clear reason.
+- 現在のIssue scopeを優先する。
+- clear implementationをclever implementationより優先する。
+- premature abstractionを避ける。
+- 大規模なunrelated refactorを行わない。
+- directory構成を理由なく変更しない。
+- 既存の命名・設計パターンを確認してから新しいpatternを追加する。
+- dependencyを追加する前に標準機能・既存dependencyで解決できないか確認する。
 
 ### Frontend
 
-- Use TypeScript.
-- Use TanStack Query for server state.
-- Use React Hook Form + Zod for forms.
-- Keep components readable and small.
-- Prefer reusable components for:
-  - Button
-  - Card
-  - Sidebar
-  - Form field
-  - Status badge
-  - Recipe card
-  - Prep task card
-- Client-side validation is for UX only; backend validation is authoritative.
-- Preserve form input when save requests fail.
-- Show loading, empty, and error states for API-backed screens.
+- TypeScriptを使用する。
+- 現在のReact / Fetch APIベースの実装と整合させる。
+- componentは読みやすい責務に保つ。
+- client-side validationはUX補助であり、backend validationを正本とする。
+- API-backed screenではloading / empty / error stateを考慮する。
+- save失敗時に可能な限り入力内容を失わない。
+- 未導入libraryをIssueなしに追加しない。
 
 ### Backend
 
-- Use Django + DRF.
-- Use PostgreSQL.
-- Prefer model-level clarity.
-- Use serializers for validation.
-- Use viewsets where appropriate, but avoid overcomplicating early.
-- Filter querysets by current shop.
-- Keep cost calculation in backend service/helper functions.
-- Treat frontend input as untrusted.
-- Do not expose `shop_id` as writable for shop-scoped models.
-- Do not change the authentication strategy without explicit direction.
+- Django + DRF + PostgreSQLの現在構成を維持する。
+- serializer等でserver-side validationを行う。
+- QuerySetのShop Scopeを維持する。
+- cost calculationはbackend側を正本とする。
+- frontend inputを信用しない。
+- shop-scoped modelの `shop_id` をwritableにしない。
+- authentication strategyを明示的なIssueなしに変更しない。
+- 複数modelを更新する処理ではatomicityの必要性を確認する。
 
-### API
+## Verification
 
-API prefix:
+変更内容に応じて必要なVerificationを実施する。
 
-```text
-/api/v1/
-```
-
-MVP APIs:
-
-```text
-Auth
-Shop
-Dashboard
-Recipes
-Ingredients
-PrepTasks
-Categories
-Units
-```
-
-Do not implement Stripe, billing, or POS APIs in MVP.
-
-Do not add Stripe, billing, POS integration, inventory automation, or multi-shop UI during MVP unless explicitly requested.
-
-### Migrations
-
-- Model changes require migrations.
-- Do not rewrite existing migrations casually after they may have been shared.
-- Run migration checks before considering backend work complete.
-- Prefer Docker Compose for local verification when the task depends on the project runtime.
-
-Recommended backend checks:
+Backendの基本確認:
 
 ```bash
-python manage.py check
-python manage.py makemigrations --check --dry-run
-python manage.py test
+docker compose exec backend python manage.py check
+docker compose exec backend python manage.py makemigrations --check --dry-run
+docker compose exec backend python manage.py test
 ```
 
-Docker equivalent:
+Frontendの基本確認:
 
 ```bash
-docker compose run --rm backend python manage.py check
-docker compose run --rm backend python manage.py makemigrations --check --dry-run
-docker compose run --rm backend python manage.py test
-```
-
-### Environment Variables and Secrets
-
-- `.env` must not be committed.
-- Update `.env.example` when new environment variables are added.
-- Do not hardcode secret keys, database passwords, Stripe keys, or tokens.
-- Use development defaults only when they are clearly safe for local development.
-- Production-like secrets must be provided through environment variables.
-
-When adding a new environment variable, update:
-
-- `.env.example`
-- `README.md`, if developers need setup information
-- `docs/handoff/latest.md`, if it affects the current task or next agent
-
-### Dependencies
-
-- Do not add new dependencies casually.
-- Check whether the existing stack can solve the problem first.
-- Prefer built-in Django, DRF, React, and TypeScript features when reasonable.
-- Add a short reason in the task summary or handoff when adding a dependency.
-- Update lockfiles.
-- Ensure CI passes.
-
-Do not add these without explicit direction:
-
-- New UI library
-- New state management library
-- New API client library
-- New auth library
-- Payment library
-
-### CI
-
-- Do not proceed to the next implementation phase with known failing CI.
-- If CI fails because of environment configuration, fix CI before adding business features.
-- Keep CI minimal and fast.
-- Do not add deployment or CD workflows unless explicitly requested.
-- Do not add secrets-dependent CI jobs during MVP setup.
-
-Recommended checks:
-
-```bash
-python manage.py check
-python manage.py makemigrations --check --dry-run
-python manage.py test
-npm run build
+cd frontend
 npm run lint
+npm run build
 ```
 
-Consider adding frontend `typecheck` only after the project has a stable script for it.
+Documentation-only変更では、少なくとも以下を確認する。
 
-### Codex Scope Guardrails
+- Markdownの内容とリンク先
+- 現在実装との矛盾
+- secret実値を含んでいないこと
+- `git diff --check`
 
-- Do not implement features outside the current prompt.
-- Do not add future SaaS features unless explicitly requested.
-- Do not implement Stripe, billing, POS integration, inventory automation, or multi-shop UI during MVP unless explicitly requested.
-- Do not refactor large unrelated areas.
-- Do not rename directories or change project structure without a clear reason.
-- Do not change authentication strategy without explicit direction.
-- Do not silently change API response shapes.
-- Do not add new dependencies, migrations, or environment variables for documentation-only tasks.
+実行環境がなくVerificationを実施できない場合は、PRに未実施理由を明記する。
 
-When a necessary design judgment comes up:
+## Before Finishing a Task
 
-- Record task-local context in `docs/handoff/latest.md`.
-- Record or propose a decision doc in `docs/decisions/` if the choice has long-term product or technical impact.
-
-## Testing Guidelines
-
-At minimum, add tests for:
-
-- Shop-scoped queryset filtering
-- Recipe CRUD
-- Ingredient cost modes
-- Cost calculation
-- PrepTask status updates
-- Auth required endpoints
-
-Important cases:
-
-- User cannot access another shop's data
-- `cost_mode=none` does not affect material cost
-- `cost_mode=same_unit` calculates correctly
-- `cost_mode=conversion` calculates correctly
-- Selling price missing results in `cost_rate = null`
-
-## Initial Implementation Order
-
-Recommended order:
-
-```text
-1. Project scaffold
-2. Docker Compose
-3. Backend models
-4. Auth / Shop scope
-5. Categories / Units seed data
-6. Ingredients
-7. Recipes
-8. Cost calculation
-9. PrepTasks
-10. Dashboard API
-11. Frontend layout
-12. Frontend screens
-13. Form integration
-14. UI polish
-```
-
-Do not start with Stripe.
-
-Do not start with advanced prep logs.
-
-Do not start with multi-shop management.
-
-## Commit Message Style
-
-Use Conventional Commits.
-
-Examples:
-
-```text
-docs(planning): add Ricetta MVP requirements
-feat(api): add ingredient cost mode
-feat(frontend): add tablet sidebar layout
-fix(cost): handle missing selling price
-refactor(recipe): split recipe detail components
-```
-
-## Current MVP Reminder
-
-The first version should prove this:
-
-> 小さな飲食店が、レシピ台帳と今日の仕込みボードをひとつのアプリで使えるか。
-
-If a feature does not support this directly, defer it.
+- 対象IssueのAcceptance Criteriaを確認する。
+- unrelated changeが混ざっていないか確認する。
+- 必要な正本docsが更新されているか確認する。
+- secret / credential / private dataが差分に含まれていないか確認する。
+- 実際に行ったVerificationをPRへ記載する。
+- 新しいIssueやDecisionが必要な未解決事項を、作業中に勝手に実装して解消しない。
