@@ -235,7 +235,3 @@ Temporary EC2へ手動再構築
 v1.0.0では、公開品質のドキュメント整理、クロスブラウザ確認、Public Release Readiness、Temporary EC2での手動再構築演習、Release Notes / tagまでを行います。
 
 Terraform / Ansible / GitHub Actions CDはv1.0.0には含めず、手動で構築・復旧できることを確認した後のInfrastructure Automationフェーズで扱います。
-
-## License
-
-This project is currently maintained as a portfolio project. See repository metadata and documentation for the current usage policy.
