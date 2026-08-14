@@ -6,7 +6,9 @@
 
 ## Status
 
-Accepted
+Superseded
+
+現在の画面仕様は `docs/product/screens.md` と `docs/product/ui-guidelines.md` を正本として扱います。
 
 ## Context
 
@@ -131,13 +133,11 @@ Ricettaでは、複雑なUIより常時表示の安定感を優先します。
 - スマホとタブレットでナビ実装が分かれる
 - サイドバーのレスポンシブ設計が必要
 
-## UI Notes
+## Superseded Note
 
-- サイドバー文字サイズは16〜18px程度
-- カード高さは48〜56px程度
-- 選択中カードは淡いアクセント背景
-- サイドバーは目立ちすぎない
-- 仕込みはRicettaの主導線なので2番目に置く
+このDecisionは初期UI方針を記録したものです。
+
+現在はレスポンシブナビゲーションの実装・画面仕様が更新され、スマホのナビ項目数やアイコン利用などがこのDecisionと一致しません。過去の判断履歴として本文は残し、現在仕様はProduct docsを優先します。
 
 ## Related Docs
 
