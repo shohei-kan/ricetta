@@ -2,7 +2,7 @@
 
 ## Date
 
-2026-08-13
+2026-08-15
 
 ## Project
 
@@ -10,22 +10,24 @@ Ricetta
 
 ## Status
 
-GitHub Issue #56「Add minimal EC2 resource monitoring with CloudWatch」のsource-first実装を完了。AWS / EC2 / IAM / Slack変更、Agent install、commit / pushは未実施。
+GitHub Issue #56のCloudWatch Agent memory metric未送信に対するsource hotfixを実装中。AWS上のAgentはrunningのまま維持し、AWS / EC2 / IAM / CloudWatch / SNS / Slack変更、commit / pushは未実施。
 
 ## Summary
 
-EC2基本モニタリング3種とCloudWatch Agentカスタムメトリクス2種の最小監視設計を追加した。Agent設定とnamespace制限付きIAM policyをGit管理し、Alarm、missing data、SNS→Amazon Q Developer→Slack、Dashboard、一次対応、rollback、再構築、コスト確認を文書化した。
+実環境では`disk_used_percent`がCloudWatchへ到着した一方、`mem_used_percent`は未到着。memory originalはすでに`InstanceId`だけを持つため同じdimensionへのrollupが生成されず、`drop_original_metrics`によって唯一のoriginalまで削除されたことが根本原因候補。memory measurementは`mem_used_percent`を維持し、memのdrop設定を削除した。source再適用後に2 metricの実到着を確認する。Alarm、SNS、Dashboardはまだ未作成。
 
 ## Current Goal
 
-source差分をレビューし、AWS管理者権限で段階的に実環境へ反映・検証する。
+memory metric hotfixをsourceで確定し、実環境へ再適用して`mem_used_percent`の到着を確認する。
 
 ## Current State
 
-- Branch: `ops/issue-56-cloudwatch-monitoring`
+- Branch: `fix/issue-56-cloudwatch-memory-metric`
 - EC2 detailed monitoring: 使用しない
 - Standard metrics: StatusCheckFailed / CPUUtilization / CPUCreditBalance
 - Agent metrics: mem_used_percent / disk_used_percent (`/` only)
+- Runtime observation: Agent running、disk到着済み、memory未到着
+- AWS resources: Alarm / SNS / Dashboardは未作成
 - Collection: 60 seconds、namespace `CWAgent`、dimension `InstanceId` only
 - EC2 Role permission: namespace制限付きcloudwatch:PutMetricDataだけ
 - Logs / trace / X-Ray / high-resolution metrics: なし
@@ -43,6 +45,9 @@ source差分をレビューし、AWS管理者権限で段階的に実環境へ�
 - SNS→Amazon Q Developer in chat applications→Slackの構築・テスト手順を記録した。
 - Dashboard、一次対応、rollback、再構築、コスト確認を文書化した。
 - docs indexとsecret managementを更新した。
+- memory measurementを`mem_used_percent`へ修正し、送信対象を0件にしていたmemの`drop_original_metrics`を削除した。
+- diskのdrop対象を最終出力名`disk_used_percent`へ明示した。
+- schema validation後にもCloudWatch上の実metric到着確認が必要であることを追記した。
 
 ## Key Decisions
 
@@ -51,6 +56,7 @@ source差分をレビューし、AWS管理者権限で段階的に実環境へ�
 - EC2 Roleには監視リソースの管理権限を付けず、Agentのmetric送信だけを許可する。
 - AWS実値と変動する料金単価はsourceへ保存しない。
 - source-first段階のコスト確認は未完了とし、Issue close前に確認日・Free Tier前提・見積額を記録する。
+- Memoryはoriginalがすでに`InstanceId`だけなのでdropせず、diskだけを`InstanceId`へrollupしてoriginalをdropする。
 
 ## Key Files
 
@@ -62,11 +68,14 @@ source差分をレビューし、AWS管理者権限で段階的に実環境へ�
 
 ## Verification
 
-- JSON syntax: pass
+- JSON syntax / Agent設定条件の静的検査: pass
 - Markdown relative links: pass
 - `git diff --check`: pass
 - Secret-like and AWS identifier pattern check: pass
+- `.env.prod`: unchanged / untracked
 - Backend / frontend source changes: none
+- IAM policy changes: none
+- 実Agentへの再適用とCloudWatch上のmemory metric到着確認: not run
 
 ## Current Product Scope
 
@@ -83,10 +92,10 @@ source差分をレビューし、AWS管理者権限で段階的に実環境へ�
 
 ## Next Recommended Tasks
 
-1. Agent policyをAWS管理者sessionからEC2 Roleへ追加する。
-2. EC2で公式deb署名を検証してAgentをinstallし、2 metricsの到着を確認する。
-3. SNS、Amazon Q Developer Slack configuration、5 Alarms、Dashboardを管理者側で作成する。
-4. 安全な一時thresholdでALARM / OK通知を確認し、EC2再起動後のAgent復旧を確認する。
+1. source-managed Agent JSONをEC2へ再配置し、`fetch-config -s`で再適用する。
+2. runtime copyとAgent statusを確認する。
+3. CloudWatchで`mem_used_percent` / `disk_used_percent`の2系列だけが到着することを確認する。
+4. SNS、Amazon Q Developer Slack configuration、5 Alarms、Dashboardを管理者側で作成する。
 
 ## Open Questions
 
