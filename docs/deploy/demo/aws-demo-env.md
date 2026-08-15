@@ -201,10 +201,12 @@ EC2停止:
 EC2再開後の確認:
 
 ```bash
-ssh -i ~/.ssh/ricetta-demo-key.pem ubuntu@ricetta.lintake.net
+ssh ricetta
 cd /srv/ricetta
 docker compose --env-file .env.prod -f docker-compose.prod.yml ps
 ```
+
+SSH接続はBitwarden SSH Agentと`~/.ssh/config`のhost aliasを使用します。秘密鍵ファイルをrepositoryやEC2上へ配置せず、PEMファイルを直接指定する運用は標準手順にしません。
 
 `restart: unless-stopped` のため、EC2再起動後は各コンテナが自動起動する想定です。
 

@@ -21,7 +21,7 @@ MVPでは以下を実現する。
 - Backend: Django + Django REST Framework
 - DB: PostgreSQL
 - API prefix: `/api/v1/`
-- 認証: MVPでは Django Session Auth + DRF Basic Auth
+- 認証: Django Session Authentication
 - 初期MVPでは決済APIは作らない
 - 将来的に Stripe Checkout / Billing を追加予定
 

@@ -6,7 +6,9 @@
 
 ## Status
 
-採用
+Superseded
+
+Superseded by `0007-documentation-source-of-truth.md`.
 
 ## Context
 
@@ -67,8 +69,15 @@ release-prep.md
 - 類似するhandoffエントリは、既存の大分類archiveファイルへ追記する。
 - 新しいarchiveファイルは、新しい大きな作業領域が出てきた場合だけ作成する。
 
+## Superseded Note
+
+このDecisionは、Issue / Pull Requestを中心とする現在の開発フローへ移行したため現役方針ではありません。
+
+`docs/handoff/` は過去記録として参照できますが、`latest.md` を作業ごとに更新する運用は現在採用していません。現在の正本と責務分離は `0007-documentation-source-of-truth.md` を参照してください。
+
 ## Related Docs
 
 - `AGENTS.md`
-- `docs/handoff/latest.md`
-- `docs/handoff/archive/index.md`
+- `docs/README.md`
+- `docs/documentation-audit.md`
+- `docs/decisions/0007-documentation-source-of-truth.md`
