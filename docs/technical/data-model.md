@@ -86,7 +86,7 @@ MVPでは Django標準User を利用します。
 
 メールログインは `username=email` として扱います。`email` も同じ値を保存し、APIレスポンスでは `email` をユーザー識別子として返します。
 
-認証方式は Django Session Auth + DRF Basic Auth で開始します。JWTは必要になってから検討します。
+認証方式は Django Session Authentication を使用します。JWTは必要になってから検討します。
 
 ### 主なフィールド
 

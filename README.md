@@ -156,7 +156,7 @@ frontendはReact標準のstate / effectとFetch APIを中心に実装してい�
 ### Start
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/shohei-kan/ricetta.git
 cd ricetta
 cp .env.example .env
 docker compose up --build -d

@@ -51,7 +51,7 @@ AGENTS.md
 | `AGENTS.md` | 大幅更新 | 現在の技術構成・作業ルールへ合わせ、未導入技術や旧 handoff 運用を除く |
 | `docs/product/concept.md` | 維持 | Product Concept の正本として扱う |
 | `docs/product/mvp-requirements.md` | 更新 | 現在実装とのズレを確認して更新する |
-| `docs/product/mvp-roadmap.md` | 廃止候補 | Roadmap の正本を GitHub Issues / Milestones へ移行する |
+| `docs/product/mvp-roadmap.md` | 廃止済み | Roadmap の正本を GitHub Issues / Milestones へ移行した |
 | `docs/product/screens.md` | 維持・更新 | 現在の画面仕様の正本として扱う |
 | `docs/product/ui-guidelines.md` | 整理 | 共通 UI 原則へ絞り、個別画面仕様は `screens.md` へ寄せる |
 | `docs/technical/api-design.md` | 維持・更新 | API 設計の正本。認証方式など現在実装とのズレを修正する |
@@ -88,9 +88,7 @@ AI / Codex が不要な技術導入や古い運用を行わないよう、#34 �
 
 ### Technical docs
 
-`api-design.md` と `data-model.md` に、現在は利用していない Basic Authentication を前提とする記述が残っている。
-
-現在の production security 方針・実装と照合して更新する。
+`api-design.md` と `data-model.md` の認証記述は、現在のDjango Session Authenticationへ統一した。
 
 `data-model.md` は現行モデルと Future entity が同じ流れで記載されているため、Implemented / Future を明確に分離する。
 
@@ -98,7 +96,7 @@ AI / Codex が不要な技術導入や古い運用を行わないよう、#34 �
 
 `docs/deploy/` は Backup / Restore / Monitoring / Secret Management を含み、v1.0.0 の手動再構築で利用する正本として十分な構成になっている。
 
-一部に旧 SSH 手順（PEM ファイルを直接指定する接続）が残っているため、現在の Bitwarden SSH Agent を使う `ssh ricetta` 運用へ更新する。
+旧SSH手順（PEMファイルを直接指定する接続）は、現在のBitwarden SSH Agentと`~/.ssh/config`を使う`ssh ricetta`運用へ更新した。
 
 Secret Management は Bitwarden を secret 実値の正本とし、GitHub には変数名・用途・配置先・復旧手順のみを残す現在方針を維持する。
 
@@ -165,7 +163,7 @@ Terraform / Ansible / GitHub Actions CD は v1.0.0 の Documentation scope に�
 ### #35 Docs cleanup
 
 - Product / Technical / Deploy docs の古い記述を更新する
-- `mvp-roadmap.md` の廃止可否を確定する
+- 廃止した`mvp-roadmap.md`への参照が残っていないことを確認する
 - `docs/handoff/` の有効情報を移行し、廃止可否を確定する
 - `docs/README.md` を新しい Single Source of Truth に合わせる
 - 古い ADR は Superseded として履歴を維持する

@@ -115,6 +115,7 @@ MVP後に検討する拡張：
 
 - `docs/product/concept.md`
 - `docs/product/mvp-requirements.md`
-- `docs/product/mvp-roadmap.md`
 - `docs/product/screens.md`
 - `docs/technical/api-design.md`
+
+今後の実装順とBacklogはGitHub Issues / Milestonesで管理する。
