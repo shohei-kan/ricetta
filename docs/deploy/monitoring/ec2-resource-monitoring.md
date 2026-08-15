@@ -26,6 +26,8 @@ Ricetta公開デモの単一EC2について、CloudWatchの標準メトリクス
 | [`ops/cloudwatch/amazon-cloudwatch-agent.json`](../../../ops/cloudwatch/amazon-cloudwatch-agent.json) | Agent metrics configuration | `/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json` |
 | [`ops/cloudwatch/cloudwatch-agent-put-metrics-policy.json`](../../../ops/cloudwatch/cloudwatch-agent-put-metrics-policy.json) | EC2 Role用最小IAM policy | IAM inline/customer-managed policy input |
 
+repository内のAgent JSONをsource of truthとします。`fetch-config`でfile設定を読み込むと、Agent側のruntime設定コピーは`/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.d/file_amazon-cloudwatch-agent.json`に作成されます。このruntime fileを直接編集せず、repository側を修正して再配置・再適用します。
+
 Account ID、Instance ID、SNS ARN、Slack workspace/channel IDは環境固有値としてGitへ保存しません。Alarm、SNS、Amazon Q Developer in chat applications、DashboardはAWS管理者がConsoleまたは管理用credentialで作成します。
 
 ## Metric collection design
@@ -38,7 +40,11 @@ Account ID、Instance ID、SNS ARN、Slack workspace/channel IDは環境固有�
 | Agent | `CWAgent` | `mem_used_percent` | Average | 60 seconds | `InstanceId` |
 | Agent | `CWAgent` | `disk_used_percent` | Maximum | 60 seconds | `InstanceId` |
 
-Agent設定はメモリの`used_percent`とroot filesystem `/`の`used_percent`だけを60秒間隔で収集します。`aggregation_dimensions: [["InstanceId"]]`でInstanceId集約系列を作り、mem / disk双方の`drop_original_metrics: ["used_percent"]`で元系列を送信しません。diskはさらに`drop_device: true`とします。これにより、送信対象は`InstanceId`だけをdimensionに持つ`mem_used_percent`と`disk_used_percent`の2系列です。logs / tracesセクションはなく、Agent自身の利用統計も`usage_data: false`で無効化します。
+Agent設定はmemory measurementに`mem_used_percent`を指定し、disk measurementはroot filesystem `/`の`used_percent`を指定して、60秒間隔で収集します。これはAWS Agent公式のLinux EC2 default configと同じmeasurement名です。`append_dimensions`と`aggregation_dimensions: [["InstanceId"]]`は維持します。
+
+Memory metricは`append_dimensions`適用後のoriginalがすでに`InstanceId`だけを持ちます。CloudWatch Agentの`ProcessRollup`は集約先dimension数がoriginal以上の場合にrollupを作らないため、memoryでoriginalをdropすると送信対象が0件になります。このためmemには`drop_original_metrics`を設定せず、`InstanceId`だけを持つoriginalの`mem_used_percent`を送信します。
+
+Disk metricのoriginalにはfilesystem由来の追加dimensionがあり、`aggregation_dimensions`によって`InstanceId`だけの`disk_used_percent`を別途生成できます。diskでは`drop_original_metrics: ["disk_used_percent"]`と`drop_device: true`を維持し、追加dimensionを持つoriginalを送信しません。最終的な送信対象は、どちらも`InstanceId`だけをdimensionに持つ`mem_used_percent`と`disk_used_percent`の2系列です。logs / tracesセクションはなく、Agent自身の利用統計も`usage_data: false`で無効化します。
 
 InstanceIdはAgentの`${aws:InstanceId}`置換を使い、EC2 metadataから取得します。Instance Metadata ServiceはIMDSv2を使用し、EC2 Roleへ`ec2:DescribeInstances`を追加しません。
 
@@ -131,7 +137,9 @@ sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
   -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
 ```
 
-`fetch-config`が設定をparseし、失敗時は非zeroになります。IAM policyがまだ未反映の場合は`-s`を付けず、設定validation後に停止状態を維持します。
+`fetch-config`が設定をparseし、失敗時は非zeroになります。読み込まれたfile設定は`/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.d/file_amazon-cloudwatch-agent.json`へ展開されますが、このruntime copyではなくrepository側のJSONをsource of truthとして維持します。IAM policyがまだ未反映の場合は`-s`を付けず、設定validation後に停止状態を維持します。
+
+JSON schema validationとruntime設定への変換成功は、設定形式と変換処理の成功だけを示します。receiverが対象measurementを実際に収集し、CloudWatchへ期待するmetric名で送信できたことまでは保証しません。実際にdiskだけ到着してmemoryが欠落した事例があるため、再適用後はAgent statusに加え、CloudWatchの`ListMetrics`とdatapoint取得で`mem_used_percent` / `disk_used_percent`双方の到着を確認します。
 
 ```bash
 if sudo systemctl is-active --quiet amazon-cloudwatch-agent; then
@@ -291,6 +299,8 @@ AWS BillingのCloudWatch usage typeとCost Explorerで、導入前後の増分�
 ## References
 
 - [AWS: Create the CloudWatch agent configuration file](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/create-cloudwatch-agent-configuration-file.html)
+- [AWS CloudWatch Agent source: Linux EC2 default config](https://github.com/aws/amazon-cloudwatch-agent/blob/9884add8ed69a6d2ab7d9c8c5bf9bbce66a7302c/translator/config/defaultConfig.go)
+- [AWS CloudWatch Agent source: ProcessRollup](https://github.com/aws/amazon-cloudwatch-agent/blob/9884add8ed69a6d2ab7d9c8c5bf9bbce66a7302c/plugins/outputs/cloudwatch/cloudwatch.go)
 - [AWS: Manage detailed monitoring for EC2](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/manage-detailed-monitoring.html)
 - [AWS: Verify the CloudWatch Agent package signature](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/verify-CloudWatch-Agent-Package-Signature.html)
 - [AWS: Configure how CloudWatch alarms treat missing data](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/alarms-and-missing-data.html)

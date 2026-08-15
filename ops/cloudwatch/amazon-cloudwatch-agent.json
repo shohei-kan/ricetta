@@ -17,12 +17,9 @@
     "metrics_collected": {
       "mem": {
         "measurement": [
-          "used_percent"
+          "mem_used_percent"
         ],
-        "metrics_collection_interval": 60,
-        "drop_original_metrics": [
-          "used_percent"
-        ]
+        "metrics_collection_interval": 60
       },
       "disk": {
         "measurement": [
@@ -34,7 +31,7 @@
         ],
         "drop_device": true,
         "drop_original_metrics": [
-          "used_percent"
+          "disk_used_percent"
         ]
       }
     }
