@@ -4,6 +4,8 @@
 
 Ricetta公開デモの単一EC2について、CloudWatchの標準メトリクスとCloudWatch Agentの最小メトリクスで、基盤異常とリソース逼迫を早期検知します。
 
+この構成は2026-08-17に実環境への導入と再起動後の動作確認まで完了しています。変動するAWS resource ID、ARN、Slack IDはこの文書へ保存しません。
+
 対象環境:
 
 - Region: `ap-northeast-1`
@@ -75,6 +77,18 @@ Alarm名にはenvironmentと目的を含めますが、Git管理する文書に�
 | Root disk high | `CWAgent` | `disk_used_percent` | `InstanceId` | Maximum | 60 | 80% | GreaterThanOrEqualToThreshold | 5 | 5 | breaching | SNS notify | SNS notify | SNS notify |
 
 EC2基本モニタリングでもstatus check metricsは1分周期で提供されるため、StatusCheckFailedは60秒・1/1で検知します。CPU alarmは基本モニタリングの5分粒度で3連続、合計15分の高負荷を検知します。メモリは10分、diskは5分の連続超過を要求し、一時的な変動を除外します。
+
+### Production alarms
+
+2026-08-17に次の5 Alarmを設計表どおり作成し、threshold、statistic、period、M-of-N、TreatMissingDataを照合しました。
+
+- `ricetta-demo-status-check-failed`
+- `ricetta-demo-cpu-utilization-high`
+- `ricetta-demo-cpu-credit-balance-low`
+- `ricetta-demo-memory-used-high`
+- `ricetta-demo-root-disk-used-high`
+
+全AlarmでActionsEnabledは有効、ALARM / OK / INSUFFICIENT_DATAの各通知actionは1件、確認終了時の状態はすべてOKです。actionは通知だけで、自動再起動、EC2停止、自動復旧actionは設定していません。
 
 ### CPUCreditBalance threshold
 
@@ -167,6 +181,21 @@ sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a status
 
 CloudWatch Consoleの`CWAgent` namespaceで、対象InstanceIdの2メトリクスだけが約1分間隔で到着することを確認します。EC2再起動後にもserviceがactiveで、新しいdatapointが届くことを確認します。
 
+### Production Agent verification
+
+2026-08-17にUbuntu 24.04 x86_64 / `t3.micro`へCloudWatch Agent `1.300071.0b1720`を導入しました。
+
+- 公式deb、署名、GPG keyを取得し、AWS公式fingerprintとの一致とGPG署名成功を確認してからinstallした
+- repository JSONとruntime copyの一致、JSON schema validation、config translation成功を確認した
+- serviceはenabled / active、Agent statusはrunning / configured
+- usage dataは無効
+- 固定AWS access keyは使用せずEC2 IAM Roleを使用
+- Agent権限はnamespaceを`CWAgent`へ限定した`cloudwatch:PutMetricData`だけ
+- CloudWatch上には`mem_used_percent`と`disk_used_percent`の2系列だけが存在する
+- 両系列はnamespace `CWAgent`、60秒間隔、dimensionは`InstanceId`だけで、同じEC2を示し、最新datapointが継続して到着している
+
+初回検証ではdiskだけが到着し、memoryが未送信でした。原因候補は、`InstanceId`だけを持つmemory originalと同数dimensionのrollupが生成されない状態でoriginalをdropし、送信対象が0件になったことです。memのdrop設定を削除したsourceを再適用後、memoryとdiskの2系列が継続して到着することを確認しました。
+
 ## SNS and Slack notification route
 
 構成:
@@ -189,6 +218,19 @@ CloudWatch Alarm
 
 SNS topic ARN、Slack workspace ID、channel IDはAWS側だけで管理します。Incoming WebhookやLambdaは使いません。既存のEC2 backup alert webhookとは別経路・別責務です。
 
+### Production notification verification
+
+2026-08-17にSNS topic `ricetta-demo-cloudwatch-alarms`、Amazon Q channel configuration `ricetta-demo-monitoring`、Slack channel `infra-alerts`を構成しました。IDとARNはこの文書へ記録しません。
+
+- SNS subscription confirmed
+- Amazon Q test messageのSlack到着を確認
+- 安全な一時AlarmでALARM通知を確認
+- thresholdを安全な値へ戻し、OK通知を確認
+- 一時Alarmを削除し、本番用Alarmが5件だけ残っていることを確認
+- Slackスマートフォン通知を確認
+
+Macデスクトップ通知はAWS監視構成のAcceptance Criteriaには含めません。
+
 ## Dashboard
 
 1つのCloudWatch Dashboardに以下を配置します。
@@ -203,6 +245,20 @@ SNS topic ARN、Slack workspace ID、channel IDはAWS側だけで管理します
 | 4 | `CPUCreditBalance` | Minimum, 5 minutes |
 
 Dashboard名、Region、InstanceIdはAWS側で入力し、sourceへ実値を保存しません。期間は通常3時間、調査時は24時間または1週間へ切り替えます。
+
+2026-08-17にDashboard `ricetta-demo-ec2-monitoring`を作成しました。widgetは7件で、5 Alarmの状態、5 metrics、説明用textを表示し、validation messageが0件であることを確認しました。Dashboard、SNS、Alarm、Amazon Qは手動管理とし、Terraform化は今回の対象外です。
+
+## EC2 reboot verification
+
+2026-08-17に計画再起動を実施し、次を確認しました。
+
+- CloudWatch Agentが自動起動し、enabled / active、running / configuredへ復旧
+- runtime設定を正常に読み込んだ
+- `mem_used_percent`と`disk_used_percent`が再起動約1分後から毎分到着
+- Docker Composeの全4サービスが自動復旧
+- backendとdbがhealthy
+- HTTPS health endpointが200
+- 5 Alarmが最終的にすべてOK
 
 ## Incident first response
 
@@ -255,17 +311,14 @@ sudo systemctl disable amazon-cloudwatch-agent
 
 ## Cost review
 
-Source-first段階の月額コスト確認は未完了です。AWSリソースをまだ作成しておらず、アカウント全体のFree Tier使用状況も確認していないためです。
-
-実環境反映時に、AWS CloudWatch PricingとAWS Pricing Calculatorで`ap-northeast-1`の料金を確認し、Billing / Free Tier画面でアカウント全体の既使用量を確認します。Issue #56をcloseする前に、次の記録欄へ確認日、料金前提、Free Tier前提、月額見積額を追記します。secretやaccount IDは記録しません。
+2026-08-17にAWS公式料金ページで見積前提を確認しました。
 
 ```text
-Cost review status: incomplete
-Checked date: 未確認
+Cost review status: complete
+Checked date: 2026-08-17
 Region: ap-northeast-1
-Free Tier assumption: 未確認（アカウント全体の使用状況確認が必要）
-Pricing assumptions: 未確認
-Estimated monthly amount: 未確認
+Free Tier assumption: アカウント内の対象Free Tier枠が他用途で消費されていないと仮定
+Estimated monitoring increment: USD 0/month under the stated Free Tier assumption
 ```
 
 見積対象:
@@ -273,28 +326,32 @@ Estimated monthly amount: 未確認
 - EC2基本モニタリング: 詳細モニタリングを有効化しない
 - custom metrics: `CWAgent`の2系列
 - metric alarms: 5 standard-resolution alarms
-- Dashboard: 1 dashboard
+- Dashboard: 1 dashboard（50 metrics以下）
 - SNS notifications
 - Amazon Q Developer in chat applicationsの通知利用
 - Logs ingestion/storage: 0
 - high-resolution metrics/alarms: 0
 
-AWS BillingのCloudWatch usage typeとCost Explorerで、導入前後の増分を月次確認します。想定外のcustom metric数が増えた場合は、`CWAgent`のdimension一覧とAgent configを確認します。確認日・前提・見積額が未記入のままIssue #56をcloseしません。
+確認時点のFree Tier前提は、CloudWatch custom / detailed metrics 10、standard-resolution alarm metrics 10、50 metrics以下のcustom dashboard 3、SNSは最初の月100万requestです。Amazon Q Developer in chat applications自体に追加料金はなく、underlying servicesの料金だけが対象です。
+
+今回の2 custom metrics、5 standard-resolution alarms、1 dashboard、少量のSNS通知は、同じAWSアカウントで該当Free Tier枠が他用途に消費されていない前提では月額USD 0想定です。アカウント全体のFree Tier使用量は実際には確認していないため、他用途や将来の追加resourceによって課金される可能性があります。AWS creditsは見積もりに含めません。
+
+実請求はBilling / Cost Explorerで導入後も継続確認します。想定外のcustom metric数が増えた場合は、`CWAgent`のdimension一覧とAgent configを確認します。
 
 ## Verification checklist for production rollout
 
-- [ ] EC2 Roleにnamespace制限付き`PutMetricData`だけが追加されている
-- [ ] 固定AWS credentialsがない
-- [ ] Agent設定validationが成功する
-- [ ] Agentがactive / enabledである
-- [ ] `CWAgent`に2 metrics、各InstanceId 1系列だけがある
-- [ ] StatusCheckFailedは1分、その他EC2 standard metricsは5分、detailed monitoringが無効である
-- [ ] 5 alarmsが設計表どおりである
-- [ ] ALARM / OK / INSUFFICIENT_DATA actionsがSNS topicを参照する
-- [ ] SlackでALARMとOKを受信できる
-- [ ] Dashboardに5 metricsとalarm statusがある
-- [ ] 再起動後にAgentとmetric送信が復旧する
-- [ ] test alarm / temporary thresholdが残っていない
+- [x] EC2 Roleにnamespace制限付き`PutMetricData`だけが追加されている
+- [x] 固定AWS credentialsがない
+- [x] Agent設定validationが成功する
+- [x] Agentがactive / enabled、running / configuredである
+- [x] `CWAgent`に2 metrics、各InstanceId 1系列だけがある
+- [x] StatusCheckFailedは1分、その他EC2 standard metricsは5分、detailed monitoringが無効である
+- [x] 5 alarmsが設計表どおりで、最終状態がすべてOKである
+- [x] ALARM / OK / INSUFFICIENT_DATA actionsがSNS topicを参照する
+- [x] SlackでALARMとOKを受信できる
+- [x] Dashboardに5 metrics、alarm status、説明textがありvalidation messageがない
+- [x] 再起動後にAgentとmetric送信が復旧する
+- [x] test alarm / temporary thresholdが残っていない
 
 ## References
 
@@ -307,3 +364,5 @@ AWS BillingのCloudWatch usage typeとCost Explorerで、導入前後の増分�
 - [AWS: CloudWatch alarm actions](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/alarm-actions.html)
 - [AWS: Amazon Q Developer in chat applications](https://docs.aws.amazon.com/chatbot/latest/adminguide/what-is.html)
 - [AWS: CloudWatch pricing](https://aws.amazon.com/cloudwatch/pricing/)
+- [AWS: SNS pricing](https://aws.amazon.com/sns/pricing/)
+- [AWS: Amazon Q Developer in chat applications pricing](https://aws.amazon.com/chatbot/pricing/)
