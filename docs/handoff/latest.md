@@ -2,7 +2,7 @@
 
 ## Date
 
-2026-08-15
+2026-08-17
 
 ## Project
 
@@ -10,53 +10,53 @@ Ricetta
 
 ## Status
 
-GitHub Issue #56のCloudWatch Agent memory metric未送信に対するsource hotfixを実装中。AWS上のAgentはrunningのまま維持し、AWS / EC2 / IAM / CloudWatch / SNS / Slack変更、commit / pushは未実施。
+GitHub Issue #56「Add minimal EC2 resource monitoring with CloudWatch」の実装と実環境検証が完了。source、Agent、IAM、2 custom metrics、5 Alarm、SNS→Amazon Q→Slack通知、Dashboard、EC2再起動後の自動復旧、コスト見積を確認済み。Issue #56のPR / merge / close待ち。
 
 ## Summary
 
-実環境では`disk_used_percent`がCloudWatchへ到着した一方、`mem_used_percent`は未到着。memory originalはすでに`InstanceId`だけを持つため同じdimensionへのrollupが生成されず、`drop_original_metrics`によって唯一のoriginalまで削除されたことが根本原因候補。memory measurementは`mem_used_percent`を維持し、memのdrop設定を削除した。source再適用後に2 metricの実到着を確認する。Alarm、SNS、Dashboardはまだ未作成。
+Ubuntu 24.04 x86_64 / `t3.micro`へCloudWatch Agent `1.300071.0b1720`を署名検証後に導入し、`CWAgent`へ`mem_used_percent`と`disk_used_percent`の2系列だけを60秒間隔・`InstanceId` dimensionで送信する構成を完成させた。5 Alarmは設計表どおり作成し、SNS→Amazon Q Developer in chat applications→SlackでALARM / OK通知を確認した。Dashboardと計画再起動後の自動復旧も検証済み。
 
 ## Current Goal
 
-memory metric hotfixをsourceで確定し、実環境へ再適用して`mem_used_percent`の到着を確認する。
+Issue #56のdocumentation差分をレビューしてPR / merge / closeし、その後に公開デモのsmoke testとrelease readinessへ進む。
 
 ## Current State
 
-- Branch: `fix/issue-56-cloudwatch-memory-metric`
-- EC2 detailed monitoring: 使用しない
-- Standard metrics: StatusCheckFailed / CPUUtilization / CPUCreditBalance
-- Agent metrics: mem_used_percent / disk_used_percent (`/` only)
-- Runtime observation: Agent running、disk到着済み、memory未到着
-- AWS resources: Alarm / SNS / Dashboardは未作成
-- Collection: 60 seconds、namespace `CWAgent`、dimension `InstanceId` only
-- EC2 Role permission: namespace制限付きcloudwatch:PutMetricDataだけ
-- Logs / trace / X-Ray / high-resolution metrics: なし
-- StatusCheckFailed: Maximum、60秒、1/1、1以上、missing
+- Branch: `docs/issue-56-cloudwatch-verification`
+- EC2 monitoring: 基本モニタリング、詳細モニタリングは使用しない
+- Agent: enabled / active、running / configured、usage data無効
+- Agent authentication: 固定access keyなし、EC2 IAM Role
+- Agent permission: namespace `CWAgent`限定の`cloudwatch:PutMetricData`だけ
+- Custom metrics: `mem_used_percent` / `disk_used_percent`、60秒、`InstanceId`のみ
+- Alarms: 5件、ActionsEnabled、ALARM / OK / INSUFFICIENT_DATA通知あり、最終状態はすべてOK
+- Notifications: CloudWatch Alarm → SNS → Amazon Q Developer → Slack
+- Dashboard: 1件、7 widgets、validation messageなし
+- Infrastructure management: 手動。Terraform / Ansible化は別Issue
 
 ## What Was Done
 
-- CloudWatch Agent設定JSONを追加した。
-- 最小IAM policy JSONを追加した。
-- Ubuntu x86_64での署名検証、install、設定validation、起動、自動起動確認を文書化した。
-- 5 Alarmのthreshold、period、M-of-N、missing data、state通知方針を決定した。
-- commit前レビューでStatusCheckFailedを基本モニタリング対応の60秒評価へ修正した。
-- Agent公開鍵fingerprint照合、usage data無効化、IAM反映前の停止確認を追加した。
-- CPUCreditBalance 24 creditsの判断理由を記録した。
-- SNS→Amazon Q Developer in chat applications→Slackの構築・テスト手順を記録した。
-- Dashboard、一次対応、rollback、再構築、コスト確認を文書化した。
-- docs indexとsecret managementを更新した。
-- memory measurementを`mem_used_percent`へ修正し、送信対象を0件にしていたmemの`drop_original_metrics`を削除した。
-- diskのdrop対象を最終出力名`disk_used_percent`へ明示した。
-- schema validation後にもCloudWatch上の実metric到着確認が必要であることを追記した。
+- 公式deb、署名、GPG keyを取得し、公式fingerprintとの一致とGPG署名成功後にAgentをinstallした。
+- repository JSONとruntime copyの一致、JSON schema validation、config translationを確認した。
+- source-managed最小IAM policyをEC2 Roleへ適用し、固定credentialを使用しない構成にした。
+- memory未送信を調査し、mem originalをdropして送信対象が0件になる原因候補へ対応した。
+- `mem_used_percent` originalを残し、diskだけを`InstanceId`へ集約してoriginalをdropする構成へ修正した。
+- CloudWatch上に2 custom metricsだけが存在し、最新datapointが継続到着することを確認した。
+- 設計表どおり5 Alarmを作成し、通知actionと最終OK状態を確認した。
+- SNS、Amazon Q channel configuration、Slack通知経路を作成し、test message、ALARM、OK、スマートフォン通知を確認した。
+- 一時Alarmを削除し、本番用Alarmが5件だけ残ることを確認した。
+- 5 Alarm、5 metrics、説明textを表示するDashboardを作成した。
+- 2026-08-17の計画再起動後にAgent、metrics、Docker Compose全4サービス、backend / db health、HTTPS health、Alarm状態を確認した。
+- 料金前提を確認し、Free Tierが他用途で消費されていない前提で監視追加分を月額USD 0と見積もった。
 
 ## Key Decisions
 
-- Agent欠測は監視停止としてbreaching、EC2標準欠測はmissingとして扱う。
-- ALARM / OK / INSUFFICIENT_DATAの全状態遷移を同じSNS topicへ通知する。
-- EC2 Roleには監視リソースの管理権限を付けず、Agentのmetric送信だけを許可する。
-- AWS実値と変動する料金単価はsourceへ保存しない。
-- source-first段階のコスト確認は未完了とし、Issue close前に確認日・Free Tier前提・見積額を記録する。
-- Memoryはoriginalがすでに`InstanceId`だけなのでdropせず、diskだけを`InstanceId`へrollupしてoriginalをdropする。
+- Agentから送るcustom metricは`mem_used_percent`と`disk_used_percent`の2系列だけにする。
+- Memory originalはすでに`InstanceId`だけなのでdropせず、diskだけを`InstanceId`へrollupしてoriginalをdropする。
+- EC2 Roleにはmetric送信権限だけを付与し、Alarm / SNS / Dashboard管理権限を付与しない。
+- ALARM / OK / INSUFFICIENT_DATAを同じSNS経路でSlackへ通知する。
+- 自動再起動、EC2停止、自動復旧actionは設定せず、Alarm actionは通知だけにする。
+- Dashboard、SNS、Alarm、Amazon Qは手動管理とし、Terraform / Ansible化は別Issueで扱う。
+- AWS resource ID、ARN、Slack ID、secret実値はrepositoryへ保存しない。
 
 ## Key Files
 
@@ -68,20 +68,27 @@ memory metric hotfixをsourceで確定し、実環境へ再適用して`mem_used
 
 ## Verification
 
-- JSON syntax / Agent設定条件の静的検査: pass
-- Markdown relative links: pass
-- `git diff --check`: pass
-- Secret-like and AWS identifier pattern check: pass
-- `.env.prod`: unchanged / untracked
-- Backend / frontend source changes: none
-- IAM policy changes: none
-- 実Agentへの再適用とCloudWatch上のmemory metric到着確認: not run
+- Agent package fingerprint / GPG signature: pass
+- Repository config / runtime copy一致: pass
+- JSON schema validation / config translation: pass
+- Agent enabled / active / running / configured: pass
+- `CWAgent` custom metrics 2系列、60秒、`InstanceId`のみ: pass
+- 5 Alarmの設定、actions、最終OK状態: pass
+- SNS subscription / Amazon Q test message: pass
+- Slack ALARM / OK / smartphone notification: pass
+- Temporary Alarm削除、本番Alarm 5件のみ: pass
+- Dashboard 7 widgets / validation message 0: pass
+- EC2 reboot後のAgent / metric自動復旧: pass
+- Docker Compose全4サービス、backend / db health、HTTPS health 200: pass
+- Cost estimate reviewed: 2026-08-17
+- Account全体のFree Tier使用量: 未確認
 
 ## Current Product Scope
 
 - Single EC2 public demo resource monitoring
-- Minimal CloudWatch metrics and Slack alarm delivery design
-- Manual source-first reconstruction
+- Minimal CloudWatch metrics and Slack alarm notifications
+- Source-managed Agent configuration and IAM policy
+- Manual reconstruction and incident response procedures
 
 ## Out of Scope for MVP
 
@@ -92,24 +99,23 @@ memory metric hotfixをsourceで確定し、実環境へ再適用して`mem_used
 
 ## Next Recommended Tasks
 
-1. source-managed Agent JSONをEC2へ再配置し、`fetch-config -s`で再適用する。
-2. runtime copyとAgent statusを確認する。
-3. CloudWatchで`mem_used_percent` / `disk_used_percent`の2系列だけが到着することを確認する。
-4. SNS、Amazon Q Developer Slack configuration、5 Alarms、Dashboardを管理者側で作成する。
+1. Issue #56の差分をレビューしてPRを作成する。
+2. PRをmergeし、Issue #56をcloseする。
+3. 公開デモのsmoke testとrelease readiness確認へ進む。
 
 ## Open Questions
 
-- 実環境の通常負荷を2～4週間観測後、CPUCreditBalance 24 creditsが適切か再評価する。
-- 実装時点のap-northeast-1料金見積をAWS Pricing Calculatorで記録する。
+- なし。
 
 ## Notes for Next Agent
 
-- account ID、Instance ID、SNS ARN、Slack IDsをGitへ追加しない。
-- EC2 RoleへCloudWatchAgentServerPolicyやAlarm/SNS/Dashboard管理権限を付けない。
-- Agent停止計画時はcustom metric alarmがALARMになるため事前共有する。
+- CPUCreditBalance 24 creditsは初期early-warning値のため、2～4週間後に実績から再評価する。
+- Billing / Cost Explorerで監視導入後の実コストを継続確認する。
+- Terraform / Ansible化は別Issueで扱う。
+- account ID、Instance ID、ARN、Slack workspace/channel ID、secret実値をdocsへ追加しない。
 
 ## Suggested Commit Message
 
 ```text
-docs(ops): add minimal EC2 CloudWatch monitoring
+docs(ops): record CloudWatch production verification
 ```
