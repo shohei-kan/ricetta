@@ -192,6 +192,8 @@ Versioningが無効であることは、backupの削除・上書きからの保�
 
 ## Unexpected charge first response
 
+請求異常と同時にapplication障害やsecurity侵害が疑われる場合は、証拠保全と影響範囲の切り分けを [Incident Response Runbook](../operations/incident-response.md) から開始します。
+
 1. Budget通知のactual / forecast、threshold、対象期間、評価時刻を確認する。
 2. Cost ExplorerをService → Usage Type → Record Type → Regionの順で絞り、増加源を特定する。
 3. 対象serviceのConsoleまたはread-only APIでresourceを特定する。識別子をpublicなIssueへ転記しない。

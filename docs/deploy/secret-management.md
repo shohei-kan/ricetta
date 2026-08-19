@@ -4,6 +4,8 @@
 
 このドキュメントは、Ricetta公開デモの運用secretをBitwardenを正本として管理し、EC2再構築時にGitHubとBitwardenから安全に復旧するための方針をまとめます。
 
+credential漏えいまたは不正アクセスが疑われる場合の初動と証拠保全は [Incident Response Runbook](./operations/incident-response.md) を入口にし、失効・更新・復旧は本書に従います。
+
 ここにはsecretの名称、用途、保管先、配置先、更新・復旧方法だけを記載し、実値は記載しません。
 
 ## Source of Truth

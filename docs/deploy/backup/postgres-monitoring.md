@@ -1,5 +1,7 @@
 # PostgreSQL Backup Monitoring
 
+backup失敗またはSlack通知からRicetta全体の影響を切り分ける場合は [Incident Response Runbook](../operations/incident-response.md) を入口にし、本書でbackup監視固有のexit statusと復旧手順を確認します。
+
 ## Purpose
 
 このドキュメントは、Ricetta公開デモ環境のPostgreSQLバックアップ監視とSlack通知の運用手順をまとめたものです。
