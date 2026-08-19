@@ -4,6 +4,8 @@
 
 このファイルは、AWS公開時のenv設定と運用コマンドに絞った実務メモです。
 
+障害時は、ここにあるdeploy、reset、rollback等の状態変更コマンドを先に実行せず、[Incident Response Runbook](../operations/incident-response.md) でread-only確認と実行判断を行います。
+
 ## Scope
 
 このメモの対象:

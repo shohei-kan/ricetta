@@ -4,6 +4,8 @@
 
 このドキュメントは、AWS S3へ保存したRicetta PostgreSQL backupから、安全にデータを復元・検証する手順をまとめたものです。
 
+障害からrestoreへ進む前の切り分けと判断基準は [Incident Response Runbook](../operations/incident-response.md) を参照してください。本書はrestoreが必要と判断された後の検証手順を扱います。
+
 restoreはDBを書き換える危険操作のため、公開中の `ricetta` DBへ直接restoreせず、一時DBを作成して検証します。
 
 バックアップ全体の方針は [Backup and Restore](./backup-and-restore.md)、バックアップ取得手順は [PostgreSQL Backup](./postgres-backup.md) を参照します。

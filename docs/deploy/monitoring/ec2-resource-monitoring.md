@@ -264,6 +264,8 @@ Dashboard名、Region、InstanceIdはAWS側で入力し、sourceへ実値を保�
 
 ## Incident first response
 
+Alarm通知からRicetta全体の共通トリアージへ入る場合は [Incident Response Runbook](../operations/incident-response.md) を入口にし、本節で各metric固有の確認を行います。
+
 | Alarm | First checks | Initial action |
 | --- | --- | --- |
 | Status check | EC2 status checks、AWS Health、reachability | AWS基盤障害かinstance障害かを切り分ける。自動rebootはしない |

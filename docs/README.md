@@ -39,6 +39,7 @@ API・データモデルなど、現在実装に近い技術仕様の正本で�
 - [PostgreSQL backup monitoring](./deploy/backup/postgres-monitoring.md)
 - [EC2 resource monitoring](./deploy/monitoring/ec2-resource-monitoring.md)
 - [AWS cost monitoring and billing guardrails](./deploy/monitoring/aws-cost-monitoring.md)
+- [Incident response runbook](./deploy/operations/incident-response.md)
 
 production secretの実値はGitHubへ保存せず、Bitwardenを正本とします。
 

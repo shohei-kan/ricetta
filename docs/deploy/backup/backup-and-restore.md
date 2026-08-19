@@ -4,6 +4,8 @@
 
 このドキュメントは、Ricetta公開デモ環境のバックアップ・復旧方針と運用全体を整理するためのものです。
 
+障害発生直後のread-only確認と、reset / restore / rebuildへ進む判断は [Incident Response Runbook](../operations/incident-response.md) を入口にします。本書は判断後のbackup / recovery方針を扱います。
+
 目的は、EC2、Docker、PostgreSQL、設定ファイルなどに問題が起きた場合でも、GitHub、Bitwarden、S3、手順書をもとに復旧作業を進められる状態にすることです。
 
 バックアップは「取ること」ではなく、「必要なときに戻せること」を目的とします。
