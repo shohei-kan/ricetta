@@ -60,6 +60,12 @@ production secretの実値はGitHubへ保存せず、Bitwardenを正本としま
 
 今後のrelease scopeはGitHub Milestones、公開リリースはGitHub Releasesを正本として扱います。
 
+## Testing / Quality
+
+公開前の手動QA計画と結果記録です。自動testの実装計画はGitHub Issuesを正本とします。
+
+- [Public demo cross-browser smoke test](./testing/cross-browser-smoke-test.md)
+
 ## Design References
 
 画面検討・デザイン参照用の素材です。
