@@ -4,6 +4,8 @@
 
 Ricetta公開デモの単一EC2について、CloudWatchの標準メトリクスとCloudWatch Agentの最小メトリクスで、基盤異常とリソース逼迫を早期検知します。
 
+AWSアカウント全体のBudget、請求、Free Tier、月次コスト確認は [AWS Cost Monitoring and Billing Guardrails](./aws-cost-monitoring.md) を参照してください。本書はEC2の稼働・resource監視を対象とし、請求ガードレールは扱いません。
+
 この構成は2026-08-17に実環境への導入と再起動後の動作確認まで完了しています。変動するAWS resource ID、ARN、Slack IDはこの文書へ保存しません。
 
 対象環境:
@@ -310,6 +312,8 @@ sudo systemctl disable amazon-cloudwatch-agent
 将来Terraform / Ansible化する際は、2つのJSONとAlarm design tableを入力仕様とし、Region、InstanceId、SNS ARN、Slack IDsをenvironment-specific variablesへ分離します。
 
 ## Cost review
+
+AWSアカウント全体の実コスト、Budget、Free Tier、resource棚卸しの最新正本は [AWS Cost Monitoring and Billing Guardrails](./aws-cost-monitoring.md) です。以下はIssue #56で監視追加分を設計した時点の記録です。
 
 2026-08-17にAWS公式料金ページで見積前提を確認しました。
 

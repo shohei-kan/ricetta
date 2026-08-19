@@ -2,7 +2,7 @@
 
 ## Date
 
-2026-08-17
+2026-08-19
 
 ## Project
 
@@ -10,112 +10,71 @@ Ricetta
 
 ## Status
 
-GitHub Issue #56「Add minimal EC2 resource monitoring with CloudWatch」の実装と実環境検証が完了。source、Agent、IAM、2 custom metrics、5 Alarm、SNS→Amazon Q→Slack通知、Dashboard、EC2再起動後の自動復旧、コスト見積を確認済み。Issue #56のPR / merge / close待ち。
+GitHub Issue #77「AWSコスト監視と課金ガードレール」の実環境設定確認とsource-first文書整備を実施。Budget、Cost Explorer、Free Tier、resource棚卸し、月次確認、想定外課金時の初動、再構築、rollbackを正本へ集約した。Budget→Slack実通知到着は次回評価待ち。
 
-## Summary
-
-Ubuntu 24.04 x86_64 / `t3.micro`へCloudWatch Agent `1.300071.0b1720`を署名検証後に導入し、`CWAgent`へ`mem_used_percent`と`disk_used_percent`の2系列だけを60秒間隔・`InstanceId` dimensionで送信する構成を完成させた。5 Alarmは設計表どおり作成し、SNS→Amazon Q Developer in chat applications→SlackでALARM / OK通知を確認した。Dashboardと計画再起動後の自動復旧も検証済み。
+この文書整備より前に、管理者がSNS PolicyへのAWS Budgets用Statement追加、ACTUAL 30 / 50 / 80 / 100%へのSNS subscriber追加、FORECASTED 100%通知追加をAWS実環境で実施済み。今回のCodex作業ではAWSや外部サービスを変更していない。
 
 ## Current Goal
 
-Issue #56のdocumentation差分をレビューしてPR / merge / closeし、その後に公開デモのsmoke testとrelease readinessへ進む。
+Issue #77のdocumentation差分を検証し、Budget→Slack実通知到着確認を保留事項として引き継ぐ。
 
 ## Current State
 
-- Branch: `docs/issue-56-cloudwatch-verification`
-- EC2 monitoring: 基本モニタリング、詳細モニタリングは使用しない
-- Agent: enabled / active、running / configured、usage data無効
-- Agent authentication: 固定access keyなし、EC2 IAM Role
-- Agent permission: namespace `CWAgent`限定の`cloudwatch:PutMetricData`だけ
-- Custom metrics: `mem_used_percent` / `disk_used_percent`、60秒、`InstanceId`のみ
-- Alarms: 5件、ActionsEnabled、ALARM / OK / INSUFFICIENT_DATA通知あり、最終状態はすべてOK
-- Notifications: CloudWatch Alarm → SNS → Amazon Q Developer → Slack
-- Dashboard: 1件、7 widgets、validation messageなし
+- Branch: `ops/issue-77-aws-cost-monitoring`
+- AWS cost source of truth: `docs/deploy/monitoring/aws-cost-monitoring.md`
+- Budget: monthly COST / USD 10 / account全体 / 5段階通知 / Action 0件
+- Budget notifications: Email + existing SNS→Amazon Q→Slack
+- Budget→Slack actual delivery: 次回評価待ち
+- EC2 resource monitoring: Issue #56で構築・検証済み。責務は専用文書に分離
 - Infrastructure management: 手動。Terraform / Ansible化は別Issue
 
 ## What Was Done
 
-- 公式deb、署名、GPG keyを取得し、公式fingerprintとの一致とGPG署名成功後にAgentをinstallした。
-- repository JSONとruntime copyの一致、JSON schema validation、config translationを確認した。
-- source-managed最小IAM policyをEC2 Roleへ適用し、固定credentialを使用しない構成にした。
-- memory未送信を調査し、mem originalをdropして送信対象が0件になる原因候補へ対応した。
-- `mem_used_percent` originalを残し、diskだけを`InstanceId`へ集約してoriginalをdropする構成へ修正した。
-- CloudWatch上に2 custom metricsだけが存在し、最新datapointが継続到着することを確認した。
-- 設計表どおり5 Alarmを作成し、通知actionと最終OK状態を確認した。
-- SNS、Amazon Q channel configuration、Slack通知経路を作成し、test message、ALARM、OK、スマートフォン通知を確認した。
-- 一時Alarmを削除し、本番用Alarmが5件だけ残ることを確認した。
-- 5 Alarm、5 metrics、説明textを表示するDashboardを作成した。
-- 2026-08-17の計画再起動後にAgent、metrics、Docker Compose全4サービス、backend / db health、HTTPS health、Alarm状態を確認した。
-- 料金前提を確認し、Free Tierが他用途で消費されていない前提で監視追加分を月額USD 0と見積もった。
+- Issue #77の本文とAcceptance Criteriaを確認した。
+- AWSアカウント全体のコスト監視正本を追加した。
+- 実環境で確認済みのBudget、通知、Cost Explorer、Free Tier、resource、S3状態を確認日付きで記録した。
+- 文書整備前に実施済みのSNS Policy変更、ACTUAL 4通知へのSNS subscriber追加、FORECASTED通知追加を変更履歴として記録した。
+- 24時間稼働時の税込月額約USD 18を、請求確定値ではない概算として分離した。
+- 月次のBudget / Cost Explorer / Free Tier / Credits / Bills確認手順を追加した。
+- Cost Explorerの調査順とresource棚卸しchecklistを追加した。
+- 想定外課金時の初動、再構築、rollback手順を追加した。
+- Issue #56文書との責務分離と相互リンク、docs indexからの導線を追加した。
+- account固有値が必要な形骸的JSONは追加しなかった。
 
 ## Key Decisions
 
-- Agentから送るcustom metricは`mem_used_percent`と`disk_used_percent`の2系列だけにする。
-- Memory originalはすでに`InstanceId`だけなのでdropせず、diskだけを`InstanceId`へrollupしてoriginalをdropする。
-- EC2 Roleにはmetric送信権限だけを付与し、Alarm / SNS / Dashboard管理権限を付与しない。
-- ALARM / OK / INSUFFICIENT_DATAを同じSNS経路でSlackへ通知する。
-- 自動再起動、EC2停止、自動復旧actionは設定せず、Alarm actionは通知だけにする。
-- Dashboard、SNS、Alarm、Amazon Qは手動管理とし、Terraform / Ansible化は別Issueで扱う。
-- AWS resource ID、ARN、Slack ID、secret実値はrepositoryへ保存しない。
+- Budget USD 10は厳格な警戒線として当面維持する。
+- Budgetは約8〜12時間の更新遅延があるため、リアルタイム監視や自動停止として扱わない。
+- 自動Budget Actionは使用せず、削除・停止前にbackupと依存関係を確認する。
+- AWS Account ID、Instance ID、ARN、Email、Slack IDをrepositoryへ保存しない。
+- EBS未暗号化はIssue #77で変更せず、Issue #69のTemporary EC2 rebuild drillへ引き継ぐ。
+- S3は現状極小のためLifecycleを追加せず、長期保持と実コストを定期的に再評価する。
+- Budget / SNS / Amazon Qのaccount固有設定は手動管理し、Terraform / Ansible化は別Issueで扱う。
 
 ## Key Files
 
-- `ops/cloudwatch/amazon-cloudwatch-agent.json`
-- `ops/cloudwatch/cloudwatch-agent-put-metrics-policy.json`
+- `docs/deploy/monitoring/aws-cost-monitoring.md`
 - `docs/deploy/monitoring/ec2-resource-monitoring.md`
-- `docs/deploy/secret-management.md`
 - `docs/README.md`
+- `docs/handoff/latest.md`
 
 ## Verification
 
-- Agent package fingerprint / GPG signature: pass
-- Repository config / runtime copy一致: pass
-- JSON schema validation / config translation: pass
-- Agent enabled / active / running / configured: pass
-- `CWAgent` custom metrics 2系列、60秒、`InstanceId`のみ: pass
-- 5 Alarmの設定、actions、最終OK状態: pass
-- SNS subscription / Amazon Q test message: pass
-- Slack ALARM / OK / smartphone notification: pass
-- Temporary Alarm削除、本番Alarm 5件のみ: pass
-- Dashboard 7 widgets / validation message 0: pass
-- EC2 reboot後のAgent / metric自動復旧: pass
-- Docker Compose全4サービス、backend / db health、HTTPS health 200: pass
-- Cost estimate reviewed: 2026-08-17
-- Account全体のFree Tier使用量: 未確認
+- Markdown相対リンク: pass
+- `git diff --check`: pass
+- secret-like pattern / account固有identifier検査: pass
+- `.env.prod`、backend、frontendの無変更確認: pass
+- 今回のCodexによるAWS / external serviceへの追加変更: 実施なし（文書整備前の実環境変更は上記Statusと正本文書に記録）
 
-## Current Product Scope
+## Open Items
 
-- Single EC2 public demo resource monitoring
-- Minimal CloudWatch metrics and Slack alarm notifications
-- Source-managed Agent configuration and IAM policy
-- Manual reconstruction and incident response procedures
-
-## Out of Scope for MVP
-
-- CloudWatch Logs、trace、X-Ray
-- Auto Scaling、自動復旧、自動再起動
-- Terraform / Ansible implementation
-- External monitoring services
-
-## Next Recommended Tasks
-
-1. Issue #56の差分をレビューしてPRを作成する。
-2. PRをmergeし、Issue #56をcloseする。
-3. 公開デモのsmoke testとrelease readiness確認へ進む。
-
-## Open Questions
-
-- なし。
-
-## Notes for Next Agent
-
-- CPUCreditBalance 24 creditsは初期early-warning値のため、2～4週間後に実績から再評価する。
-- Billing / Cost Explorerで監視導入後の実コストを継続確認する。
-- Terraform / Ansible化は別Issueで扱う。
-- account ID、Instance ID、ARN、Slack workspace/channel ID、secret実値をdocsへ追加しない。
+- 次回Budget評価でBudget→SNS→Amazon Q→Slackの実通知到着を確認する。
+- 到着結果をAWS cost monitoring正本とhandoffへ記録する。
+- Public demo公開後の実績を見てBudget上限を再評価する。現時点ではUSD 10を維持する。
+- Issue #69で暗号化されたroot EBSとしての再構築を検討する。
 
 ## Suggested Commit Message
 
 ```text
-docs(ops): record CloudWatch production verification
+docs(ops): document AWS cost monitoring guardrails
 ```
