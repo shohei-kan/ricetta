@@ -13,10 +13,15 @@ import { fetchRecipes, type RecipeListItem } from '../api/recipes'
 import { fetchUnits, type Unit } from '../api/units'
 import { useAuth } from '../auth/useAuth'
 import { AutoResizeTextarea } from '../components/ui/AutoResizeTextarea'
+import {
+  getFormBackPath,
+  hierarchyBackOptions,
+  type Navigate,
+} from '../navigation'
 
 type IngredientFormPageProps = {
   id?: number
-  navigate: (path: string) => void
+  navigate: Navigate
 }
 
 type FormState = {
@@ -244,6 +249,13 @@ export function IngredientFormPage({ id, navigate }: IngredientFormPageProps) {
   if (loading) {
     return (
       <div className="mx-auto max-w-4xl px-5 py-6 md:px-7 md:py-8">
+        <button
+          className="mb-5 rounded-lg border border-[#dfd1bf] bg-[#fffdf9] px-4 py-3 text-base font-bold text-[#5d5148] transition hover:bg-[#fbf7f0]"
+          onClick={() => goBack(isEdit, id, navigate)}
+          type="button"
+        >
+          ← 戻る
+        </button>
         <div className="rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-6 text-[#75685e] shadow-sm">
           材料情報を読み込んでいます...
         </div>
@@ -256,10 +268,10 @@ export function IngredientFormPage({ id, navigate }: IngredientFormPageProps) {
       <div className="mx-auto max-w-4xl px-5 py-6 md:px-7 md:py-8">
         <button
           className="mb-5 rounded-lg border border-[#dfd1bf] bg-[#fffdf9] px-4 py-3 text-base font-bold text-[#5d5148]"
-          onClick={() => navigate('/ingredients')}
+          onClick={() => goBack(isEdit, id, navigate)}
           type="button"
         >
-          ← 材料一覧へ
+          ← 戻る
         </button>
         <div className="rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-6 text-[#a23d2d] shadow-sm">
           {loadError}
@@ -271,9 +283,9 @@ export function IngredientFormPage({ id, navigate }: IngredientFormPageProps) {
   if (!canManageIngredients) {
     return (
       <ForbiddenFormPage
-        backLabel="← 材料一覧へ"
+        backLabel="← 戻る"
         message="材料の作成・編集はオーナーのみ利用できます。"
-        navigate={() => navigate('/ingredients')}
+        navigate={() => goBack(isEdit, id, navigate)}
       />
     )
   }
@@ -837,10 +849,9 @@ function formatSaveError(caught: unknown) {
   return '保存に失敗しました。入力内容を確認してください。'
 }
 
-function goBack(isEdit: boolean, id: number | undefined, navigate: (path: string) => void) {
-  if (isEdit && id !== undefined) {
-    navigate(`/ingredients/${id}`)
-    return
-  }
-  navigate('/ingredients')
+function goBack(isEdit: boolean, id: number | undefined, navigate: Navigate) {
+  navigate(
+    getFormBackPath('/ingredients', isEdit ? id : undefined),
+    hierarchyBackOptions,
+  )
 }

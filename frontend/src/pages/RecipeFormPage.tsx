@@ -13,10 +13,15 @@ import {
 import { fetchUnits, type Unit } from '../api/units'
 import { useAuth } from '../auth/useAuth'
 import { AutoResizeTextarea } from '../components/ui/AutoResizeTextarea'
+import {
+  getFormBackPath,
+  hierarchyBackOptions,
+  type Navigate,
+} from '../navigation'
 
 type RecipeFormPageProps = {
   id?: number
-  navigate: (path: string) => void
+  navigate: Navigate
 }
 
 type IngredientRow = {
@@ -240,6 +245,13 @@ export function RecipeFormPage({ id, navigate }: RecipeFormPageProps) {
   if (loading) {
     return (
       <div className="mx-auto max-w-4xl px-5 py-6 md:px-7 md:py-8">
+        <button
+          className="mb-5 rounded-lg border border-[#dfd1bf] bg-[#fffdf9] px-4 py-3 text-base font-bold text-[#5d5148] transition hover:bg-[#fbf7f0]"
+          onClick={() => goBack(isEdit, id, navigate)}
+          type="button"
+        >
+          ← 戻る
+        </button>
         <div className="rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-6 text-[#75685e] shadow-sm">
           レシピを読み込んでいます...
         </div>
@@ -252,10 +264,10 @@ export function RecipeFormPage({ id, navigate }: RecipeFormPageProps) {
       <div className="mx-auto max-w-4xl px-5 py-6 md:px-7 md:py-8">
         <button
           className="mb-5 rounded-lg border border-[#dfd1bf] bg-[#fffdf9] px-4 py-3 text-base font-bold text-[#5d5148]"
-          onClick={() => navigate('/recipes')}
+          onClick={() => goBack(isEdit, id, navigate)}
           type="button"
         >
-          ← レシピ一覧へ
+          ← 戻る
         </button>
         <div className="rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-6 text-[#a23d2d] shadow-sm">
           {loadError}
@@ -267,9 +279,9 @@ export function RecipeFormPage({ id, navigate }: RecipeFormPageProps) {
   if (!canManageRecipes) {
     return (
       <ForbiddenFormPage
-        backLabel="← レシピ一覧へ"
+        backLabel="← 戻る"
         message="レシピの作成・編集はオーナーのみ利用できます。"
-        navigate={() => navigate('/recipes')}
+        navigate={() => goBack(isEdit, id, navigate)}
       />
     )
   }
@@ -911,10 +923,9 @@ function formatSaveError(caught: unknown) {
   return '保存に失敗しました。入力内容を確認してください。'
 }
 
-function goBack(isEdit: boolean, id: number | undefined, navigate: (path: string) => void) {
-  if (isEdit && id !== undefined) {
-    navigate(`/recipes/${id}`)
-    return
-  }
-  navigate('/recipes')
+function goBack(isEdit: boolean, id: number | undefined, navigate: Navigate) {
+  navigate(
+    getFormBackPath('/recipes', isEdit ? id : undefined),
+    hierarchyBackOptions,
+  )
 }

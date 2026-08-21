@@ -1,10 +1,15 @@
 import { useEffect, useRef, useState, type TouchEvent } from 'react'
 import { fetchRecipeDetail, type RecipeDetail } from '../api/recipes'
 import { useAuth } from '../auth/useAuth'
+import {
+  getDetailBackPath,
+  hierarchyBackOptions,
+  type Navigate,
+} from '../navigation'
 
 type RecipeDetailPageProps = {
   id: number
-  navigate: (path: string) => void
+  navigate: Navigate
 }
 
 export function RecipeDetailPage({ id, navigate }: RecipeDetailPageProps) {
@@ -65,7 +70,7 @@ function RecipeDetailContent({
   navigate,
   recipe,
 }: {
-  navigate: (path: string) => void
+  navigate: Navigate
   recipe: RecipeDetail
 }) {
   const { session } = useAuth()
@@ -224,7 +229,7 @@ function BackButton({
   navigate,
   withBottomMargin = true,
 }: {
-  navigate: (path: string) => void
+  navigate: Navigate
   withBottomMargin?: boolean
 }) {
   return (
@@ -366,12 +371,8 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
   )
 }
 
-function goBack(navigate: (path: string) => void) {
-  if (window.history.length > 1) {
-    window.history.back()
-    return
-  }
-  navigate('/recipes')
+function goBack(navigate: Navigate) {
+  navigate(getDetailBackPath('/recipes'), hierarchyBackOptions)
 }
 
 function formatQuantity(value: string) {

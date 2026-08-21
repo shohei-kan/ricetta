@@ -185,8 +185,8 @@ owner
 
 目的：
 
-- 直前に見ていた画面へ戻る
-- 一覧の検索条件やスクロール位置を保つ
+- ブラウザ履歴ではなく、画面階層に基づく予測可能な親画面へ戻る
+- URL直打ちやreload後も同じ親画面へ戻る
 - サイドバー遷移で文脈が切れるのを防ぐ
 
 対象画面：
@@ -206,11 +206,14 @@ owner
 
 ```text
 Recipe List → Recipe Detail → 戻る → Recipe List
-Prep Today → Recipe Detail → 戻る → Prep Today
 Recipe Detail → Recipe Edit → 戻る → Recipe Detail
+Recipe New → 戻る → Recipe List
+Ingredient List → Ingredient Detail → 戻る → Ingredient List
+Ingredient Detail → Ingredient Edit → 戻る → Ingredient Detail
+Ingredient New → 戻る → Ingredient List
 ```
 
-サイドバーは大きな画面移動、戻るボタンは直前の文脈へ戻るために使います。
+フォームのキャンセルも戻るボタンと同じ画面階層を使います。サイドバーは大きな画面移動、アプリ内の戻るボタンは親画面への移動、ブラウザ標準の戻る・進むは実際に辿った履歴の移動に使います。
 
 ---
 

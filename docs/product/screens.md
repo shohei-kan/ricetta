@@ -62,15 +62,20 @@ MVPで扱う画面は以下です。
 
 目的：
 
-- 一覧のスクロール位置や検索状態を保ったまま戻る
-- 直前に見ていた画面へ戻る
+- ブラウザ履歴ではなく、画面階層に基づく予測可能な親画面へ戻る
+- URL直打ちやreload後も同じ親画面へ戻る
 - サイドバー遷移と役割を分ける
 
 戻る導線の例：
 
 - Recipe List → Recipe Detail → 戻る → Recipe List
-- Prep Today → Recipe Detail → 戻る → Prep Today
 - Recipe Detail → Recipe Edit → 戻る → Recipe Detail
+- Recipe New → 戻る → Recipe List
+- Ingredient List → Ingredient Detail → 戻る → Ingredient List
+- Ingredient Detail → Ingredient Edit → 戻る → Ingredient Detail
+- Ingredient New → 戻る → Ingredient List
+
+フォームのキャンセルも戻るボタンと同じ画面階層を使います。ブラウザ標準の戻る・進むは、実際に辿った履歴を移動する別の操作として維持します。
 
 ### フォーム入力
 
@@ -794,5 +799,5 @@ Unit種別：
 - Ingredient Detailは材料マスター管理画面
 - 材料欄に原価情報を混ぜない
 - 原価情報は専用カードに集約する
-- 戻るボタンで直前の文脈に戻れるようにする
+- アプリ内の戻るボタンは画面階層に基づく親画面へ戻し、ブラウザ標準履歴とは分ける
 - タブレット横向きでは120px固定サイドバーを使う
