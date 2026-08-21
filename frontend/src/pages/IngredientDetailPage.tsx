@@ -6,10 +6,15 @@ import {
   type IngredientType,
 } from '../api/ingredients'
 import { useAuth } from '../auth/useAuth'
+import {
+  getDetailBackPath,
+  hierarchyBackOptions,
+  type Navigate,
+} from '../navigation'
 
 type IngredientDetailPageProps = {
   id: number
-  navigate: (path: string) => void
+  navigate: Navigate
 }
 
 const costModeText: Record<IngredientCostMode, { label: string; description: string }> = {
@@ -99,7 +104,7 @@ function IngredientDetailContent({
   navigate,
 }: {
   ingredient: IngredientDetail
-  navigate: (path: string) => void
+  navigate: Navigate
 }) {
   const { session } = useAuth()
   const mode = costModeText[ingredient.cost_mode]
@@ -248,12 +253,8 @@ function InfoRow({ label, value }: { label: string; value: string }) {
   )
 }
 
-function goBack(navigate: (path: string) => void) {
-  if (window.history.length > 1) {
-    window.history.back()
-    return
-  }
-  navigate('/ingredients')
+function goBack(navigate: Navigate) {
+  navigate(getDetailBackPath('/ingredients'), hierarchyBackOptions)
 }
 
 function formatQuantityWithUnit(
