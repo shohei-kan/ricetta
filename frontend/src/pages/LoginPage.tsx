@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
-import { ApiError } from '../api/api'
 import { ricettaLogoFull } from '../assets'
+import { getLoginErrorMessage } from '../auth/login-error'
 import { useAuth } from '../auth/useAuth'
 import { isDemoMode } from '../config/demo'
 
@@ -64,11 +64,7 @@ export function LoginPage({ navigate }: LoginPageProps) {
       await login({ email, password })
       navigate('/dashboard')
     } catch (caught) {
-      if (caught instanceof ApiError) {
-        setError(caught.message)
-      } else {
-        setError('ログインに失敗しました。もう一度お試しください。')
-      }
+      setError(getLoginErrorMessage(caught))
     } finally {
       setSubmitting(false)
     }
