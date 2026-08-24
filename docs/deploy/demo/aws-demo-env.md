@@ -96,6 +96,8 @@ VITE_DEMO_MODE=true
 - 公開デモ用frontend image / buildでは `VITE_DEMO_MODE=true` を渡す必要がある
 - API URL envは現時点の既存実装にないため、ここには記載しない
 
+低メモリEC2上で既存frontendを稼働させたままproduction imageを手動buildし、image IDでguardして切り替える場合は、[Frontend Build on a Low-memory EC2 Host](../operations/frontend-build-on-low-memory-ec2.md) を参照してください。一時swap、監視、中断、frontend限定rollback、cleanupを含む詳細手順はそちらを正本とします。
+
 ## Initial deploy commands
 
 AWSサーバー上での初回起動時に実行する想定コマンドです。
