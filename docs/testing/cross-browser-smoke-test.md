@@ -3,14 +3,16 @@
 ## この文書の状態
 
 - 対象: GitHub Issue [#58 Perform cross-browser smoke test for public demo](https://github.com/shohei-kan/ricetta/issues/58)
-- 現在の段階: **必須5browser実施済み、#82・#83の本番反映後回帰と最終集計待ち**
-- Chrome desktop判定: **Pass with issues**
+- 現在の段階: **必須5browserと最終production回帰を実施済み**
+- Production deployed commit: `72b35b786763353976195747cde64c71fa5ffdb6`
+- Final verification date: **2026-08-25**
+- Chrome desktop判定: **Pass with known issues**
 - iPhone Safari判定: **Pass**
-- Safari desktop判定: **Fail（既知Majorの#86あり）**
-- Firefox desktop判定: **Fail（既知Majorの#86あり）**
+- Safari desktop判定: **Pass**
+- Firefox desktop判定: **Pass**
 - Edge desktop判定: **Pass**
-- 全browser総合判定: **Not run（#82・#83の本番反映後回帰と最終集計待ち）**
-- #82と#83はmainへmerge済みだが、Edge実施時点の本番frontendには未反映であり、修正後の表示を確認済みとは扱わない。
+- 全browser総合判定: **Pass with known issues**
+- Issue #58: **Acceptance Criteriaを満たし、このDocs変更のmerge後にClose可能**
 
 この文書はRicetta公開デモの手動cross-browser smoke testについて、計画、実施環境、結果、発見事項を一か所で管理する正本である。ピクセル単位の完全一致ではなく、重大な表示崩れ、操作不能、認証・Session・CSRF異常がないことを確認する。
 
@@ -23,11 +25,12 @@
 | Not run | 未実施。結果を判断できない |
 | Pass | 計画した必須項目を実施し、問題なし |
 | Pass with issues | 公開可能だが、追跡する軽微な問題あり |
+| Pass with known issues | 必須確認を完了し、公開可否を妨げない既知IssueまたはKnown limitationを別Issueで追跡中 |
 | Blocked | 環境、端末、権限などにより完了できない |
 | Fail | 完了条件を満たさない問題あり |
 | N/A | 実機やデータ状態に該当しない。理由を記録する |
 
-`Not run` と `Blocked` を `Pass` に数えない。件数欄の `—` はゼロではなく、未集計を表す。
+`Not run` と `Blocked` を `Pass` に数えない。件数欄の `—` はゼロではなく、未集計を表す。個別checklistに残る `Not run` は、その補助項目の個別結果が記録されていないことを示し、Browser matrixの実施済み判定を上書きしない。
 
 ## 完了条件
 
@@ -62,13 +65,15 @@
 
 | 優先 | Browser | OS / device | Version | Status | Blocker | Major | Minor | Cosmetic | Evidence / Issue | Tester | Tested at |
 | --- | --- | --- | --- | --- | ---: | ---: | ---: | ---: | --- | --- | --- |
-| 1 | Chrome desktop | macOS 15.5 / MacBook Air | Google Chrome 151.0.7922.138 | Pass with issues | 0 | 1 | 3 | 1 | [#82](https://github.com/shohei-kan/ricetta/issues/82), [#83](https://github.com/shohei-kan/ricetta/issues/83), [#84](https://github.com/shohei-kan/ricetta/issues/84), [#85](https://github.com/shohei-kan/ricetta/issues/85), [#86](https://github.com/shohei-kan/ricetta/issues/86) |  | 2026-08-19〜2026-08-20 |
-| 2 | iPhone Safari | iOS 26.6 / iPhone 12 mini | Safari | Pass | 0 | 0 | 0 | 0 | 新規findingなし |  | 2026-08-20 |
-| 3 | Safari desktop | macOS 15.5（24F74） | Safari 18.5 | Fail | 0 | 1 | 1 | 0 | [#85](https://github.com/shohei-kan/ricetta/issues/85), [#86](https://github.com/shohei-kan/ricetta/issues/86) |  | 2026-08-20 15:22:24 JST〜2026-08-21 |
-| 4 | Firefox desktop | macOS 15.5（24F74） | Mozilla Firefox 154.0 | Fail | 0 | 1 | 1 | 0 | [#85](https://github.com/shohei-kan/ricetta/issues/85), [#86](https://github.com/shohei-kan/ricetta/issues/86) |  | Started: 2026-08-21 15:00:55 JST |
-| 5 | Edge desktop | Windows 10 Pro 2009（Build 19045）/ 64-bit | Microsoft Edge 149.0.4022.80 | Pass | 0 | 0 | 0 | 0 | 新規findingなし。[#85](https://github.com/shohei-kan/ricetta/issues/85)修正確認 |  | Started: 2026-08-24 12:42:02 JST |
+| 1 | Chrome desktop | macOS 15.5 / MacBook Air | Google Chrome 151.0.7922.138 | Pass with known issues | 0 | 1 | 3 | 1 | [#82](https://github.com/shohei-kan/ricetta/issues/82), [#83](https://github.com/shohei-kan/ricetta/issues/83), [#84](https://github.com/shohei-kan/ricetta/issues/84), [#85](https://github.com/shohei-kan/ricetta/issues/85), [#86](https://github.com/shohei-kan/ricetta/issues/86) |  | 2026-08-19〜2026-08-20、final regression: 2026-08-25 |
+| 2 | iPhone Safari | iOS 26.6 / iPhone 12 mini | Safari | Pass | 0 | 0 | 0 | 0 | 新規findingなし。[#82](https://github.com/shohei-kan/ricetta/issues/82)、[#83](https://github.com/shohei-kan/ricetta/issues/83)、[#85](https://github.com/shohei-kan/ricetta/issues/85)修正確認 |  | 2026-08-20、final regression: 2026-08-25 |
+| 3 | Safari desktop | macOS 15.5（24F74） | Safari 18.5 | Pass | 0 | 1 | 1 | 0 | [#85](https://github.com/shohei-kan/ricetta/issues/85) resolved / verified、[#86](https://github.com/shohei-kan/ricetta/issues/86) Known limitation |  | 2026-08-20 15:22:24 JST〜2026-08-21、final regression: 2026-08-25 |
+| 4 | Firefox desktop | macOS 15.5（24F74） | Mozilla Firefox 154.0 | Pass | 0 | 1 | 1 | 0 | [#85](https://github.com/shohei-kan/ricetta/issues/85) resolved / verified、[#86](https://github.com/shohei-kan/ricetta/issues/86) Known limitation |  | Started: 2026-08-21 15:00:55 JST、final regression: 2026-08-25 |
+| 5 | Edge desktop | Windows 10 Pro 2009（Build 19045）/ 64-bit | Microsoft Edge 149.0.4022.80 | Pass | 0 | 0 | 0 | 0 | 新規findingなし。[#85](https://github.com/shohei-kan/ricetta/issues/85)修正確認 |  | Started: 2026-08-24 12:42:02 JST、final regression: 2026-08-25 |
 
 EdgeをmacOSで確認した場合は `macOS / Edge` と明記し、Windows Edge確認済みとは扱わない。iPhone Safariは機種とiOS versionを記録する。
+
+Browser matrixの件数は、各browserの初回確認で発見または再現したFindingを監査履歴として残した値であり、現在の未解決件数ではない。修正・検証済みFindingと現在のKnown Issueは「結果summary」で別に集計する。
 
 ## 現実的なcoverage
 
@@ -76,10 +81,10 @@ EdgeをmacOSで確認した場合は `macOS / Edge` と明記し、Windows Edge�
 
 | Browser | Owner | Staff | 固有の重点 | Status |
 | --- | --- | --- | --- | --- |
-| Chrome desktop | 広範 | 主要 + 権限詳細 | 基準動作、responsive DevTools | Pass with issues |
+| Chrome desktop | 広範 | 主要 + 権限詳細 | 基準動作、responsive DevTools | Pass with known issues |
 | iPhone Safari | 広範 | 主要 + 権限詳細 | portrait / landscape、safe area、bottom nav、tap / keyboard | Pass |
-| Safari desktop | 主要 | login / 主要画面 / logout | fixed / sticky、native form、Session、back-forward cache | Fail（[#86](https://github.com/shohei-kan/ricetta/issues/86)） |
-| Firefox desktop | 主要 | login / 主要画面 / logout | form、scrollbar、flex / grid、focus | Fail（[#86](https://github.com/shohei-kan/ricetta/issues/86)） |
+| Safari desktop | 主要 | login / 主要画面 / logout | fixed / sticky、native form、Session、back-forward cache | Pass |
+| Firefox desktop | 主要 | login / 主要画面 / logout | form、scrollbar、flex / grid、focus | Pass |
 | Edge desktop | 主要 | login / 主要画面 / logout | Windows 10でのlayout、form、Session、Chromeとの差 | Pass |
 
 staffの詳細な権限差はChrome desktopとiPhone Safariで確認する。他のdesktop browserでもstaffでlogin、Dashboard、Recipe List / Detail、Prep Today、Account / Settings、logoutを確認し、owner sessionと混同しない。
@@ -95,7 +100,7 @@ staffの詳細な権限差はChrome desktopとiPhone Safariで確認する。他
 | OS | macOS 15.5 |
 | Device | MacBook Air |
 | Browser | Google Chrome 151.0.7922.138 |
-| Status | Pass with issues |
+| Status | Pass with known issues |
 
 Tester、deployed commit、viewportは記録されていないため、推測で補完しない。
 
@@ -130,17 +135,17 @@ Tester、deployed commit、viewportは記録されていないため、推測で
 - Logoutに成功した。
 - 新しい重大なConsole errorは確認されなかった。
 
-### Findings
+### Findings（初回確認時）
 
-| Issue | Finding | Severity | Chromeへの影響 |
+| Issue | Finding | 発見時Severity | Chromeへの影響 / 最終状態 |
 | --- | --- | --- | --- |
-| [#82 Show authentication error for rejected login](https://github.com/shohei-kan/ricetta/issues/82) | Login APIがHTTP 400を返した際、UIが認証失敗ではなく通信失敗として表示する | Minor | 正しい認証情報ではlogin可能 |
-| [#83 Replace technical wording on Settings with user-facing copy](https://github.com/shohei-kan/ricetta/issues/83) | SettingsにMVP、Recipe Form、Shop、Unit等の技術的表現が残る | Cosmetic | 操作不能なし |
+| [#82 Show authentication error for rejected login](https://github.com/shohei-kan/ricetta/issues/82) | Login APIがHTTP 400を返した際、UIが認証失敗ではなく通信失敗として表示する | Minor | Resolved / verified |
+| [#83 Replace technical wording on Settings with user-facing copy](https://github.com/shohei-kan/ricetta/issues/83) | SettingsにMVP、Recipe Form、Shop、Unit等の技術的表現が残る | Cosmetic | Resolved / verified |
 | [#84 Add identifiers and label associations to form controls](https://github.com/shohei-kan/ricetta/issues/84) | Chrome DevToolsがapp-owned form fieldのid / name不足を警告する | Minor | 現時点でform操作不能なし |
-| [#85 Fix recipe and ingredient detail/edit back-button loop](https://github.com/shohei-kan/ricetta/issues/85) | Recipe / IngredientのDetailとEditでアプリ内戻るボタンがループする | Minor | Browser backまたはsidebar navigationで回避可能 |
-| [#86 Add owner deletion flow for recipes and ingredients](https://github.com/shohei-kan/ricetta/issues/86) | Owner向けRecipe / Ingredient削除UIが存在しない | Major | UI上の回避策なし。公開可否は[#30](https://github.com/shohei-kan/ricetta/issues/30)で判断する |
+| [#85 Fix recipe and ingredient detail/edit back-button loop](https://github.com/shohei-kan/ricetta/issues/85) | Recipe / IngredientのDetailとEditでアプリ内戻るボタンがループする | Minor | Resolved / verified |
+| [#86 Add owner deletion flow for recipes and ingredients](https://github.com/shohei-kan/ricetta/issues/86) | Owner向けRecipe / Ingredient削除UIが存在しない | Major（初期判定） | Browser-independentなBacklog / Known limitation。公開scopeは[#30](https://github.com/shohei-kan/ricetta/issues/30)で判断する |
 
-Chrome desktop集計はBlocker 0、Major 1、Minor 3、Cosmetic 1。Browser判定は指定どおり **Pass with issues** を維持する。[#86](https://github.com/shohei-kan/ricetta/issues/86)はbrowser-independentな既知Majorとして追跡し、公開可否は[#30](https://github.com/shohei-kan/ricetta/issues/30)で判断する。
+Chrome desktopの発見時集計はBlocker 0、Major 1、Minor 3、Cosmetic 1である。#82、#83、#85は修正・検証済み、#84はnon-blockingなKnown Issue、#86はbrowser-independentなKnown limitationへ整理したため、最終判定は **Pass with known issues** とする。
 
 ## iPhone Safari実施結果
 
@@ -197,9 +202,9 @@ Testerとdeployed commitは記録されていないため、推測で補完し�
 
 ### Findings
 
-iPhone Safariで新しい問題は確認されなかった。Blocker 0、Major 0、Minor 0、Cosmetic 0。確認した範囲にpublic release blockerはなく、判定は **Pass** である。
+iPhone Safariで新しい問題は確認されなかった。Blocker 0、Major 0、Minor 0、Cosmetic 0。確認した範囲に公開を妨げるbrowser固有問題はなく、判定は **Pass** である。
 
-[#85](https://github.com/shohei-kan/ricetta/issues/85)と[#86](https://github.com/shohei-kan/ricetta/issues/86)はiPhone Safariで再確認していないため、iPhone Safariの結果へ加算しない。
+2026-08-25の最終回帰では、iPhone Safariで[#82](https://github.com/shohei-kan/ricetta/issues/82)、[#83](https://github.com/shohei-kan/ricetta/issues/83)、[#85](https://github.com/shohei-kan/ricetta/issues/85)の修正を確認した。これは既存Findingの修正確認であり、iPhone Safariの新規Finding件数へ加算しない。[#86](https://github.com/shohei-kan/ricetta/issues/86)はbrowser-independentなKnown limitationとして[#30](https://github.com/shohei-kan/ricetta/issues/30)へ判断を引き継ぐ。
 
 ## Safari desktop実施結果
 
@@ -215,7 +220,7 @@ iPhone Safariで新しい問題は確認されなかった。Blocker 0、Major 0
 | Browser | Safari 18.5 |
 | Window | 通常window |
 | Page zoom | 100% |
-| Status | Fail |
+| Status | Pass |
 
 Testerとdeployed commitは確認されていないため、推測で補完しない。
 
@@ -236,7 +241,7 @@ Testerとdeployed commitは確認されていないため、推測で補完し�
 - Navigation、Prep Today、Recipe List / Detail、Recipe Detail内の原価情報、Ingredient List / Detail、Settings、Accountを利用できた。
 - Recipe form、Ingredient form、Safari native selectを利用できた。
 - 狭いwindow幅、scroll、contentの重なりに問題はなかった。
-- Browser back / forwardは正常だった。ただしアプリ内戻るボタンには[#85](https://github.com/shohei-kan/ricetta/issues/85)のループがある。
+- Browser back / forwardは正常だった。初回確認ではアプリ内戻るボタンに[#85](https://github.com/shohei-kan/ricetta/issues/85)のループがあったが、2026-08-25の最終回帰で修正を確認した。
 - Accountの表示名を一時変更し、更新requestがHTTP PATCH 200となることを確認した。
 - 更新requestに `X-CSRFToken` headerが存在することを確認した。header値は記録していない。
 - Reload後も一時変更を維持し、確認後に元の表示名へ復元した。復元後のreloadでも元の値を維持した。
@@ -251,14 +256,14 @@ Testerとdeployed commitは確認されていないため、推測で補完し�
 - Login中のunknown routeはDashboard、logout後のunknown routeはLoginへ遷移した。
 - Logoutに成功し、Consoleに予期しないerrorはなかった。
 
-### Findings
+### Findings（初回確認時）
 
-| Issue | Finding | Severity | 影響 / 回避策 |
+| Issue | Finding | 発見時Severity | 影響 / 最終状態 |
 | --- | --- | --- | --- |
-| [#85 Fix recipe and ingredient detail/edit back-button loop](https://github.com/shohei-kan/ricetta/issues/85) | Recipe / IngredientのDetailとEditでアプリ内戻るボタンがループする。Safari 18.5とChrome 151で再現 | Minor | Browser backまたはsidebar navigationで回避可能 |
-| [#86 Add owner deletion flow for recipes and ingredients](https://github.com/shohei-kan/ricetta/issues/86) | Owner向けRecipe / Ingredient削除UIが存在しない。DEMO_MODEによる意図的な非表示ではなく、frontend未実装 | Major | UI上の回避策なし。公開可否は[#30](https://github.com/shohei-kan/ricetta/issues/30)で判断する |
+| [#85 Fix recipe and ingredient detail/edit back-button loop](https://github.com/shohei-kan/ricetta/issues/85) | Recipe / IngredientのDetailとEditでアプリ内戻るボタンがループする。Safari 18.5とChrome 151で再現 | Minor | Resolved / verified |
+| [#86 Add owner deletion flow for recipes and ingredients](https://github.com/shohei-kan/ricetta/issues/86) | Owner向けRecipe / Ingredient削除UIが存在しない。DEMO_MODEによる意図的な非表示ではなく、frontend未実装 | Major（初期判定） | Browser-independentなBacklog / Known limitation。公開scopeは[#30](https://github.com/shohei-kan/ricetta/issues/30)で判断する |
 
-Safari desktop集計はBlocker 0、Major 1、Minor 1、Cosmetic 0。主要画面、Session、form、browser navigation自体は利用できたが、既知Majorの[#86](https://github.com/shohei-kan/ricetta/issues/86)があるため、既存の重大度規則に従って判定は **Fail** とする。公開可否は[#30](https://github.com/shohei-kan/ricetta/issues/30)で判断する。
+Safari desktopの発見時集計はBlocker 0、Major 1、Minor 1、Cosmetic 0である。#85は修正・検証済みであり、#86はbrowser固有不具合ではないため、Safari互換性の最終判定は **Pass** とする。
 
 ## Firefox desktop実施結果
 
@@ -273,7 +278,7 @@ Safari desktop集計はBlocker 0、Major 1、Minor 1、Cosmetic 0。主要画面
 | Browser | Mozilla Firefox 154.0 |
 | Window | 通常ウィンドウ |
 | Page zoom | 100% |
-| Status | Fail |
+| Status | Pass |
 
 Tester、deployed commit、完了日時は確認されていないため、推測で補完しない。
 
@@ -293,7 +298,7 @@ Tester、deployed commit、完了日時は確認されていないため、推�
 - Owner login、Dashboardへの遷移と表示、reload後のSession維持を確認した。
 - Navigation、Prep Today、Recipe、Recipe Detail内の原価情報、Ingredient、Settings、Accountを利用できた。
 - Form、Firefox native select、scrollbar、flex / grid、狭いwindow幅での表示に問題はなかった。
-- Tab / Shift+Tabによるkeyboard focusとBrowser back / forwardは正常だった。ただしアプリ内戻るボタンには[#85](https://github.com/shohei-kan/ricetta/issues/85)のループがある。
+- Tab / Shift+Tabによるkeyboard focusとBrowser back / forwardは正常だった。初回確認ではアプリ内戻るボタンに[#85](https://github.com/shohei-kan/ricetta/issues/85)のループがあったが、2026-08-25の最終回帰で修正を確認した。
 - Accountの表示名を一時変更し、更新requestがHTTP PATCH 200となることを確認した。
 - 更新requestに `X-CSRFToken` headerが存在することを確認した。header値は記録していない。
 - Reload後も一時変更を維持し、確認後に元の表示名へ復元した。復元後のreloadでも元の値を維持した。
@@ -307,14 +312,14 @@ Tester、deployed commit、完了日時は確認されていないため、推�
 - Login中のunknown routeはDashboard、logout後のunknown routeはLoginへ遷移した。
 - Logoutに成功し、Consoleに予期しないerrorはなかった。
 
-### Findings
+### Findings（初回確認時）
 
-| Issue | Finding | Severity | 影響 / 回避策 |
+| Issue | Finding | 発見時Severity | 影響 / 最終状態 |
 | --- | --- | --- | --- |
-| [#85 Fix recipe and ingredient detail/edit back-button loop](https://github.com/shohei-kan/ricetta/issues/85) | Recipe / IngredientのDetailとEditでアプリ内戻るボタンがループする。Firefox 154.0でも再現 | Minor | Browser backまたはsidebar navigationで回避可能 |
-| [#86 Add owner deletion flow for recipes and ingredients](https://github.com/shohei-kan/ricetta/issues/86) | Owner向けRecipe / Ingredient削除buttonが存在しない。Firefox 154.0でも再現 | Major | UI上の回避策なし。公開可否は[#30](https://github.com/shohei-kan/ricetta/issues/30)で判断する |
+| [#85 Fix recipe and ingredient detail/edit back-button loop](https://github.com/shohei-kan/ricetta/issues/85) | Recipe / IngredientのDetailとEditでアプリ内戻るボタンがループする。Firefox 154.0でも再現 | Minor | Resolved / verified |
+| [#86 Add owner deletion flow for recipes and ingredients](https://github.com/shohei-kan/ricetta/issues/86) | Owner向けRecipe / Ingredient削除buttonが存在しない。Firefox 154.0でも再現 | Major（初期判定） | Browser-independentなBacklog / Known limitation。公開scopeは[#30](https://github.com/shohei-kan/ricetta/issues/30)で判断する |
 
-Firefox固有の新規findingは確認されなかった。Firefox desktop集計はBlocker 0、Major 1、Minor 1、Cosmetic 0。Firefox互換性に起因するFailではなく、既知Majorの[#86](https://github.com/shohei-kan/ricetta/issues/86)が再現したため、既存の重大度規則に従って判定は **Fail** とする。公開可否は[#30](https://github.com/shohei-kan/ricetta/issues/30)で判断する。
+Firefox固有の新規findingは確認されなかった。Firefox desktopの発見時集計はBlocker 0、Major 1、Minor 1、Cosmetic 0である。#85は修正・検証済みであり、#86はbrowser固有不具合ではないため、Firefox互換性の最終判定は **Pass** とする。
 
 ## Edge desktop実施結果
 
@@ -370,13 +375,62 @@ Tester、deployed commit、完了日時は確認されていないため、推�
 - Login中のunknown routeはDashboardへ遷移した。
 - Edge固有のlayout崩れ、操作不能、予期しないConsole errorは確認されなかった。
 
-### Findings and pending verification
+### Findings and current status
 
 Edge固有の新規findingは確認されなかった。Edge desktop集計はBlocker 0、Major 0、Minor 0、Cosmetic 0で、確認したEdge互換性の判定は **Pass** である。
 
-- [#85](https://github.com/shohei-kan/ricetta/issues/85)は本番反映済みで、Chrome、Safari、Edgeでは修正後の戻る導線を確認済みである。Firefoxでの修正後確認は記録されていない。
-- [#82](https://github.com/shohei-kan/ricetta/issues/82)と[#83](https://github.com/shohei-kan/ricetta/issues/83)はmainへmerge済みだが、Edge実施時点の本番frontendには未反映である。新しいlogin error文言とSettings文言はEdgeで最終確認済みとしない。
-- [#84](https://github.com/shohei-kan/ricetta/issues/84)と[#86](https://github.com/shohei-kan/ricetta/issues/86)はopenのKnown Issueである。[#86](https://github.com/shohei-kan/ricetta/issues/86)はbrowser-independentであり、公開可否は[#30](https://github.com/shohei-kan/ricetta/issues/30)で判断する。
+- [#85](https://github.com/shohei-kan/ricetta/issues/85)は2026-08-25の最終回帰を含め、必須5browserすべてで修正確認済みである。
+- [#82](https://github.com/shohei-kan/ricetta/issues/82)と[#83](https://github.com/shohei-kan/ricetta/issues/83)の最終回帰対象はChrome desktopとiPhone Safariであり、両browserで修正確認済みである。
+- [#84](https://github.com/shohei-kan/ricetta/issues/84)はnon-blockingなアクセシビリティKnown Issue、[#86](https://github.com/shohei-kan/ricetta/issues/86)はbrowser-independentなBacklog / Known limitationとして残る。#86の公開scopeは[#30](https://github.com/shohei-kan/ricetta/issues/30)で判断する。
+
+## 2026-08-25 final production regression
+
+### Environment
+
+| 項目 | 記録 |
+| --- | --- |
+| Verification date | 2026-08-25 |
+| Target | public demo |
+| Production deployed commit | `72b35b786763353976195747cde64c71fa5ffdb6` |
+| #82 / #83 verification browsers | Chrome desktop、iPhone Safari |
+| #85 verification browsers | Chrome desktop、iPhone Safari、Safari desktop、Firefox desktop、Edge desktop |
+
+Testerは記録されていないため、推測で補完しない。Commit SHAは公開デモのrevision照合用であり、credentialやprivate identifierではない。
+
+### #82 rejected login error
+
+- Chrome desktopとiPhone Safariで修正を確認した。
+- 誤った認証情報では「メールアドレスまたはパスワードが正しくありません。」と表示された。
+- Login APIのHTTP 400は期待どおりの認証拒否responseとして扱われ、network failureとは誤分類されなかった。
+- 正しいowner / staff認証情報ではloginに成功した。
+- Accountの存在や認証失敗理由を推測できる詳細は表示されなかった。
+
+判定: [#82](https://github.com/shohei-kan/ricetta/issues/82)は **Resolved / verified**。
+
+### #83 Settings copy
+
+- Chrome desktopとiPhone Safariで新しい日本語説明を確認した。
+- iPhone Safariでは説明文がmobile幅で自然に折り返され、文字切れや操作不能はなかった。
+- Ownerではカテゴリ・単位の管理formが表示され、staffでは閲覧専用表示となった。
+- 標準単位に編集・削除操作が表示されないことを確認した。
+
+判定: [#83](https://github.com/shohei-kan/ricetta/issues/83)は **Resolved / verified**。
+
+### #85 navigation
+
+- Chrome desktop、iPhone Safari、Safari desktop、Firefox desktop、Edge desktopで修正を確認した。
+- Recipe / Ingredientともに、List → Detail → Edit → アプリ内戻る → Detail → アプリ内戻る → Listが正常だった。
+- Browser標準のBackも正常だった。
+- 初回確認で再現したDetail / Edit loopは、最終回帰では再現しなかった。
+
+判定: [#85](https://github.com/shohei-kan/ricetta/issues/85)は **Resolved / verified**。
+
+### Final regression result
+
+- 新しいConsole errorは確認されなかった。
+- 必須5browserの確認と、対象Findingのproduction回帰を完了した。
+- 未実施browserはない。
+- Unresolved Blockerは0件、Unresolved Majorは0件である。
 
 ## 実施前の共通確認
 
@@ -384,7 +438,7 @@ Edge固有の新規findingは確認されなかった。Edge desktop集計はBlo
 
 | ID | 確認と目的 | 期待結果 | Status / 記録 |
 | --- | --- | --- | --- |
-| PRE-01 | 実施URLとdeployed commitを管理者に確認し、別revisionを試さない | 対象が記録欄と一致する | Not run |
+| PRE-01 | 実施URLとdeployed commitを管理者に確認し、別revisionを試さない | 対象が記録欄と一致する | 初回のbrowser別実施ではcommit未記録。2026-08-25 final regression: Pass（production deployed commitを記録） |
 | PRE-02 | Browserでpublic demo URLを開き、HTTPSを確認する | 証明書警告なく表示される | Chrome・Safari・Firefox・Edge: Pass / iPhone: Not run |
 | PRE-03 | 同じoriginの `/api/v1/health/` をBrowserで開き、公開APIの到達性を確認する | `status` が `ok` のJSONを返す | Chrome・Safari・Edge: HTTP 200確認（bodyの個別記録なし）、Firefox: Pass（status codeの個別記録なし）/ iPhone: Not run |
 | PRE-04 | 同じoriginの `/admin/` を開き、公開しない管理画面の境界を確認する | 意図どおり404 | Chrome・Safari・Firefox・Edge: Pass / iPhone: Not run |
@@ -425,7 +479,7 @@ desktop sidebarとmobile bottom navigationのラベルは `ホーム`、`仕込�
 | COM-01 | HTTPSでLoginを開く | certificate warningやmixed-content起因の操作不能がない | 全browser | Chrome・Safari・Firefox・Edge: Pass / iPhone: Not run |
 | COM-02 | Tabのfaviconとpage titleを見る | Ricettaのfaviconとtitleが表示される | 全browser | Chrome・Safari・Firefox・Edge: Pass / iPhone: Not run |
 | COM-03 | 既存正本のowner accountを選びloginする | Dashboardへ移動し、オーナー表示になる | 全browser | Chrome・iPhone・Safari・Firefox・Edge: Pass |
-| COM-04 | 意図的なinvalid loginを1回だけ試す | accountの存在を推測させないgeneric errorが表示される | Chromeのみ | Fail（Minor、[#82](https://github.com/shohei-kan/ricetta/issues/82)） |
+| COM-04 | 意図的なinvalid loginを1回だけ試す | accountの存在を推測させないgeneric errorが表示される | Chrome / iPhone | 初回Chrome: Fail（Minor、[#82](https://github.com/shohei-kan/ricetta/issues/82)）。2026-08-25 final regression: Chrome・iPhoneともPass（HTTP 400でgenericな認証エラーを表示） |
 | COM-05 | protected route間を移動する | login sessionが維持され、再loginを要求されない | 全browser | Chrome・iPhone・Safari・Firefox・Edge: Pass |
 | COM-06 | Accountからlogoutし、Browser backとprotected route直打ちを試す | 保護画面へ戻れずLoginへredirectされる | 全browser / 両role | Chrome owner・iPhone・Safari・Firefox・Edge owner: Pass、Chrome・Edge staff logout: Pass |
 | COM-07 | logout後にstaffでloginする | スタッフ表示となりowner sessionが残らない | 全browser | Chrome・iPhone・Safari・Firefox・Edge: Pass |
@@ -443,7 +497,7 @@ invalid loginを短時間に繰り返さない。login throttleをテストす�
 | COM-14 | Ingredient Listを開き検索、detailへ進む | desktop / mobile表示と遷移が利用可能 | Safari・Firefox・Edge: list / detail表示はPass。検索の個別記録なし / Chrome・iPhone: Not run |
 | COM-15 | Prep Todayを開きtask、status、board memo領域を見る | contentが重ならず、buttonが操作可能 | Chrome・iPhone・Safari・Firefox: 画面表示・staff status更新と復元はPass。Edge: 画面表示Pass。board memoの個別記録なし |
 | COM-16 | AccountとSettingsを開く | roleに合う情報と操作だけが表示される | Chrome・iPhone・Safari・Firefox・Edge: Pass |
-| COM-17 | Browser back / forwardを主要画面間で使う | routeと表示、navigation選択状態が一致する | Safari・Firefox・Edge: browser back / forwardはPass。Edgeのアプリ内戻るは[#85](https://github.com/shohei-kan/ricetta/issues/85)修正確認済み、Safari・Firefoxの表中結果は修正前。Chrome: back Pass、forward個別記録なし / iPhone: Not run |
+| COM-17 | Browser back / forwardを主要画面間で使う | routeと表示、navigation選択状態が一致する | Desktopのbrowser back / forwardはPass。2026-08-25 final regressionでは全5browserでRecipe / Ingredientのアプリ内戻る導線とbrowser標準BackがPass（[#85](https://github.com/shohei-kan/ricetta/issues/85)） |
 | COM-18 | Dashboard、Recipe Detail、Accountでreloadする | login sessionが維持され、同じ画面を再表示できる | Chrome: reload Pass、route内訳なし。iPhone: Account / Prep更新後、Safari・Firefox: Session / Account / Prep更新後のreload Pass。Edge: Dashboard / Account更新後Pass、Recipe Detail reloadの個別記録なし |
 | COM-19 | 現在のRecipe Detail URLを新しいtabで直接開く | login済みならdetailを表示。ID実値は結果文書へ転記しない | Not run |
 | COM-20 | 存在しないtest用pathを開く | login中はDashboard、logout中はLoginへredirectする | iPhone・Safari・Firefox: Pass。Edge: login中はPass、logout中は個別記録なし / Chrome: Not run |
@@ -471,11 +525,11 @@ error stateはnetwork遮断、API改変、production data操作で人工的に�
 | ID | 確認 | 期待結果 | Status |
 | --- | --- | --- | --- |
 | ROLE-O1 | Recipe / Ingredientの一覧とdetail | 追加・編集導線が見える | Safari: 追加・編集はPass / 他browser: Not run |
-| ROLE-O2 | Settings | category / unitの追加・編集UIが見える | Not run |
+| ROLE-O2 | Settings | category / unitの追加・編集UIが見える | Chrome・iPhone: Pass（2026-08-25 final regression、[#83](https://github.com/shohei-kan/ricetta/issues/83)）/ 他browser: 個別記録なし |
 | ROLE-O3 | Account | 店舗情報の編集導線が見える | Not run |
 | ROLE-O4 | Prep Today | taskとboard memoの操作UIが見える | Not run |
 | ROLE-O5 | 自分の表示名 | `表示名を保存` が利用できる | Chrome・iPhone・Safari・Firefox・Edge: Pass |
-| ROLE-O6 | Recipe / Ingredientの削除 | Owner向けの安全な削除導線が利用できる | Chrome・Safari・Firefox: Fail（[#86](https://github.com/shohei-kan/ricetta/issues/86)）/ iPhone: 再確認なし / Edge: Not run |
+| ROLE-O6 | Recipe / Ingredientの削除 | 公開scopeに含める場合、Owner向けの安全な削除導線が利用できる | [#86](https://github.com/shohei-kan/ricetta/issues/86)として未実装。browser-independentなBacklog / Known limitationであり、browser判定のFailには数えない。公開scopeは[#30](https://github.com/shohei-kan/ricetta/issues/30)で判断する |
 
 削除、recipe保存、ingredient保存、店舗情報更新は権限表示確認だけに留める。Issue #58のSession / CSRF代表操作には、後述の表示名更新だけを使う。
 
@@ -533,9 +587,9 @@ source上、日付inputは主要formにないためdate pickerは `N/A（該当c
 
 | Browser | 確認 | Status |
 | --- | --- | --- |
-| Chrome | 基準動作に加え、DevTools responsive表示で767px付近のnavigation切替、scroll、横overflowを確認する | Pass with issues（重大なlayout崩れ・横scrollなし。767px個別結果は未記録） |
-| Safari | sticky sidebar、fixed要素、native form control、Session、back / forward後の表示とback-forward cache由来の古い状態を確認する | Fail（基本動作はPass、[#85](https://github.com/shohei-kan/ricetta/issues/85) Minor、[#86](https://github.com/shohei-kan/ricetta/issues/86) Major。#85は修正後確認済み） |
-| Firefox | input / select、scrollbar、flex / grid、keyboard focus ring、長いcontentを確認する | Fail（form、native select、scrollbar、flex / grid、narrow window、focusはPass。[#85](https://github.com/shohei-kan/ricetta/issues/85) Minor、[#86](https://github.com/shohei-kan/ricetta/issues/86) Major。#85の修正後確認は未実施） |
+| Chrome | 基準動作に加え、DevTools responsive表示で767px付近のnavigation切替、scroll、横overflowを確認する | Pass with known issues（重大なlayout崩れ・横scrollなし。767px個別結果は未記録） |
+| Safari | sticky sidebar、fixed要素、native form control、Session、back / forward後の表示とback-forward cache由来の古い状態を確認する | Pass（基本動作とbrowser back / forwardがPass。[#85](https://github.com/shohei-kan/ricetta/issues/85)はfinal regressionで修正確認済み） |
+| Firefox | input / select、scrollbar、flex / grid、keyboard focus ring、長いcontentを確認する | Pass（form、native select、scrollbar、flex / grid、narrow window、focusがPass。[#85](https://github.com/shohei-kan/ricetta/issues/85)はfinal regressionで修正確認済み） |
 | Edge | Chromeと同じChromium系でもlayout、form、Sessionを再確認し、確認したOSをmatrixへ明記する | Pass（Windows 10 Pro / 1366 × 768、主要layout・form・Session・navigationを確認。Edge固有findingなし） |
 
 ## Browserごとの実施順
@@ -602,48 +656,48 @@ cookie、CSRF token、Authorization header、password、個人情報、private i
 
 ### Browser結果
 
-Browser matrixを正本とする。Chrome desktopは **Pass with issues**、iPhone Safariは **Pass**、Safari desktopとFirefox desktopは **Fail**、Edge desktopは **Pass** である。必須5browserの実機確認は揃ったが、#82・#83の本番反映後回帰と最終集計が残るため、全browser総合判定は **Not run** を維持する。
+Browser matrixを正本とする。Chrome desktopは **Pass with known issues**、iPhone Safari、Safari desktop、Firefox desktop、Edge desktopは **Pass** である。必須5browserの実機確認と2026-08-25のproduction回帰が完了し、未実施browserはない。全browser総合判定は **Pass with known issues** とする。
 
 ### Role結果
 
 | Role | Status | 確認browser | Evidence / Issue |
 | --- | --- | --- | --- |
-| Owner | Chrome: Pass with issues / iPhone: Pass / Safari: Fail / Firefox: Fail / Edge: Pass | Chrome desktop、iPhone Safari、Safari desktop、Firefox desktop、Edge desktop | [#82](https://github.com/shohei-kan/ricetta/issues/82)〜[#86](https://github.com/shohei-kan/ricetta/issues/86)。Safari / FirefoxのFail理由は既知Majorの[#86](https://github.com/shohei-kan/ricetta/issues/86)。Edge固有findingなし |
-| Staff | Chrome: Pass with issues / iPhone: Pass / Safari: Pass / Firefox: Pass / Edge: Pass | Chrome desktop、iPhone Safari、Safari desktop、Firefox desktop、Edge desktop | Chrome findings: [#83](https://github.com/shohei-kan/ricetta/issues/83), [#84](https://github.com/shohei-kan/ricetta/issues/84)。Firefox・Edge固有findingなし |
+| Owner | Chrome: Pass with known issues / iPhone: Pass / Safari: Pass / Firefox: Pass / Edge: Pass | Chrome desktop、iPhone Safari、Safari desktop、Firefox desktop、Edge desktop | Login、主要画面、代表更新、logoutがPass。[#82](https://github.com/shohei-kan/ricetta/issues/82)、[#83](https://github.com/shohei-kan/ricetta/issues/83)、[#85](https://github.com/shohei-kan/ricetta/issues/85)は修正・検証済み |
+| Staff | 全browser: Pass | Chrome desktop、iPhone Safari、Safari desktop、Firefox desktop、Edge desktop | Login、閲覧専用制御、許可されたPrep更新と復元、logoutがPass。Chrome・iPhoneでは[#83](https://github.com/shohei-kan/ricetta/issues/83)修正後の閲覧専用表示も確認済み |
 
 ### Finding集計
 
-| Blocker | Major | Minor | Cosmetic | 作成したIssue |
-| ---: | ---: | ---: | --- |
-| 0 | 1 | 3 | 1 | [#82](https://github.com/shohei-kan/ricetta/issues/82), [#83](https://github.com/shohei-kan/ricetta/issues/83), [#84](https://github.com/shohei-kan/ricetta/issues/84), [#85](https://github.com/shohei-kan/ricetta/issues/85), [#86](https://github.com/shohei-kan/ricetta/issues/86) |
+テスト中に発見したunique Findingは5件で、発見時の集計はBlocker 0、Major 1、Minor 3、Cosmetic 1である。この件数は発見時の影響度を残す監査記録であり、現在の未解決件数ではない。
 
-- [#86](https://github.com/shohei-kan/ricetta/issues/86)はbrowser-independentな既知Majorであり、公開可否は[#30](https://github.com/shohei-kan/ricetta/issues/30)で判断する。
-- Chrome判定: **Pass with issues**
-- iPhone Safariでpublic releaseを妨げる問題: **なし**
-- iPhone Safari判定: **Pass**
-- Safari desktop判定: **Fail**
-- Firefox desktop判定: **Fail**（Firefox互換性ではなく既存Majorの[#86](https://github.com/shohei-kan/ricetta/issues/86)が理由）
-- Edge desktop判定: **Pass**（Edge固有findingなし、[#85](https://github.com/shohei-kan/ricetta/issues/85)修正確認済み）
-- [#85](https://github.com/shohei-kan/ricetta/issues/85)修正後確認: **Chrome・Safari・EdgeでPass。Firefoxは未確認**
-- [#82](https://github.com/shohei-kan/ricetta/issues/82)・[#83](https://github.com/shohei-kan/ricetta/issues/83): **mainへmerge済み。本番frontend反映後の回帰は未実施**
-- Open Known Issue: **[#84](https://github.com/shohei-kan/ricetta/issues/84)、[#86](https://github.com/shohei-kan/ricetta/issues/86)**
-- 全browser総合判定: **Not run（#82・#83の本番反映後回帰と最終集計待ち）**
-- Issue #58の完了可否: **まだClose不可。#82・#83の本番反映後回帰と最終集計が残る**
-- 未実施browser: **なし**
-- 次のaction: #82・#83の本番反映後に対象表示を回帰確認し、Findingの最終状態とAcceptance Criteriaを再集計する。
+| Issue | 発見時の分類 | Browser依存 | 最終状態 |
+| --- | --- | --- | --- |
+| [#82](https://github.com/shohei-kan/ricetta/issues/82) | Minor | Browser-independentなlogin error処理 | Resolved / verified。Chrome・iPhoneでproduction確認済み |
+| [#83](https://github.com/shohei-kan/ricetta/issues/83) | Cosmetic | Browser-independentなSettings copy | Resolved / verified。Chrome・iPhoneでproduction確認済み |
+| [#84](https://github.com/shohei-kan/ricetta/issues/84) | Minor | Browser-independentなform markup / accessibility。Chrome DevToolsで発見 | Open Known Issue。操作不能やbrowser互換性の失敗は確認されていない |
+| [#85](https://github.com/shohei-kan/ricetta/issues/85) | Minor | 複数browserで再現したnavigation実装 | Resolved / verified。必須5browserでproduction確認済み |
+| [#86](https://github.com/shohei-kan/ricetta/issues/86) | Major（初期判定） | Browser-independentな未実装機能 | Open Backlog / Known limitation。現在のbrowser判定やpublic blockerには固定せず、公開デモscopeを[#30](https://github.com/shohei-kan/ricetta/issues/30)で判断する |
+
+- 修正・検証済みFinding: **3件（#82、#83、#85）**
+- 現在残るKnown Issue / Known limitation: **2件（#84、#86）**
+- 現在残るbrowser固有問題: **なし**
+- Unresolved Blocker: **0件**
+- Unresolved Major: **0件**
+- 全browser総合判定: **Pass with known issues**
+
+Issue [#58](https://github.com/shohei-kan/ricetta/issues/58)はcross-browser smoke testのAcceptance Criteriaを満たし、このDocs変更のmerge後にClose可能である。Ricetta公開デモ全体の公開可否と[#86](https://github.com/shohei-kan/ricetta/issues/86)を公開scopeへ含めるかの判断は、Issue [#30 Public Release Readiness Review](https://github.com/shohei-kan/ricetta/issues/30)へ引き継ぐ。#58の完了判断を#30の公開判断と同一視しない。
 
 ## Acceptance Criteria対応
 
 | Issue #58 Acceptance Criteria | この文書の確認箇所 | 現在 |
 | --- | --- | --- |
-| Chrome / Safari / Firefox / Edgeで重大なlayout崩れがない | Browser matrix、共通 / desktop checklist | Chrome・Safari・Firefox・Edgeとも重大なlayout崩れなし。Safari・Firefoxのbrowser判定は既知Majorの[#86](https://github.com/shohei-kan/ricetta/issues/86)によりFail |
+| Chrome / Safari / Firefox / Edgeで重大なlayout崩れがない | Browser matrix、共通 / desktop checklist | Pass。4 desktop browserとも重大なlayout崩れなし |
 | iPhone Safariで主要導線を操作できる | iPhone Safari専用checklist | Pass |
 | owner / staffでlogin / logoutできる | Public表示と認証、Role結果 | Chrome・iPhone・Safari・Firefox・Edge: Pass |
-| 主要navigationが機能する | 主要画面とnavigation | Browser back / forwardは各desktopでPass。[#85](https://github.com/shohei-kan/ricetta/issues/85)のアプリ内戻るはChrome・Safari・Edgeで修正確認済み、Firefoxの修正後確認は未実施 |
-| 主要form / 操作がbrowser差で使用不能でない | UI state / form、Session / CSRF | 各browserの代表form / 更新はPass。owner削除操作はbrowser-independentな[#86](https://github.com/shohei-kan/ricetta/issues/86)としてopen |
+| 主要navigationが機能する | 主要画面とnavigation、final production regression | Pass。[#85](https://github.com/shohei-kan/ricetta/issues/85)のRecipe / Ingredient戻る導線とbrowser標準Backを必須5browserで確認済み |
+| 主要form / 操作がbrowser差で使用不能でない | UI state / form、Session / CSRF | Pass。各browserの代表form / 更新は利用可能。[#86](https://github.com/shohei-kan/ricetta/issues/86)はbrowser-independentなBacklog / Known limitationとして[#30](https://github.com/shohei-kan/ricetta/issues/30)でscope判断する |
 | Session / CSRFを伴う主要操作が正常 | 表示名の安全な代表確認 | Chrome・iPhone・Safari・Firefox・Edge owner: Pass |
-| 公開を妨げるbrowser固有問題がない | 完了条件、重大度、結果summary | Edge固有findingなし。既知Issueの公開可否は[#30](https://github.com/shohei-kan/ricetta/issues/30)で判断し、#82・#83回帰後に最終判定する |
-| 発見事項を必要に応じて別Issue化 | 問題記録template、結果summary | Chrome / Safari / Firefox: #82〜#86、iPhone・Edge: 新規findingなし |
+| 公開を妨げるbrowser固有問題がない | 完了条件、重大度、結果summary | Pass。現在残るbrowser固有問題なし。公開デモ全体の公開可否は[#30](https://github.com/shohei-kan/ricetta/issues/30)で判断する |
+| 発見事項を必要に応じて別Issue化 | 問題記録template、結果summary | Pass。[#82](https://github.com/shohei-kan/ricetta/issues/82)〜[#86](https://github.com/shohei-kan/ricetta/issues/86)へ分離し、最終状態を記録済み |
 
 ## 実施者の最終確認
 
@@ -651,7 +705,7 @@ Browser matrixを正本とする。Chrome desktopは **Pass with issues**、iPho
 - [x] owner / staffを混同せず、各browserでlogoutまで確認した
 - [x] 一時的な表示名を元へ戻した
 - [x] Not run / Blocked / N/AをPassとして数えていない
-- [ ] Blocker 0、未対応Major 0を確認した
+- [x] Blocker 0、未対応Major 0を確認した
 - [x] evidenceからsecret、credential、個人情報を除いた
 - [x] 必要なfollow-up Issueを作成または候補として記録した
 - [x] Issue #58のAcceptance Criteriaと結果を照合した
