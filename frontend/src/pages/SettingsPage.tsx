@@ -255,7 +255,7 @@ export function SettingsPage() {
   return (
     <div className="mx-auto max-w-7xl px-5 py-6 md:px-8 md:py-8">
       <div className="mb-6 border-b border-[#ded2c2] pb-5">
-        <p className="text-sm font-bold text-[#c76738]">Settings</p>
+        <p className="text-sm font-bold text-[#c76738]">カテゴリ・単位</p>
         <div className="mt-2 flex items-center gap-3">
           <h1 className="text-3xl font-bold tracking-normal text-[#2e2822] md:text-4xl">
             設定
@@ -268,7 +268,7 @@ export function SettingsPage() {
           />
         </div>
         <p className="mt-2 text-base leading-7 text-[#75685e]">
-          MVPではレシピ台帳の運用に必要なカテゴリと単位だけを管理します。
+          レシピの分類に使うカテゴリと、材料の分量に使う単位を管理します。
         </p>
         {!canManageSettings && (
           <p className="mt-3 rounded-lg border border-[#eadfce] bg-[#fffdf9] px-4 py-3 text-sm font-semibold text-[#75685e]">
@@ -281,7 +281,7 @@ export function SettingsPage() {
         <section className="rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-5 shadow-sm md:p-6">
           <h2 className="text-2xl font-bold text-[#2e2822]">レシピカテゴリ</h2>
           <p className="mt-2 text-sm leading-6 text-[#75685e]">
-            Recipe Formで選ぶ分類です。現在Shopのカテゴリだけを管理します。
+            レシピを前菜・メインなどに分類するための項目です。
           </p>
 
           {canManageSettings && (
@@ -359,7 +359,7 @@ export function SettingsPage() {
         <section className="rounded-xl border border-[#ded2c2] bg-[#fffdf9] p-5 shadow-sm md:p-6">
           <h2 className="text-2xl font-bold text-[#2e2822]">単位</h2>
           <p className="mt-2 text-sm leading-6 text-[#75685e]">
-            標準Unitは表示のみです。店舗独自Unitだけ追加・編集・削除できます。
+            g・kg・mlなど、材料の分量に使う単位を管理します。標準単位は編集できません。
           </p>
 
           {canManageSettings && (

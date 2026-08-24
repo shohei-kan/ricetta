@@ -13,6 +13,11 @@ import { RecipeDetailPage } from './pages/RecipeDetailPage'
 import { RecipeFormPage } from './pages/RecipeFormPage'
 import { RecipeListPage } from './pages/RecipeListPage'
 import { SettingsPage } from './pages/SettingsPage'
+import {
+  updateBrowserHistory,
+  type Navigate,
+  type NavigateOptions,
+} from './navigation'
 
 const protectedPaths: RoutePath[] = [
   '/dashboard',
@@ -44,9 +49,8 @@ function AppRouter() {
     return () => window.removeEventListener('popstate', handlePopState)
   }, [])
 
-  function navigate(nextPath: string) {
-    if (window.location.pathname !== nextPath) {
-      window.history.pushState(null, '', nextPath)
+  function navigate(nextPath: string, options?: NavigateOptions) {
+    if (updateBrowserHistory(window.history, window.location.pathname, nextPath, options)) {
       setPath(getCurrentPath())
     }
   }
@@ -82,7 +86,7 @@ function AppRouter() {
   )
 }
 
-function renderRoute(path: string, routePath: RoutePath, navigate: (path: string) => void) {
+function renderRoute(path: string, routePath: RoutePath, navigate: Navigate) {
   if (routePath === '/account') {
     return <AccountPage />
   }
@@ -138,7 +142,7 @@ function RedirectTo({
   navigate,
   path,
 }: {
-  navigate: (path: string) => void
+  navigate: Navigate
   path: string
 }) {
   useEffect(() => {
@@ -200,7 +204,7 @@ function getIngredientEditId(path: string): number | null {
   return Number(match[1])
 }
 
-function navigateToRoute(navigate: (path: string) => void) {
+function navigateToRoute(navigate: Navigate) {
   return (path: RoutePath) => navigate(path)
 }
 

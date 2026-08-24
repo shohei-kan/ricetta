@@ -76,7 +76,26 @@ AWS Budgets
 
 既存SNS Topic PolicyではCloudWatch用Statementを維持し、Budget用Statementを1件追加済みです。Budget用StatementはPrincipalを`budgets.amazonaws.com`、Actionを`SNS:Publish`とし、`aws:SourceAccount`で同一account、`aws:SourceArn`で同一accountのAWS Budgetsに限定しています。Topicは非KMS暗号化、HTTPS subscriptionは1件です。policyのARNやAccount ID実値はGitへ保存しません。再構築やrollbackでは現在のPolicyを先に読み取り、Policy document全体を盲目的に上書きしません。
 
-BudgetからSlackへの実通知到着は次回Budget評価待ちです。CloudWatch Alarmから同じSNS→Amazon Q→Slack経路への通知確認済みという事実だけでは、Budget publisherの実通知確認を代替しません。
+### End-to-end notification verification
+
+2026-08-22に、AWS BudgetのACTUAL 80%通知がSlackへ到着したことを実環境で確認しました。これにより、次のend-to-end deliveryを確認済みです。
+
+```text
+AWS Budgets
+→ existing SNS topic
+→ Amazon Q Developer in chat applications
+→ Slack infra-alerts
+```
+
+同じACTUAL 80%通知が、設定済みのEmail subscriberにも到着したことを確認しました。通知先Emailの実値は記録しません。
+
+これは既存設定での実通知到着確認であり、Budget、SNS、Amazon Q、Slackの設定変更は行っていません。ACTUAL 30 / 50 / 80 / 100%、FORECASTED 100%、Limit USD 10、Automatic Budget Actions 0の構成も維持しています。
+
+2026-08-22の確認により、Email deliveryとBudget→SNS→Amazon Q→Slack deliveryの両方を確認済みです。
+
+ACTUAL 80%通知は、遅延を含むBudget評価で当該thresholdの通知条件を満たしたことを示します。通知受信時点の正確な支出額、Budget超過、当月の最終月額、請求確定を示すものではありません。Cost ExplorerとBillsを別途確認します。また、今回の成功は今後の通知到着を恒久的に保証しないため、月次確認と通知経路の定期点検を継続します。
+
+Slack上の通知内容をIssueやDocsへ転記する場合も、credential、Account ID、ARN、subscriber、Email、Slack ID等のprivate identifierを貼りません。
 
 ## Current cost baseline
 
@@ -216,7 +235,7 @@ Temporary EC2 rebuild時はIssue #69のRunbookから本節へリンクし、Bill
 6. Budget用StatementのPrincipal / Actionと、同一accountへ限定する`aws:SourceAccount` / `aws:SourceArn`条件をConsole上で照合する。
 7. SNS→Amazon Q Developer→Slack `infra-alerts`の既存関連付けを確認する。
 8. Budget一覧と通知設定を再表示し、Budget、threshold、subscriber、Action 0件を照合する。
-9. 次回Budget評価後にEmailとSlackへの実通知到着を確認する。到着前は未検証として記録する。
+9. 再構築後にBudgetが実際にthresholdを評価した際、EmailとSlackへの到着を個別に確認する。2026-08-22のEmail・Slack到着実績は現在の経路のevidenceであり、再構築後や設定変更後のdeliveryを保証しない。未確認の経路は確認済みと記録しない。
 10. Cost Explorer、Free Tier、Credits、Billsとresource棚卸しを実行し、確認日付きbaselineを更新する。
 
 account固有placeholderを埋めるだけのJSONは作成しません。将来Terraform化する場合、本書のBudget表、通知表、policy制約、検証手順を入力仕様とします。
@@ -237,18 +256,21 @@ Budget本体、CloudWatch Alarm、SNS Topic、HTTPS subscription、Amazon Q chan
 | Issue #77 Acceptance Criteria | Evidence in this document |
 | --- | --- |
 | AWSコストの上限目安が決まっている | USD 10を厳格な警戒線として維持し、USD 20は将来候補と明記 |
-| 想定外の課金を通知で検知できる | 5段階のBudget通知とEmail / SNS経路を記録。Budget→Slack実通知は保留 |
+| 想定外の課金を通知で検知できる | 5段階のBudget通知を設定済み。2026-08-22にACTUAL 80%通知のEmailとBudget→SNS→Amazon Q→Slack到着を確認 |
 | 無料枠 / クレジット残高の確認手順が分かる | Monthly cost reviewとFree Tier and credits |
 | EC2停止中にも課金されるリソースを把握できている | EBSとPublic IPv4の継続課金、resource inventory |
 | 月次で確認するコスト項目が整理されている | Monthly cost reviewとcost inventory checklist |
 | 想定外課金時の確認手順がDocsに残っている | Unexpected charge first response |
 
-通知構成は作成済みですが、Budget→Slack実通知到着だけがAcceptance Criteriaの最終検証として残っています。
+Issue #77のAcceptance Criteriaは本書の設定・確認手順と2026-08-22の実通知evidenceで充足しています。本ドキュメント変更のmerge後にIssue #77をCloseできます。Issue本文の更新、コメント、Closeは本作業では行いません。
 
-## Open items and handoff
+## Ongoing operations and handoff
 
-- 次回Budget評価でBudget→SNS→Amazon Q→Slackの実通知到着を確認し、本節とhandoffを更新する。
-- Budget上限は公開後の実績を見て再評価する。現時点ではUSD 10を維持する。
+- 月次でCost ExplorerをService → Usage Type → Record Type → Regionの順に確認し、Billsの確定値と区別する。
+- Budget上限は公開後の実績を見て定期的に再評価する。現時点ではUSD 10を維持する。
+- Free Tier使用状況とcredit残高を月次で確認し、無料枠やUSD 0を恒久的な保証として扱わない。
+- 想定外課金時はread-only調査と証拠保全を先に行い、backupと依存関係を確認するまでresourceを変更・削除しない。
+- Budget / SNS / Amazon Q / Slack経路は、今回の到着実績だけを根拠に将来のdeliveryを保証せず、通知受信時と再構築・設定変更後に再確認する。
 - EBS未暗号化はIssue #77で変更せず、Issue #69で暗号化root EBSとしての再構築候補にする。
 - S3 Lifecycleは現時点で追加せず、長期保持要件と実コストを定期的に再評価する。
 - Terraform / Ansible化は別Issueで扱う。
