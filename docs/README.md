@@ -40,6 +40,7 @@ API・データモデルなど、現在実装に近い技術仕様の正本で�
 - [EC2 resource monitoring](./deploy/monitoring/ec2-resource-monitoring.md)
 - [AWS cost monitoring and billing guardrails](./deploy/monitoring/aws-cost-monitoring.md)
 - [Incident response runbook](./deploy/operations/incident-response.md)
+- [Frontend build on a low-memory EC2 host](./deploy/operations/frontend-build-on-low-memory-ec2.md)
 
 production secretの実値はGitHubへ保存せず、Bitwardenを正本とします。
 
