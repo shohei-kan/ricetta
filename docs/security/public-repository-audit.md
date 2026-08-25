@@ -19,7 +19,7 @@ repository visibilityの変更、Git履歴の書換え、branch / tag / release 
 - tracked fileと全履歴に対するprivate key marker、AWS access key形式、AWS ARN、Account ID文脈、EC2 Instance ID、GitHub token、Slack tokenのpattern検査
 - `.env.prod` / `.env.production`、private key、credential file、database dump、backupに該当するhistorical filename検査
 - current / historical generic password、secret、token assignmentの候補をpath単位で確認
-- commit author / committer emailのnoreply判定。メール実値は表示・記録していない
+- commit metadataに含まれるprivacy情報の有無と公開影響を確認。実値は表示・記録していない
 - GitHub連携で取得できた61 Issuesと33 Pull Requestsのtitle / bodyに対する同じidentifier pattern検査
 - README、Docs index、security / deploy docs、workflow、`.gitignore`、tracked screenshotsの公開範囲確認
 
@@ -37,11 +37,10 @@ repository visibilityの変更、Git履歴の書換え、branch / tag / release 
 | GitHub token / Slack token形式 | 検出なし |
 | Generic password / secret assignments | デモ・test用の明示的なダミーcredential候補のみ。production secret候補は検出なし |
 | Docs内のemail形式 | デモ用addressまたはsystemd等の技術表記。commit metadataのメールとの一致なし |
-| Non-noreply commit metadata | 132 commitsが影響。実値は非表示 |
+| Repository privacy findings | current treeとGit履歴を確認し、repository ownerが影響を評価して対応方針を決定済み。実値は非表示 |
 | GitHub Issue title / body | 61件で対象identifier patternの検出なし |
 | GitHub PR title / body | PR #55の1件はsystemd template unit identifierによるemail形式のfalse positive。個人メール、credential、private identifierではないことを確認済み |
 | README掲載screenshots | 5件を目視確認。デモ用データのみで、secret / private identifierの写り込みなし |
-| `docs/figma/` screenshots | 公開不要な6件をcurrent treeから削除済み。過去のGit履歴には同じimage blobが残る |
 | Git history rewrite | 未実施 |
 
 検出なしは今回使用したpatternと取得できたGit objectsの範囲を意味し、credentialが存在しないことを暗号学的に保証するものではありません。GitHub Actions logs / artifacts、Issue / PR comments、添付画像、Console内の連携設定はlocal Git監査の対象外なので、後述の手動確認が完了するまで公開可とは判断しません。
@@ -200,25 +199,23 @@ public化により既存ruleの適用状態が変わる可能性があるため�
 
 - currentまたはGit履歴に有効なcredential、private key、token、password、公開不可identifierがある
 - Actions logs / artifacts、Issue、PR、comment、添付画像にsecretまたは公開不可情報がある
-- `docs/figma/`から削除した6件がGit履歴に残る影響について#30の判断がない
 - public repositoryから利用可能なself-hosted runnerがある
 - fork由来workflowへwrite tokenまたはsecretを渡す設定がある
 - productionへ直接到達する不要なDeploy key、Webhook、App / OAuth連携がある
-- non-noreply commit metadataの公開影響についてrepository ownerの判断がない
 - LICENSEなし / All rights reserved方針がREADMEとGitHub表示で明確でない
 - public化直後にmain Rulesetを設定・検証する担当者と手順が確定していない
 - #30でMajor以上と判断された問題が残っている
 
 secretが見つかった場合はrepositoryから削除するだけでは不十分です。まずcredentialを失効・rotationし、その後にGit履歴、Actions logs / artifacts、Issue / PR等の修正範囲を判断します。
 
-## Known Issues for Issue #30
+## Remaining controls for Issue #30
 
-1. **Commit metadata email:** 全132 commitsにnoreplyではないauthorまたはcommitter emailが含まれます。実値は記録しません。選択肢は、公開影響を理解して現履歴を維持する、public化前に別Issueで履歴書換えと全ref調整を計画する、または公開を延期する、のいずれかです。本Issueでは履歴を書き換えません。
-2. **Historical Figma screenshot blobs:** 公開不要な`docs/figma/`の6件はcurrent treeから削除済みです。ただし通常のfile削除では過去のcommitからblobは消えません。完全削除には全refへ影響するGit履歴書換えとforce pushが必要です。本Issueでは実施せず、履歴に残る画像の公開影響を受容するか、別Issueで履歴書換えを計画するか、public化を延期するかを#30で判断します。画像内の実値はIssue / PRへ転記しません。
-3. **Post-public controls:** Social preview、main Ruleset / branch protection、secret scanning、push protection、private vulnerability reporting、code scanningの利用可否はpublic化直後に設定・確認します。完了するまで通常のmerge / pushを行いません。
+Public release auditで確認した非Blockerのprivacy事項は、repository ownerが影響を確認し、対応方針を決定済みです。詳細な判断記録はGit repository外で管理します。有効なcredentialやproduction secretの検出はありません。
+
+Public化直後にSocial preview、main Ruleset / branch protection、secret scanning、push protection、private vulnerability reporting、code scanningの利用可否を設定・確認します。完了するまで通常のmerge / pushを行いません。
 
 ## Handoff to Issue #30
 
-Issue #30では、手動チェックリストを完了し、Known Issuesを一件ずつaccept / remediate / deferとして判断します。公開承認時は、visibility変更担当者、main Ruleset設定担当者、public化直後のActions / Security再確認担当者、問題発見時にprivateへ戻す判断者を記録します。
+Issue #30では、手動チェックリストを完了し、公開前監査で残るBlockerがないことと、public化直後の担当・手順を確認します。公開承認時は、visibility変更担当者、main Ruleset設定担当者、public化直後のActions / Security再確認担当者、問題発見時にprivateへ戻す判断者を記録します。
 
 public化直後は、Ruleset、Actions default permissions、fork approval、Security alerts、secret scanning / push protection、公開README / social preview、branches / tags / releasesの見え方を再確認します。確認が終わるまで新しい通常変更をmergeしません。
