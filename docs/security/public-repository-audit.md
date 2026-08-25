@@ -39,7 +39,7 @@ repository visibilityの変更、Git履歴の書換え、branch / tag / release 
 | Docs内のemail形式 | デモ用addressまたはsystemd等の技術表記。commit metadataのメールとの一致なし |
 | Non-noreply commit metadata | 132 commitsが影響。実値は非表示 |
 | GitHub Issue title / body | 61件で対象identifier patternの検出なし |
-| GitHub PR title / body | 33件中1件にexample / noreply以外のemail形式が1件。commit metadataとは不一致。実値は非表示、要手動分類 |
+| GitHub PR title / body | PR #55の1件はsystemd template unit identifierによるemail形式のfalse positive。個人メール、credential、private identifierではないことを確認済み |
 | README掲載screenshots | 5件を目視確認。デモ用データのみで、secret / private identifierの写り込みなし |
 | `docs/figma/` screenshots | 公開不要な6件をcurrent treeから削除済み。過去のGit履歴には同じimage blobが残る |
 | Git history rewrite | 未実施 |
@@ -52,16 +52,19 @@ GitHub連携によるread-only確認と事前監査結果:
 
 - visibility: private
 - default branch: `main`
-- description: 設定済み
-- homepage URL / topics: 未設定
+- description / homepage URL / topics: 設定済み。Websiteは [https://ricetta.lintake.net](https://ricetta.lintake.net)
 - Issues / Projects: 有効
-- Wiki / Pages / Discussions: 無効
-- GitHub上のbranch: `main`とIssue #91の作業branch
+- Pull Requests: 有効
+- Wiki / Sponsorships / Discussions: 無効
+- GitHub Pages: 未設定
+- Releases: 表示。Deployments / Packages: 非表示
+- GitHub上のbranch: `main`のみ
 - tags / releases: `v0.1.0`、`v0.2.0`、`v0.3.0`。release assetなし
 - workflow: `.github/workflows/ci.yml`のみ
-- merge commit / squash / rebase: すべて有効
-- merged branch自動削除: 無効
-- LICENSE / SECURITY.md: 監査開始時はいずれもなし
+- merge commit / squash: 有効。rebase / auto-merge: 無効
+- Pull Request branchの更新提案 / merged branch自動削除: 有効
+- LICENSE: なし（All rights reserved方針）
+- `.github/SECURITY.md`: あり、内容確認済み
 - private repositoryの現在のplanではmain Rulesetを利用不可
 
 localに残るremote-tracking refはGitHub上の現在branch一覧と同義ではありません。削除判断は本監査へ混ぜず、GitHub Consoleのbranch一覧を正本として確認します。
@@ -76,14 +79,25 @@ localに残るremote-tracking refはGitHub上の現在branch一覧と同義で�
 
 PostgreSQL passwordとDjango secret keyはCI専用の明示的なdummy値で、production credentialではありません。fork Pull Requestへrepository secretを渡す参照もありません。
 
-workflowにはtop-levelの明示的権限がなかったため、Issue #92で次を追加します。
+workflowには現在、次のread-only権限を明示しています。
 
 ```yaml
 permissions:
   contents: read
 ```
 
-これによりworkflowの`GITHUB_TOKEN`をsource checkoutに必要なread-onlyへ限定します。GitHub Console側のdefault workflow permissionsもread-onlyであること、ActionsによるPull Request作成・承認を許可していないことを手動確認します。
+これによりworkflowの`GITHUB_TOKEN`をsource checkoutに必要なread-onlyへ限定します。GitHub Consoleでは次を確認済みです。
+
+- 使用Actionは`actions/checkout`、`actions/setup-python`、`actions/setup-node`だけ
+- Actionをfull-length commit SHAへ固定する設定は無効
+- artifact / log retentionは30日
+- fork Pull Request workflowは無効
+- default workflow permissionsはread-only
+- ActionsによるPull Request作成・承認は無効
+- 他repositoryからのActions accessは`Not accessible`
+- self-hosted runnerは0件
+- latest CIはsuccess
+- artifactsは0件
 
 ## License policy
 
@@ -95,7 +109,7 @@ Ricettaは現時点では採用担当・面接官に見せるportfolioとして�
 
 脆弱性やsecret漏えいの疑いをpublic Issue、PR、Discussionへ書かない方針とし、[Security Policy](../../.github/SECURITY.md)でGitHub private vulnerability reportingを案内します。個人メールアドレスやproduction secretは報告先としてDocsへ掲載しません。
 
-public化前にGitHub Consoleでprivate vulnerability reportingを有効化し、repositoryのSecurityタブに **Report a vulnerability** が表示されることを確認します。利用できない状態はsecurity reportのprivateな受け口がないため、public化停止条件です。
+private vulnerability reportingは公開前Blockerにはしません。public化直後に有効化し、repositoryのSecurityタブに **Report a vulnerability** が表示されることを必須確認とします。確認が終わるまでは通常のmerge / pushを行いません。
 
 ## GitHub Console manual checklist
 
@@ -103,46 +117,59 @@ public化前にGitHub Consoleでprivate vulnerability reportingを有効化し�
 
 ### Public repository presentation
 
-- [ ] homepage URLが公開デモの意図したHTTPS URLである
-- [ ] topicsがportfolioとtech stackを過不足なく表す
+- [x] descriptionが設定済み
+- [x] homepage URLが公開デモの意図したHTTPS URLである
+- [x] topicsがportfolioとtech stackを過不足なく表す
 - [ ] social previewにsecret、個人情報、実店舗データ、不適切なcropがない
-- [ ] description、README、screenshots、Issues / PR、comments、添付画像がpublic向けである
-- [ ] Wiki / Pages / Discussionsの無効状態が意図どおりである
-- [ ] LICENSEがなく、READMEのLicense節とGitHub表示が方針どおりである
+- [x] READMEとSecurity Policyがpublic向けである
+- [ ] screenshots、Issues / PR、comments、添付画像がpublic向けである
+- [x] Issues / Projects / Pull Requestsが有効
+- [x] Wiki / Sponsorships / Discussionsが無効
+- [x] Releasesが表示され、Deployments / Packagesが非表示
+- [x] LICENSEがなく、READMEのLicense節とGitHub表示が方針どおりである
 
 ### Pull Requests and branches
 
-- [ ] merge commit / squash / rebaseの許可方針を#30で確定する
-- [ ] merged branch自動削除を有効化するか#30で確定する
-- [ ] branches、tags、releasesとassetを棚卸しし、不要項目は公開前に別途判断する
+- [x] default branchが`main`
+- [x] remote branchが`main`だけ
+- [x] merge commit / squashを許可し、rebaseを許可しない
+- [x] Pull Request branchの更新提案とmerged branch自動削除が有効
+- [x] auto-mergeが無効
+- [ ] public化直後にmain Ruleset / branch protectionを設定・検証する
 - [ ] open / closed Issues、PR、review、comments、添付画像に公開不可情報がない
 
 ### Actions
 
-- [ ] Workflow permissionsのdefaultがread-only
-- [ ] GitHub ActionsによるPull Request作成・承認を許可していない
-- [ ] fork PRとfirst-time / external contributorのworkflow実行がapproval対象
-- [ ] fork PRへwrite tokenまたはrepository / environment secretを渡さない
-- [ ] Actions logs / artifactsのretention期間が必要最小限
+- [x] 使用ActionがGitHub公式の3 Actionだけ
+- [x] full-length commit SHA固定が無効
+- [x] Workflow permissionsのdefaultがread-only
+- [x] GitHub ActionsによるPull Request作成・承認を許可していない
+- [x] fork Pull Request workflowが無効
+- [x] 他repositoryからのActions accessが`Not accessible`
+- [x] Actions logs / artifactsのretention期間が30日
 - [ ] 過去のActions logsにsecret、個人メール、AWS / Slack private identifierがない
-- [ ] artifact一覧が空、または全assetの内容・retention・公開影響を確認済み
-- [ ] repository / organizationにpublic repositoryから利用可能なself-hosted runnerがない
+- [x] latest CIがsuccess
+- [x] artifact一覧が0件
+- [x] self-hosted runnerが0件
 
 ### Secrets, access, and integrations
 
-- [ ] Repository secretsを名前・用途・最終利用workflowで棚卸し
-- [ ] Environment secretsとprotection rulesを棚卸し
-- [ ] Repository / Environment / Organization Variablesを棚卸し
-- [ ] Deploy keysに不要なkeyやwrite accessがない
-- [ ] Webhooksに不要なendpointやproductionへ直接到達する連携がない
-- [ ] GitHub Apps / OAuth Appsのrepository accessと権限が必要最小限
-- [ ] collaborators / teams / outside collaboratorsの権限が必要最小限
-- [ ] organization base permissionとrepository roleの組合せを確認
+- [x] Repository secretsが0件
+- [x] Environment secretsが0件
+- [x] Actions variablesが0件
+- [x] Environmentsが0件
+- [x] Deploy key `ricetta-ec2-pull`はread-onlyで維持
+- [x] Webhooksが0件
+- [x] GitHub AppはChatGPT Codex Connectorのみで、repository accessは`Only select repositories`
+- [x] external collaboratorsが0件
+- [x] pending invitationsが0件
+- [x] Codespaces secrets / trusted repositoriesが0件
 
 ### Security features
 
-- [ ] dependency graphが有効
-- [ ] Dependabot alertsを確認し、公開停止に相当する未解決事項がない
+- [x] dependency graphが有効
+- [x] Dependabot alertsが有効で、検出vulnerabilityが0件
+- [x] Dependabot malware alertsが有効で、検出malwareが0件
 - [ ] Dependabot security updatesの採否を確認
 - [ ] secret scanningが有効
 - [ ] push protectionが有効
@@ -173,12 +200,10 @@ public化により既存ruleの適用状態が変わる可能性があるため�
 
 - currentまたはGit履歴に有効なcredential、private key、token、password、公開不可identifierがある
 - Actions logs / artifacts、Issue、PR、comment、添付画像にsecretまたは公開不可情報がある
-- PR本文で検出したemail形式1件が公開可能な技術表記か確認されていない
 - `docs/figma/`から削除した6件がGit履歴に残る影響について#30の判断がない
 - public repositoryから利用可能なself-hosted runnerがある
 - fork由来workflowへwrite tokenまたはsecretを渡す設定がある
 - productionへ直接到達する不要なDeploy key、Webhook、App / OAuth連携がある
-- private vulnerability reportingを含む非公開のsecurity report導線がない
 - non-noreply commit metadataの公開影響についてrepository ownerの判断がない
 - LICENSEなし / All rights reserved方針がREADMEとGitHub表示で明確でない
 - public化直後にmain Rulesetを設定・検証する担当者と手順が確定していない
@@ -189,13 +214,8 @@ secretが見つかった場合はrepositoryから削除するだけでは不十�
 ## Known Issues for Issue #30
 
 1. **Commit metadata email:** 全132 commitsにnoreplyではないauthorまたはcommitter emailが含まれます。実値は記録しません。選択肢は、公開影響を理解して現履歴を維持する、public化前に別Issueで履歴書換えと全ref調整を計画する、または公開を延期する、のいずれかです。本Issueでは履歴を書き換えません。
-2. **GitHub Console audit incomplete:** Actions logs / artifacts、Issues / PR / attachments、secrets、variables、keys、hooks、Apps、collaborators、runner、Security機能は人間のConsole確認が必要です。
-3. **PR body email candidate:** 33 PRsのtitle / body監査で、example / noreply以外のemail形式が1件あります。commit metadataのメールとは一致しません。実値をIssueやDocsへ転記せず、GitHub Consoleで公開可能な技術表記か個人情報かを分類し、必要ならpublic化前にredactします。
-4. **Historical Figma screenshot blobs:** 公開不要な`docs/figma/`の6件はcurrent treeから削除済みです。ただし通常のfile削除では過去のcommitからblobは消えません。完全削除には全refへ影響するGit履歴書換えとforce pushが必要です。本Issueでは実施せず、履歴に残る画像の公開影響を受容するか、別Issueで履歴書換えを計画するか、public化を延期するかを#30で判断します。画像内の実値はIssue / PRへ転記しません。
-5. **Repository presentation:** homepage URLとtopicsが未設定で、social previewは手動確認が必要です。
-6. **Branch governance:** main Rulesetはprivate状態では利用不可です。public化直後に設定し、最初の通常変更前に検証する必要があります。
-7. **Repository workflow policy:** 3つのmerge方式とmerged branch自動削除方針が未確定です。
-8. **Off-repository exposure:** GitHub Actions history、release metadata、Issue / PR comments等はGit objectsのpattern監査だけでは網羅できません。
+2. **Historical Figma screenshot blobs:** 公開不要な`docs/figma/`の6件はcurrent treeから削除済みです。ただし通常のfile削除では過去のcommitからblobは消えません。完全削除には全refへ影響するGit履歴書換えとforce pushが必要です。本Issueでは実施せず、履歴に残る画像の公開影響を受容するか、別Issueで履歴書換えを計画するか、public化を延期するかを#30で判断します。画像内の実値はIssue / PRへ転記しません。
+3. **Post-public controls:** Social preview、main Ruleset / branch protection、secret scanning、push protection、private vulnerability reporting、code scanningの利用可否はpublic化直後に設定・確認します。完了するまで通常のmerge / pushを行いません。
 
 ## Handoff to Issue #30
 
