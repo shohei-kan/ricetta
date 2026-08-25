@@ -26,6 +26,13 @@ API・データモデルなど、現在実装に近い技術仕様の正本で�
 
 実装変更でAPIやデータモデルが変わる場合は、対応する正本も更新します。
 
+## Security
+
+repository公開監査と脆弱性報告方針の正本です。
+
+- [GitHub public repository audit](./security/public-repository-audit.md)
+- [Security policy](../.github/SECURITY.md)
+
 ## Deploy / Operations
 
 公開デモ、secret、backup / restore、monitoringなど運用手順の正本です。
