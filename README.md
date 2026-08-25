@@ -235,3 +235,9 @@ Temporary EC2へ手動再構築
 v1.0.0では、公開品質のドキュメント整理、クロスブラウザ確認、Public Release Readiness、Temporary EC2での手動再構築演習、Release Notes / tagまでを行います。
 
 Terraform / Ansible / GitHub Actions CDはv1.0.0には含めず、手動で構築・復旧できることを確認した後のInfrastructure Automationフェーズで扱います。
+
+## License
+
+Ricettaは、採用担当・面接官にportfolioとして閲覧していただく目的でsource codeを公開します。現時点ではオープンソースライセンスを付与しておらず、**All rights reserved**です。公開されているsource codeの利用、改変、再配布を許諾するものではありません。
+
+将来オープンソース化する場合は、ライセンス方針をあらためて検討します。
