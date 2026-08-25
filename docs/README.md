@@ -74,14 +74,6 @@ production secretの実値はGitHubへ保存せず、Bitwardenを正本としま
 
 - [Public demo cross-browser smoke test](./testing/cross-browser-smoke-test.md)
 
-## Design References
-
-画面検討・デザイン参照用の素材です。
-
-- [Figma exports and notes](./figma/)
-
-ここはProduct仕様の正本ではありません。現在の画面仕様は [`product/screens.md`](./product/screens.md) と [`product/ui-guidelines.md`](./product/ui-guidelines.md) を優先します。
-
 ## Project Management / Handoff
 
 今後の作業、Backlog、Acceptance CriteriaはGitHub Issues、release scopeはGitHub Milestones、変更内容・理由・VerificationはPull Requestsで管理します。

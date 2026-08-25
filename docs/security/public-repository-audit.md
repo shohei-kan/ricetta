@@ -41,7 +41,7 @@ repository visibilityの変更、Git履歴の書換え、branch / tag / release 
 | GitHub Issue title / body | 61件で対象identifier patternの検出なし |
 | GitHub PR title / body | 33件中1件にexample / noreply以外のemail形式が1件。commit metadataとは不一致。実値は非表示、要手動分類 |
 | README掲載screenshots | 5件を目視確認。デモ用データのみで、secret / private identifierの写り込みなし |
-| `docs/figma/` screenshots | 6件にbrowser chrome、外部design URL、profile / bookmark等の公開不要情報が写り込み。要削除、crop、または安全なexportへの差し替え |
+| `docs/figma/` screenshots | 公開不要な6件をcurrent treeから削除済み。過去のGit履歴には同じimage blobが残る |
 | Git history rewrite | 未実施 |
 
 検出なしは今回使用したpatternと取得できたGit objectsの範囲を意味し、credentialが存在しないことを暗号学的に保証するものではありません。GitHub Actions logs / artifacts、Issue / PR comments、添付画像、Console内の連携設定はlocal Git監査の対象外なので、後述の手動確認が完了するまで公開可とは判断しません。
@@ -174,7 +174,7 @@ public化により既存ruleの適用状態が変わる可能性があるため�
 - currentまたはGit履歴に有効なcredential、private key、token、password、公開不可identifierがある
 - Actions logs / artifacts、Issue、PR、comment、添付画像にsecretまたは公開不可情報がある
 - PR本文で検出したemail形式1件が公開可能な技術表記か確認されていない
-- `docs/figma/`のbrowser screenshot 6件が公開不要なbrowser / account関連情報を含む
+- `docs/figma/`から削除した6件がGit履歴に残る影響について#30の判断がない
 - public repositoryから利用可能なself-hosted runnerがある
 - fork由来workflowへwrite tokenまたはsecretを渡す設定がある
 - productionへ直接到達する不要なDeploy key、Webhook、App / OAuth連携がある
@@ -191,7 +191,7 @@ secretが見つかった場合はrepositoryから削除するだけでは不十�
 1. **Commit metadata email:** 全132 commitsにnoreplyではないauthorまたはcommitter emailが含まれます。実値は記録しません。選択肢は、公開影響を理解して現履歴を維持する、public化前に別Issueで履歴書換えと全ref調整を計画する、または公開を延期する、のいずれかです。本Issueでは履歴を書き換えません。
 2. **GitHub Console audit incomplete:** Actions logs / artifacts、Issues / PR / attachments、secrets、variables、keys、hooks、Apps、collaborators、runner、Security機能は人間のConsole確認が必要です。
 3. **PR body email candidate:** 33 PRsのtitle / body監査で、example / noreply以外のemail形式が1件あります。commit metadataのメールとは一致しません。実値をIssueやDocsへ転記せず、GitHub Consoleで公開可能な技術表記か個人情報かを分類し、必要ならpublic化前にredactします。
-4. **Figma reference screenshots:** `docs/figma/`の6件はbrowser全体のscreenshotで、browser chrome、外部design URL、profile / bookmark等の公開不要情報が写り込んでいます。public化前に削除、必要範囲だけへのcrop、またはbrowser chromeを含まない安全なexportへの差し替えが必要です。画像内の実値はIssue / PRへ転記しません。
+4. **Historical Figma screenshot blobs:** 公開不要な`docs/figma/`の6件はcurrent treeから削除済みです。ただし通常のfile削除では過去のcommitからblobは消えません。完全削除には全refへ影響するGit履歴書換えとforce pushが必要です。本Issueでは実施せず、履歴に残る画像の公開影響を受容するか、別Issueで履歴書換えを計画するか、public化を延期するかを#30で判断します。画像内の実値はIssue / PRへ転記しません。
 5. **Repository presentation:** homepage URLとtopicsが未設定で、social previewは手動確認が必要です。
 6. **Branch governance:** main Rulesetはprivate状態では利用不可です。public化直後に設定し、最初の通常変更前に検証する必要があります。
 7. **Repository workflow policy:** 3つのmerge方式とmerged branch自動削除方針が未確定です。
