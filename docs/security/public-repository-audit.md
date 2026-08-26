@@ -36,10 +36,8 @@ repository visibilityの変更、Git履歴の書換え、branch / tag / release 
 | AWS ARN / Account ID文脈 / EC2 Instance ID | 検出なし |
 | GitHub token / Slack token形式 | 検出なし |
 | Generic password / secret assignments | デモ・test用の明示的なダミーcredential候補のみ。production secret候補は検出なし |
-| Docs内のemail形式 | デモ用addressまたはsystemd等の技術表記。commit metadataのメールとの一致なし |
 | Repository content review | current treeとGit履歴を確認済み。公開停止につながるfindingなし |
-| GitHub Issue title / body | 61件で対象identifier patternの検出なし |
-| GitHub PR title / body | PR #55の1件はsystemd template unit identifierによるemail形式のfalse positive。個人メール、credential、private identifierではないことを確認済み |
+| GitHub Issue / Pull Request content | title / bodyを確認済み。公開停止につながるfindingなし |
 | README掲載screenshots | 5件を目視確認。デモ用データのみで、secret / private identifierの写り込みなし |
 
 検出なしは今回使用したpatternと取得できたGit objectsの範囲を意味し、credentialが存在しないことを暗号学的に保証するものではありません。GitHub Actions logs / artifacts、Issue / PR comments、添付画像、Console内の連携設定はlocal Git監査とは別に確認し、結果を後述の手動チェックリストへ反映します。
