@@ -149,7 +149,7 @@ seed_portfolio_data --reset を用意する
 Phase 2:
 
 ```text
-AWS上でcronまたはsystemd timerにより、毎日早朝などに自動リセットする
+AWS上でsystemd timerにより、毎日04:30 JSTに自動リセットする（運用中）
 ```
 
 Phase 3:
@@ -240,15 +240,31 @@ production env には localhost を含めません。
 
 AWS公開デモでは、本番URLのみを `DJANGO_CSRF_TRUSTED_ORIGINS` に入れます。
 
-## 定期リセット予定
+## 定期リセット運用
 
-将来的には、cronまたはsystemd timerで毎日早朝などに以下を実行する予定です。
+AWS公開デモでは、systemd timerにより毎日04:30 JSTに次のresetを実行します。
 
 ```bash
 docker compose exec backend python manage.py seed_portfolio_data --reset
 ```
 
-実際のcron / systemd timer設定は、別タスクで検討します。
+定期処理は次の順序です。
+
+| Time | Process | Purpose |
+| --- | --- | --- |
+| 04:10 JST | PostgreSQL backup | reset前のDB状態をS3へ保存 |
+| 04:30 JST | Demo reset | 公開デモを初期状態へ戻す |
+| 05:00 JST | Backup monitor | S3上の最新backupを確認 |
+
+read-only確認:
+
+```bash
+systemctl status ricetta-demo-reset.timer --no-pager
+systemctl list-timers --all | grep ricetta
+journalctl -u ricetta-demo-reset.service -n 80 --no-pager
+```
+
+backupと監視を含む運用の詳細は、[PostgreSQL backup](../backup/postgres-backup.md)と[PostgreSQL backup monitoring](../backup/postgres-monitoring.md)を参照してください。
 
 ## 公開前チェック
 
