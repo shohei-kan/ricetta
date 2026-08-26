@@ -8,7 +8,7 @@ repository visibilityの変更、Git履歴の書換え、branch / tag / release 
 
 ## Audit snapshot
 
-監査時点: 2026-08-25 JST
+監査時点: 2026-08-26 JST
 
 ### Local source and full Git history
 
@@ -19,7 +19,7 @@ repository visibilityの変更、Git履歴の書換え、branch / tag / release 
 - tracked fileと全履歴に対するprivate key marker、AWS access key形式、AWS ARN、Account ID文脈、EC2 Instance ID、GitHub token、Slack tokenのpattern検査
 - `.env.prod` / `.env.production`、private key、credential file、database dump、backupに該当するhistorical filename検査
 - current / historical generic password、secret、token assignmentの候補をpath単位で確認
-- commit metadataに含まれるprivacy情報の有無と公開影響を確認。実値は表示・記録していない
+- commit metadataを含むrepository全体の公開範囲と記載内容を確認。secretやprivate identifierの実値は表示・記録していない
 - GitHub連携で取得できた61 Issuesと33 Pull Requestsのtitle / bodyに対する同じidentifier pattern検査
 - README、Docs index、security / deploy docs、workflow、`.gitignore`、tracked screenshotsの公開範囲確認
 
@@ -36,14 +36,21 @@ repository visibilityの変更、Git履歴の書換え、branch / tag / release 
 | AWS ARN / Account ID文脈 / EC2 Instance ID | 検出なし |
 | GitHub token / Slack token形式 | 検出なし |
 | Generic password / secret assignments | デモ・test用の明示的なダミーcredential候補のみ。production secret候補は検出なし |
-| Docs内のemail形式 | デモ用addressまたはsystemd等の技術表記。commit metadataのメールとの一致なし |
-| Repository privacy findings | current treeとGit履歴を確認し、repository ownerが影響を評価して対応方針を決定済み。実値は非表示 |
-| GitHub Issue title / body | 61件で対象identifier patternの検出なし |
-| GitHub PR title / body | PR #55の1件はsystemd template unit identifierによるemail形式のfalse positive。個人メール、credential、private identifierではないことを確認済み |
+| Repository content review | current treeとGit履歴を確認済み。公開停止につながるfindingなし |
+| GitHub Issue / Pull Request content | title / bodyを確認済み。公開停止につながるfindingなし |
 | README掲載screenshots | 5件を目視確認。デモ用データのみで、secret / private identifierの写り込みなし |
-| Git history rewrite | 未実施 |
 
-検出なしは今回使用したpatternと取得できたGit objectsの範囲を意味し、credentialが存在しないことを暗号学的に保証するものではありません。GitHub Actions logs / artifacts、Issue / PR comments、添付画像、Console内の連携設定はlocal Git監査の対象外なので、後述の手動確認が完了するまで公開可とは判断しません。
+検出なしは今回使用したpatternと取得できたGit objectsの範囲を意味し、credentialが存在しないことを暗号学的に保証するものではありません。GitHub Actions logs / artifacts、Issue / PR comments、添付画像、Console内の連携設定はlocal Git監査とは別に確認し、結果を後述の手動チェックリストへ反映します。
+
+### GitHub public content review
+
+2026-08-26 JSTにGitHub上の公開対象contentをread-onlyで確認しました。
+
+- Issues 61件、Pull Requests 38件
+- top-level comments 4件
+- review submissions、inline review comments / threads、添付リンクは0件
+- private key、AWS / GitHub / Slack credential、private identifierの高信頼patternは検出なし
+- technical identifierを含む既存記載を確認し、公開停止につながるfindingなし
 
 ### GitHub repository inventory
 
@@ -64,7 +71,7 @@ GitHub連携によるread-only確認と事前監査結果:
 - Pull Request branchの更新提案 / merged branch自動削除: 有効
 - LICENSE: なし（All rights reserved方針）
 - `.github/SECURITY.md`: あり、内容確認済み
-- private repositoryの現在のplanではmain Rulesetを利用不可
+- 現在のprivate repositoryではmain Rulesetを利用不可。GitHub Freeのpublic repositoryでは利用可能
 
 localに残るremote-tracking refはGitHub上の現在branch一覧と同義ではありません。削除判断は本監査へ混ぜず、GitHub Consoleのbranch一覧を正本として確認します。
 
@@ -115,7 +122,7 @@ private vulnerability reportingは公開前Blockerにはしません。public化
 
 ## GitHub Console manual checklist
 
-以下はcredential値やprivate identifierをIssue / PRへ転記せず、存在、用途、owner、最終利用時期、削除判断だけをprivateな監査記録で確認します。
+以下はcredential値やprivate identifierをIssue / PRへ転記せず、設定状態と公開可否だけを記録します。
 
 ### Public repository presentation
 
@@ -124,7 +131,7 @@ private vulnerability reportingは公開前Blockerにはしません。public化
 - [x] topicsがportfolioとtech stackを過不足なく表す
 - [ ] social previewにsecret、個人情報、実店舗データ、不適切なcropがない
 - [x] READMEとSecurity Policyがpublic向けである
-- [ ] screenshots、Issues / PR、comments、添付画像がpublic向けである
+- [x] screenshots、Issues / PR、comments、添付画像がpublic向けである
 - [x] Issues / Projects / Pull Requestsが有効
 - [x] Wiki / Sponsorships / Discussionsが無効
 - [x] Releasesが表示され、Deployments / Packagesが非表示
@@ -138,7 +145,7 @@ private vulnerability reportingは公開前Blockerにはしません。public化
 - [x] Pull Request branchの更新提案とmerged branch自動削除が有効
 - [x] auto-mergeが無効
 - [ ] public化直後にmain Ruleset / branch protectionを設定・検証する
-- [ ] open / closed Issues、PR、review、comments、添付画像に公開不可情報がない
+- [x] open / closed Issues、PR、review、comments、添付画像に公開不可情報がない
 
 ### Actions
 
@@ -172,16 +179,16 @@ private vulnerability reportingは公開前Blockerにはしません。public化
 - [x] dependency graphが有効
 - [x] Dependabot alertsが有効で、検出vulnerabilityが0件
 - [x] Dependabot malware alertsが有効で、検出malwareが0件
-- [ ] Dependabot security updatesの採否を確認
-- [ ] secret scanningが有効
-- [ ] push protectionが有効
-- [ ] private vulnerability reportingが有効で、private report導線を確認
-- [ ] code scanningの利用有無と未対応alertを確認
-- [ ] public化直後にSecurity alertsと設定を再確認する担当者を決める
+- [x] Dependabot security updatesを採用する。public化前に有効化し、version updates / grouped security updatesは当面無効のまま運用する
+- [ ] public化直後にsecret scanning alertsを確認
+- [ ] public化直後にrepository push protectionを有効化・検証
+- [ ] public化直後にprivate vulnerability reportingを有効化し、private report導線を確認
+- [ ] public化直後にCodeQL default setupを有効化し、未対応alertを確認
+- [x] public化直後のSecurity alertsと設定を再確認する担当者はrepository owner
 
 ## Main Ruleset immediately after public visibility
 
-現在のprivate repository planではRulesetを利用できないため、#30でpublic化が承認され、人間がvisibilityをpublicへ変更した直後にGitHub Consoleでmain Rulesetを作成します。Rulesetが有効になるまで通常の変更をmerge / pushしません。
+現在のprivate repositoryではRuleset APIが利用できません。GitHub Freeのpublic repositoryではRulesetを利用できるため、#30でpublic化が承認され、repository ownerがvisibilityをpublicへ変更した直後にGitHub Consoleでmain Rulesetを作成します。Rulesetが有効になるまで通常の変更をmerge / pushしません。
 
 1. **Settings → Rules → Rulesets → New branch ruleset**を開く。
 2. 対象branchをdefault branch `main`へ限定する。
@@ -213,12 +220,12 @@ secretが見つかった場合はrepositoryから削除するだけでは不十�
 
 ## Remaining controls for Issue #30
 
-Public release auditで確認した非Blockerのprivacy事項は、repository ownerが影響を確認し、対応方針を決定済みです。詳細な判断記録はGit repository外で管理します。有効なcredentialやproduction secretの検出はありません。
+Public release auditの確認結果は本書へ反映済みです。有効なcredentialやproduction secretは検出されていません。
 
-Public化直後にSocial preview、main Ruleset / branch protection、secret scanning、push protection、private vulnerability reporting、code scanningの利用可否を設定・確認します。完了するまで通常のmerge / pushを行いません。
+public化前にDependabot security updatesを有効化します。public化直後にrepository ownerがSocial preview、main Ruleset / branch protection、secret scanning、push protection、private vulnerability reporting、CodeQL default setupを設定・確認します。完了するまで通常のmerge / pushを行いません。
 
 ## Handoff to Issue #30
 
-Issue #30では、手動チェックリストを完了し、公開前監査で残るBlockerがないことと、public化直後の担当・手順を確認します。公開承認時は、visibility変更担当者、main Ruleset設定担当者、public化直後のActions / Security再確認担当者、問題発見時にprivateへ戻す判断者を記録します。
+Issue #30では、手動チェックリストを完了し、公開前監査で残るBlockerがないことと、public化直後の手順を確認します。visibility変更、main Ruleset設定、Actions / Security再確認、問題発見時にprivateへ戻す判断はrepository ownerが担当します。
 
 public化直後は、Ruleset、Actions default permissions、fork approval、Security alerts、secret scanning / push protection、公開README / social preview、branches / tags / releasesの見え方を再確認します。確認が終わるまで新しい通常変更をmergeしません。
