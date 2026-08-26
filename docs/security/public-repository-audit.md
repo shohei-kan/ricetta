@@ -179,12 +179,21 @@ private vulnerability reportingは公開前Blockerにはしません。public化
 - [x] dependency graphが有効
 - [x] Dependabot alertsが有効で、検出vulnerabilityが0件
 - [x] Dependabot malware alertsが有効で、検出malwareが0件
-- [x] Dependabot security updatesを採用する。public化前に有効化し、version updates / grouped security updatesは当面無効のまま運用する
+- [x] Dependabot security updatesが有効。version updates / grouped security updates / self-hosted runnersは無効
 - [ ] public化直後にsecret scanning alertsを確認
 - [ ] public化直後にrepository push protectionを有効化・検証
 - [ ] public化直後にprivate vulnerability reportingを有効化し、private report導線を確認
 - [ ] public化直後にCodeQL default setupを有効化し、未対応alertを確認
 - [x] public化直後のSecurity alertsと設定を再確認する担当者はrepository owner
+
+## Production deployment check
+
+2026-08-26 JSTに、本番EC2で現在稼働中のbackendに対して、本番相当設定で`python manage.py check --deploy`を実行しました。errorsはなく、次の2 warningsだけを確認しました。
+
+- `security.W005`
+- `security.W021`
+
+現在は`SECURE_HSTS_SECONDS=3600`とし、`SECURE_HSTS_INCLUDE_SUBDOMAINS=False`、`SECURE_HSTS_PRELOAD=False`を維持します。これは、他のsubdomainへ一律にHTTPS制約を広げず、影響範囲が広く解除にも時間がかかるHSTS preloadを現在のportfolio規模では採用しないという運用判断です。warningを消すことだけを目的とした設定変更は行いません。
 
 ## Main Ruleset immediately after public visibility
 
@@ -222,7 +231,7 @@ secretが見つかった場合はrepositoryから削除するだけでは不十�
 
 Public release auditの確認結果は本書へ反映済みです。有効なcredentialやproduction secretは検出されていません。
 
-public化前にDependabot security updatesを有効化します。public化直後にrepository ownerがSocial preview、main Ruleset / branch protection、secret scanning、push protection、private vulnerability reporting、CodeQL default setupを設定・確認します。完了するまで通常のmerge / pushを行いません。
+Dependabot security updatesは有効化済みです。public化直後にrepository ownerがSocial preview、main Ruleset / branch protection、secret scanning、push protection、private vulnerability reporting、CodeQL default setupを設定・確認します。完了するまで通常のmerge / pushを行いません。
 
 ## Handoff to Issue #30
 
