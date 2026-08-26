@@ -97,6 +97,9 @@ permissions:
 - self-hosted runnerは0件
 - latest CIはsuccess
 - artifactsは0件
+- 2026-08-26 JSTに、GitHub APIで取得可能な93 runs / 185 jobs / 約4.8 MBのlogsをread-onlyで確認
+- private key marker、AWS access key / ARN / Account ID / EC2 Instance ID、GitHub / Slack token、JWT、email形式、secret assignmentの高信頼patternは検出なし
+- 12桁数値候補はDocker image layer IDによるfalse positive。failure 1件はGitHub-hosted runnerのDocker pull HTTP 500で、credentialまたはapplication test failureではない
 
 ## License policy
 
@@ -146,7 +149,7 @@ private vulnerability reportingは公開前Blockerにはしません。public化
 - [x] fork Pull Request workflowが無効
 - [x] 他repositoryからのActions accessが`Not accessible`
 - [x] Actions logs / artifactsのretention期間が30日
-- [ ] 過去のActions logsにsecret、個人メール、AWS / Slack private identifierがない
+- [x] 過去のActions logsにsecret、個人メール、AWS / Slack private identifierがない
 - [x] latest CIがsuccess
 - [x] artifact一覧が0件
 - [x] self-hosted runnerが0件
