@@ -94,6 +94,29 @@ class ProductionSettingsTests(SimpleTestCase):
         self.assertTrue(values["debug"])
         self.assertEqual(values["engine"], "django.db.backends.sqlite3")
 
+    def test_development_postgres_requires_password(self):
+        environment = os.environ.copy()
+        for name in (*REQUIRED_PRODUCTION_SETTINGS, "DJANGO_DEBUG"):
+            environment.pop(name, None)
+        environment.update(
+            {
+                "DJANGO_DEBUG": "True",
+                "POSTGRES_HOST": "db",
+            }
+        )
+
+        result = subprocess.run(
+            [sys.executable, "-c", "import ricetta.settings"],
+            cwd=BACKEND_DIR,
+            env=environment,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("POSTGRES_PASSWORD", result.stderr)
+
     def test_production_enables_expected_https_settings(self):
         command = (
             "import json; from ricetta import settings; "

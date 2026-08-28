@@ -159,6 +159,11 @@ frontendはReact標準のstate / effectとFetch APIを中心に実装してい�
 git clone https://github.com/shohei-kan/ricetta.git
 cd ricetta
 cp .env.example .env
+```
+
+コピーした `.env` の `POSTGRES_PASSWORD` にlocal環境専用のpasswordを設定してから、containerを起動します。
+
+```bash
 docker compose up --build -d
 docker compose exec backend python manage.py migrate
 docker compose exec backend python manage.py seed_initial_data

@@ -4,7 +4,7 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-ricetta}
       POSTGRES_USER: ${POSTGRES_USER:-ricetta}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ricetta}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
     ports:
       - "${POSTGRES_HOST_PORT:-5433}:5432"
     volumes:
@@ -20,7 +20,7 @@ services:
       DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1},backend
       POSTGRES_DB: ${POSTGRES_DB:-ricetta}
       POSTGRES_USER: ${POSTGRES_USER:-ricetta}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ricetta}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
       POSTGRES_HOST: db
       POSTGRES_PORT: 5432
     ports:

@@ -126,7 +126,7 @@ sudo chmod 600 /etc/ricetta/backup-monitor.env
 
 ## Production Security Hardening
 
-Issue #25で、Djangoのproduction settingsとproduction Composeは必須値がない場合にfail closedとなる構成へ変更しました。開発用fallbackは `DJANGO_DEBUG=True` の開発環境に限定します。
+Issue #25で、Djangoのproduction settingsとproduction Composeは必須値がない場合にfail closedとなる構成へ変更しました。`DJANGO_DEBUG=True` かつ `POSTGRES_HOST` 未設定の開発環境はSQLiteを使用します。開発環境でもPostgreSQLを使用する場合、`POSTGRES_PASSWORD` にfallbackは設けず、明示的な設定を必須とします。
 
 `seed_portfolio_data` のowner / staff passwordは公開デモ画面とREADMEで公開し、定期resetで元に戻すための非secret値です。追加のproduction secretに移さず、運用secretと分けて扱います。
 
