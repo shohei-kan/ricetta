@@ -165,7 +165,11 @@ else:
     if DEBUG:
         postgres_name = env('POSTGRES_DB', 'ricetta')
         postgres_user = env('POSTGRES_USER', 'ricetta')
-        postgres_password = env('POSTGRES_PASSWORD', 'ricetta')
+        postgres_password = os.getenv('POSTGRES_PASSWORD', '').strip()
+        if not postgres_password:
+            raise ImproperlyConfigured(
+                'POSTGRES_PASSWORD is required when PostgreSQL is used in development.'
+            )
         postgres_host = env('POSTGRES_HOST', 'db')
         postgres_port = env('POSTGRES_PORT', '5432')
     else:
